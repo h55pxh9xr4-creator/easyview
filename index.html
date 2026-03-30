@@ -1175,8 +1175,14 @@
   <div id="sc-dup" class="subpage on">
   <div class="wrap">
 
-    <!-- Filter bar -->
-    <div class="pg-fbar" style="background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:8px 14px;margin-bottom:0">
+    <!-- 설명 카드 -->
+    <div class="card" style="border-left:4px solid #E87722;padding:14px 18px;background:#fffbf7">
+      <div style="font-size:15px;font-weight:700;color:#E87722;margin-bottom:4px">💡 시나리오 1. 동일 금액 중복 전표</div>
+      <div style="font-size:12px;color:#666;line-height:1.8">예상위험 : 동일한 거래처에 동일 금액으로 중복 지급 또는 중복 부채를 인식하는 경우, 이중 지급 가능성이 있습니다. 동일 계정과목·동일 거래처·동일 금액으로 동일 연월에 2건 이상 기표된 전표를 추출합니다.</div>
+    </div>
+
+    <!-- 필터 -->
+    <div class="pg-fbar" style="background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:8px 14px">
       <span class="flabel">조회기간</span>
       <input type="date" value="2024-01-01" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
       <span style="font-size:12px;color:#aaa">~</span>
@@ -1186,18 +1192,6 @@
       <span style="font-size:12px;color:#aaa">~</span>
       <input type="text" value="6,000,000,000" style="width:130px;border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit;text-align:right">
       <button style="padding:3px 14px;background:#1d1d1d;color:#fff;border:none;border-radius:3px;font-size:12px;cursor:pointer;font-family:inherit;margin-left:8px">조회</button>
-    </div>
-
-    <!-- Section header -->
-    <div class="sec-hd" style="margin-top:4px">
-      <span class="sec-hd-txt">시나리오 1. 동일 금액 중복 전표</span>
-      <div class="sec-hd-line"></div>
-    </div>
-
-    <!-- Info note -->
-    <div class="info-note">
-      <strong>예상위험</strong> : 동일한 거래처에 동일 금액으로 중복 지급 또는 중복 부채를 인식하는 경우, 이중 지급 가능성이 있습니다.<br>
-      동일 계정과목·동일 거래처·동일 금액으로 동일 연월에 2건 이상 기표된 전표를 추출합니다.
     </div>
 
     <!-- Exception 내역 + 전포 추출 내역 -->
