@@ -1415,57 +1415,87 @@
 
   <div id="sc-wknd" class="subpage">
   <div class="wrap">
-    <div class="card" style="border-left:3px solid #0056d7;padding:14px 18px">
-      <div style="font-size:15px;font-weight:700;color:#0056d7;margin-bottom:6px">💡 시나리오 3. 주말 현금 지급 전표</div>
-      <div style="font-size:12px;color:#888;line-height:1.8">예상 위험 : 주말에 별도 승인 없이 현금 집행</div>
+
+    <!-- 설명 카드 -->
+    <div class="card" style="border-left:4px solid #E87722;padding:14px 18px;background:#fffbf7">
+      <div style="font-size:15px;font-weight:700;color:#E87722;margin-bottom:4px">💡 시나리오 3. 주말 현금 지급 전표</div>
+      <div style="font-size:12px;color:#666;line-height:1.8">예상위험 : 주말에 별도 승인 없이 현금 집행. 토요일/일요일에 기표된 현금성 전표(보통예금·현금 계정 대변)를 추출합니다.</div>
     </div>
+
+    <!-- 필터 -->
+    <div class="pg-fbar" style="background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:8px 14px">
+      <span class="flabel">조회기간</span>
+      <input type="date" value="2024-01-01" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <span style="font-size:12px;color:#aaa">~</span>
+      <input type="date" value="2025-09-30" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <button style="padding:3px 14px;background:#1d1d1d;color:#fff;border:none;border-radius:3px;font-size:12px;cursor:pointer;font-family:inherit;margin-left:8px">조회</button>
+    </div>
+
+    <!-- g2: 차트 + 전표 추출 내역 -->
     <div class="g2">
       <div class="card">
-        <div class="card-title">주말 현금 전표 내역 (2024-01-01 ~ 2025-09-30)</div>
-        <div class="chart-box-lg"><canvas id="ch-wknd"></canvas></div>
+        <div class="card-title">주말 현금 전표 내역</div>
+        <div class="chart-box-xl"><canvas id="ch-wknd"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">전표 추출 내역</div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>전표번호</th><th>계정과목</th><th>거래처</th><th>대변</th></tr></thead>
+        <div class="card-title">전표 추출 내역 <span style="font-size:11px;color:#aaa;font-weight:400">— 행 클릭 시 하단 전표 상세 필터</span></div>
+        <div class="tbl-wrap" style="max-height:300px;overflow-y:auto"><table class="tbl-dark">
+          <thead><tr>
+            <th style="text-align:left">전표번호</th>
+            <th style="text-align:left">계정과목</th>
+            <th style="text-align:left">거래처</th>
+            <th>대변</th>
+          </tr></thead>
           <tbody>
-            <tr><td>20250927-0028</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>4,112,193</td></tr>
-            <tr><td>20250927-0001</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>52,800</td></tr>
-            <tr><td>20250914-0011</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>550,000</td></tr>
-            <tr><td>20250913-0005</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>550,000</td></tr>
-            <tr><td>20250907-0005</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>3,077,666,604</td></tr>
-            <tr><td>20250907-0005</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>3,000</td></tr>
-            <tr><td>20250907-0004</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>15,830,000</td></tr>
-            <tr><td>20250907-0003</td><td>현금(원화)</td><td>—</td><td>15,830,000</td></tr>
+            <tr class="wknd-extract-row" onclick="selectWkndVch(this,'20250927-0028')"><td>20250927-0028</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>4,112,193</td></tr>
+            <tr class="wknd-extract-row" onclick="selectWkndVch(this,'20250927-0001')"><td>20250927-0001</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>52,800</td></tr>
+            <tr class="wknd-extract-row" onclick="selectWkndVch(this,'20250914-0011')"><td>20250914-0011</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>550,000</td></tr>
+            <tr class="wknd-extract-row" onclick="selectWkndVch(this,'20250913-0005')"><td>20250913-0005</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>550,000</td></tr>
+            <tr class="wknd-extract-row" onclick="selectWkndVch(this,'20250907-0005')"><td>20250907-0005</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>3,077,666,604</td></tr>
+            <tr class="wknd-extract-row" onclick="selectWkndVch(this,'20250907-0004')"><td>20250907-0004</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>15,830,000</td></tr>
+            <tr class="wknd-extract-row" onclick="selectWkndVch(this,'20250907-0003')"><td>20250907-0003</td><td>현금(원화)</td><td>—</td><td>15,830,000</td></tr>
             <tr class="tr-sum"><td colspan="3">합계</td><td>261,451,591,798</td></tr>
           </tbody>
         </table></div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">전표 상세 내역</div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>일자</th><th>전표번호</th><th>계정과목</th><th>거래처</th><th>적요</th><th>차변</th><th>대변</th></tr></thead>
+
+    <!-- 전표 상세 내역 -->
+    <div class="sec-hd" style="margin-top:4px">
+      <span class="sec-hd-txt">전표 상세 내역</span>
+      <div class="sec-hd-line"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap"><table class="tbl-dark">
+        <thead><tr>
+          <th style="text-align:left">일자</th>
+          <th style="text-align:left">전표번호</th>
+          <th style="text-align:left">계정과목</th>
+          <th style="text-align:left">거래처</th>
+          <th style="text-align:left">적요</th>
+          <th>차변</th>
+          <th>대변</th>
+        </tr></thead>
         <tbody>
-          <tr><td>2025-09-30</td><td>20250930-0517</td><td>FOC(선수수익)</td><td>사사홍콩</td><td>[결산조정]FOC 선수수익_HK</td><td>—</td><td>(1,113,139)</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0517</td><td>FOC(선수수익)</td><td>(주)마르코코리아</td><td>[결산조정]FOC 선수수익_RU</td><td>—</td><td>(4,077,670)</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0517</td><td>FOC(선수수익)</td><td>스타일앤코</td><td>[결산조정]FOC 선수수익_스타일앤코</td><td>—</td><td>(2,496,436)</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(제)</td><td>국민건강보험공단</td><td>구매팀, 품질관리팀, 사업지원본부</td><td>2,347,487</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>H&amp;B 팀</td><td>4,540,382</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>경영지원부문</td><td>8,341,655</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>디자인랩</td><td>5,212,753</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>면세팀</td><td>5,125,518</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>온라인영업팀</td><td>1,820,228</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>코스메틱사업부문, 글로벌마케팅팀…</td><td>8,290,789</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>해외영업팀</td><td>1,108,074</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>홈쇼핑특판팀</td><td>1,099,344</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>화장품학연구소, 상품기획팀</td><td>5,341,350</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0191</td><td>경상개발연구비-기타</td><td>스타벅스커피코리아</td><td>2021-09-24 임상대상자 스타벅스…</td><td>300,000</td><td>—</td></tr>
-          <tr><td>2025-09-30</td><td>20250930-0191</td><td>경상개발연구비-기타</td><td>스타벅스커피코리아</td><td>2021-09-24 임상대상자 스타벅스…</td><td>350,000</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250927-0028"><td>2025-09-27</td><td>20250927-0028</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>9월 운영비 이체</td><td>—</td><td>4,112,193</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250927-0028"><td>2025-09-27</td><td>20250927-0028</td><td>운반비(판)</td><td>CJ대한통운</td><td>9월 운영비 이체</td><td>4,112,193</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250927-0001"><td>2025-09-27</td><td>20250927-0001</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>소액지급_수수료</td><td>—</td><td>52,800</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250927-0001"><td>2025-09-27</td><td>20250927-0001</td><td>지급수수료(판)</td><td>—</td><td>소액지급_수수료</td><td>52,800</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250914-0011"><td>2025-09-14</td><td>20250914-0011</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>주말지급_임시비용</td><td>—</td><td>550,000</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250914-0011"><td>2025-09-14</td><td>20250914-0011</td><td>잡비(판)</td><td>—</td><td>주말지급_임시비용</td><td>550,000</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250913-0005"><td>2025-09-13</td><td>20250913-0005</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>주말지급_임시비용2</td><td>—</td><td>550,000</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250913-0005"><td>2025-09-13</td><td>20250913-0005</td><td>잡비(판)</td><td>—</td><td>주말지급_임시비용2</td><td>550,000</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250907-0005"><td>2025-09-07</td><td>20250907-0005</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>9월 제조원가 정산</td><td>—</td><td>3,077,666,604</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250907-0005"><td>2025-09-07</td><td>20250907-0005</td><td>제조원가(제)</td><td>—</td><td>9월 제조원가 정산</td><td>3,077,666,604</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250907-0004"><td>2025-09-07</td><td>20250907-0004</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>현금인출_인사집행</td><td>—</td><td>15,830,000</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250907-0004"><td>2025-09-07</td><td>20250907-0004</td><td>현금(원화)</td><td>—</td><td>현금인출_인사집행</td><td>15,830,000</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250907-0003"><td>2025-09-07</td><td>20250907-0003</td><td>미지급금(지로의)</td><td>인사집</td><td>202108 급여 현금지급분</td><td>15,830,000</td><td>—</td></tr>
+          <tr class="wknd-detail-row" data-vch="20250907-0003"><td>2025-09-07</td><td>20250907-0003</td><td>현금(원화)</td><td>인사총무팀</td><td>202108 급여 현금지급분</td><td>—</td><td>15,830,000</td></tr>
           <tr class="tr-sum"><td colspan="5">합계</td><td>2,874,380,858,742</td><td>2,874,380,858,742</td></tr>
         </tbody>
       </table></div>
     </div>
+
   </div>
   </div>
 
@@ -1569,6 +1599,35 @@ function colorScBadges(){
   });
 }
 colorScBadges();
+
+/* ── 시나리오3 전표 클릭 연동 ── */
+function selectWkndVch(row, vchNo){
+  document.querySelectorAll('#sc-wknd .wknd-extract-row').forEach(r=>r.classList.remove('selected'));
+  row.classList.add('selected');
+  document.querySelectorAll('#sc-wknd .wknd-detail-row').forEach(r=>{
+    r.classList.toggle('tr-sel', r.dataset.vch===vchNo);
+  });
+}
+
+/* ── 시나리오3 주말 현금 전표 차트 ── */
+(function(){
+  const ctx=document.getElementById('ch-wknd');if(!ctx)return;
+  const lbl=['24-01','24-02','24-03','24-04','24-05','24-06','24-07','24-08','24-09','24-10','24-11','24-12',
+             '25-01','25-02','25-03','25-04','25-05','25-06','25-07','25-08','25-09'];
+  const dat=[550,null,320,4112,null,53,15830,null,null,830,2340,4500,
+             980,null,1200,330,4112,null,null,15830,3114595];
+  new Chart(ctx,{type:'line',data:{labels:lbl,datasets:[{
+    data:dat,showLine:false,
+    backgroundColor:'#E87722',pointBackgroundColor:'#E87722',
+    pointRadius:6,pointHoverRadius:9,borderColor:'transparent'
+  }]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toLocaleString()+'천원'}}},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:10}}},
+      y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>v>=1000?Math.round(v/1000).toLocaleString()+'M':v+'천'}}
+    }
+  }});
+})();
 
 /* ── Chart defaults ── */
 Chart.defaults.font.family="'Malgun Gothic','맑은 고딕',sans-serif";
