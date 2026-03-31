@@ -180,3 +180,6 @@ tbody td:first-child{text-align:left;font-weight:600;color:#1d1d1d}
 .wknd-extract-row{cursor:pointer;transition:background .1s}
 .wknd-extract-row:hover td{background:rgba(232,119,34,0.06)}
 .wknd-extract-row.selected td{background:rgba(232,119,34,0.14);font-weight:600}
+.big-extract-row{cursor:pointer;transition:background .1s}
+.big-extract-row:hover td{background:rgba(232,119,34,0.06)}
+.big-extract-row.selected td{background:rgba(232,119,34,0.14);font-weight:600}

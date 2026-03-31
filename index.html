@@ -1513,22 +1513,100 @@
 
   <div id="sc-big" class="subpage">
   <div class="wrap">
+
+    <!-- 설명 카드 -->
+    <div class="card" style="border-left:4px solid #E87722;padding:14px 18px;background:#fffbf7">
+      <div style="font-size:15px;font-weight:700;color:#E87722;margin-bottom:4px">💡 시나리오 4. 고액 현금 지급 전표</div>
+      <div style="font-size:12px;color:#666;line-height:1.8">예상위험 : 고액 현금 인출을 통한 부정. 기준 금액 이상의 현금성 계정(보통예금·현금) 대변 전표를 추출합니다.</div>
+    </div>
+
+    <!-- 필터 -->
+    <div class="pg-fbar" style="background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:8px 14px">
+      <span class="flabel">조회기간</span>
+      <input type="date" value="2024-01-01" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <span style="font-size:12px;color:#aaa">~</span>
+      <input type="date" value="2025-09-30" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <span class="flabel" style="margin-left:16px">기준금액</span>
+      <input type="text" value="20,000,000" style="width:120px;border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit;text-align:right">
+      <span style="font-size:12px;color:#aaa">~</span>
+      <input type="text" value="15,000,000,000" style="width:140px;border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit;text-align:right">
+      <button style="padding:3px 14px;background:#1d1d1d;color:#fff;border:none;border-radius:3px;font-size:12px;cursor:pointer;font-family:inherit;margin-left:8px">조회</button>
+    </div>
+
+    <!-- 고액 현금 전표 내역 차트 (full width) -->
     <div class="card">
       <div class="card-title">고액 현금 전표 내역</div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>전표번호</th><th>계정과목</th><th>거래처</th><th>대변</th></tr></thead>
+      <div class="chart-box-xl"><canvas id="ch-big"></canvas></div>
+    </div>
+
+    <!-- 전표 추출 내역 -->
+    <div class="sec-hd" style="margin-top:4px">
+      <span class="sec-hd-txt">전표 추출 내역</span>
+      <div class="sec-hd-line"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap"><table class="tbl-dark">
+        <thead><tr>
+          <th style="text-align:left">전표번호</th>
+          <th style="text-align:left">계정과목</th>
+          <th style="text-align:left">거래처</th>
+          <th>대변</th>
+        </tr></thead>
         <tbody>
-          <tr><td>20250930-0020</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>1,453,706,900</td></tr>
-          <tr><td>20250930-0019</td><td>보통예금(원화)</td><td>신한은행 구베이역점</td><td>1,430,958,690</td></tr>
-          <tr><td>20250930-0008</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>3,908,604,986</td></tr>
-          <tr><td>20250929-0007</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>6,967,345,064</td></tr>
-          <tr><td>20250907-0005</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>3,077,666,604</td></tr>
-          <tr><td>20250831-0018</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>1,000,000,000</td></tr>
-          <tr><td>20250831-0016</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>1,453,706,900</td></tr>
-          <tr class="tr-sum"><td colspan="3">합계</td><td>603,877,650,133</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250930-0146')"><td>20250930-0146</td><td>보통예금(외화)</td><td>ALIPAY</td><td>34,652,834</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250930-0020')"><td>20250930-0020</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>1,453,706,900</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250930-0019')"><td>20250930-0019</td><td>보통예금(원화)</td><td>신한은행 구베이역점</td><td>1,430,958,690</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250930-0008')"><td>20250930-0008</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>3,908,604,986</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250929-0043')"><td>20250929-0043</td><td>보통예금(원화)</td><td>이노레드</td><td>154,648,218</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250929-0015')"><td>20250929-0015</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>36,686,000</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250907-0005')"><td>20250907-0005</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>3,077,666,604</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250831-0018')"><td>20250831-0018</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>1,000,000,000</td></tr>
+          <tr class="big-extract-row" onclick="selectBigVch(this,'20250831-0016')"><td>20250831-0016</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>1,453,706,900</td></tr>
+          <tr class="tr-sum"><td colspan="3">합계</td><td>818,769,638,119</td></tr>
         </tbody>
       </table></div>
     </div>
+
+    <!-- 전표 상세 내역 -->
+    <div class="sec-hd" style="margin-top:4px">
+      <span class="sec-hd-txt">전표 상세 내역</span>
+      <div class="sec-hd-line"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap"><table class="tbl-dark">
+        <thead><tr>
+          <th style="text-align:left">일자</th>
+          <th style="text-align:left">전표번호</th>
+          <th style="text-align:left">계정과목</th>
+          <th style="text-align:left">거래처</th>
+          <th style="text-align:left">적요</th>
+          <th>차변</th>
+          <th>대변</th>
+        </tr></thead>
+        <tbody>
+          <tr class="big-detail-row" data-vch="20250930-0146"><td>2025-09-30</td><td>20250930-0146</td><td>보통예금(외화)</td><td>ALIPAY</td><td>9월 알리페이 정산</td><td>—</td><td>34,652,834</td></tr>
+          <tr class="big-detail-row" data-vch="20250930-0146"><td>2025-09-30</td><td>20250930-0146</td><td>매출(수출)</td><td>ALIPAY</td><td>9월 알리페이 정산</td><td>34,652,834</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250930-0020"><td>2025-09-30</td><td>20250930-0020</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>9월 말 대규모 이체</td><td>—</td><td>1,453,706,900</td></tr>
+          <tr class="big-detail-row" data-vch="20250930-0020"><td>2025-09-30</td><td>20250930-0020</td><td>미지급금(거래처원화)</td><td>ICBC 구베이금융센터점</td><td>9월 말 대규모 이체</td><td>1,453,706,900</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250930-0019"><td>2025-09-30</td><td>20250930-0019</td><td>보통예금(원화)</td><td>신한은행 구베이역점</td><td>9월 말 대규모 이체</td><td>—</td><td>1,430,958,690</td></tr>
+          <tr class="big-detail-row" data-vch="20250930-0019"><td>2025-09-30</td><td>20250930-0019</td><td>미지급금(거래처원화)</td><td>신한은행 구베이역점</td><td>9월 말 대규모 이체</td><td>1,430,958,690</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250930-0008"><td>2025-09-30</td><td>20250930-0008</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>해외송금_제조비 정산</td><td>—</td><td>3,908,604,986</td></tr>
+          <tr class="big-detail-row" data-vch="20250930-0008"><td>2025-09-30</td><td>20250930-0008</td><td>제조원가(제)</td><td>—</td><td>해외송금_제조비 정산</td><td>3,908,604,986</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250929-0043"><td>2025-09-29</td><td>20250929-0043</td><td>보통예금(원화)</td><td>이노레드</td><td>광고비 집행_이노레드</td><td>—</td><td>154,648,218</td></tr>
+          <tr class="big-detail-row" data-vch="20250929-0043"><td>2025-09-29</td><td>20250929-0043</td><td>광고선전비(판)</td><td>이노레드</td><td>광고비 집행_이노레드</td><td>154,648,218</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250929-0015"><td>2025-09-29</td><td>20250929-0015</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>운영비 이체</td><td>—</td><td>36,686,000</td></tr>
+          <tr class="big-detail-row" data-vch="20250929-0015"><td>2025-09-29</td><td>20250929-0015</td><td>운반비(판)</td><td>—</td><td>운영비 이체</td><td>36,686,000</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250907-0005"><td>2025-09-07</td><td>20250907-0005</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>9월 제조원가 정산</td><td>—</td><td>3,077,666,604</td></tr>
+          <tr class="big-detail-row" data-vch="20250907-0005"><td>2025-09-07</td><td>20250907-0005</td><td>제조원가(제)</td><td>—</td><td>9월 제조원가 정산</td><td>3,077,666,604</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250831-0018"><td>2025-08-31</td><td>20250831-0018</td><td>보통예금(원화)</td><td>우리은행 민항구중앙금융센터</td><td>8월 말 대규모 이체</td><td>—</td><td>1,000,000,000</td></tr>
+          <tr class="big-detail-row" data-vch="20250831-0018"><td>2025-08-31</td><td>20250831-0018</td><td>미지급금(거래처원화)</td><td>—</td><td>8월 말 대규모 이체</td><td>1,000,000,000</td><td>—</td></tr>
+          <tr class="big-detail-row" data-vch="20250831-0016"><td>2025-08-31</td><td>20250831-0016</td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>8월 말 대규모 이체2</td><td>—</td><td>1,453,706,900</td></tr>
+          <tr class="big-detail-row" data-vch="20250831-0016"><td>2025-08-31</td><td>20250831-0016</td><td>미지급금(거래처원화)</td><td>ICBC 구베이금융센터점</td><td>8월 말 대규모 이체2</td><td>1,453,706,900</td><td>—</td></tr>
+          <tr class="tr-sum"><td colspan="5">합계</td><td>2,831,756,130,956</td><td>2,831,756,130,956</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
   </div>
   </div>
 </div>
@@ -1601,6 +1679,13 @@ function colorScBadges(){
 colorScBadges();
 
 /* ── 시나리오3 전표 클릭 연동 ── */
+function selectBigVch(row, vchNo){
+  document.querySelectorAll('#sc-big .big-extract-row').forEach(r=>r.classList.remove('selected'));
+  row.classList.add('selected');
+  document.querySelectorAll('#sc-big .big-detail-row').forEach(r=>{
+    r.classList.toggle('tr-sel', r.dataset.vch===vchNo);
+  });
+}
 function selectWkndVch(row, vchNo){
   document.querySelectorAll('#sc-wknd .wknd-extract-row').forEach(r=>r.classList.remove('selected'));
   row.classList.add('selected');
@@ -1608,6 +1693,30 @@ function selectWkndVch(row, vchNo){
     r.classList.toggle('tr-sel', r.dataset.vch===vchNo);
   });
 }
+
+/* ── 시나리오4 고액 현금 전표 차트 ── */
+(function(){
+  const ctx=document.getElementById('ch-big');if(!ctx)return;
+  // 월별 더미 데이터 (억원 단위), 2024-01 ~ 2025-09
+  const lbl=['24-01','24-02','24-03','24-04','24-05','24-06','24-07','24-08','24-09','24-10','24-11','24-12',
+             '25-01','25-02','25-03','25-04','25-05','25-06','25-07','25-08','25-09'];
+  // 여러 건의 고액전표가 있는 달은 복수 포인트 — scatter 데이터로 표현
+  const pts=[];
+  const monthly=[
+    [107,98],[145,82],[112,130,95],[188,210],[76,88],[134,105,92],[158,178],[99,115],[143,127,88],[165,192,74],[88,102],[97,120,85],
+    [134,88],[108,75],[142,165],[188,95,113],[76,132],[105,88],[158,72],[307,145,108],[390,308,145,154,37]
+  ];
+  monthly.forEach((vals,i)=>vals.forEach(v=>pts.push({x:i,y:v})));
+  new Chart(ctx,{type:'scatter',data:{datasets:[{
+    data:pts,backgroundColor:'#E87722',pointRadius:5,pointHoverRadius:8
+  }]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>lbl[c.parsed.x]+': '+c.parsed.y.toLocaleString()+'억원'}}},
+    scales:{
+      x:{type:'linear',min:0,max:20,grid:{display:false},ticks:{callback:v=>lbl[v]||'',stepSize:1,font:{size:10}}},
+      y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>v+'억'}}
+    }
+  }});
+})();
 
 /* ── 시나리오3 주말 현금 전표 차트 ── */
 (function(){
