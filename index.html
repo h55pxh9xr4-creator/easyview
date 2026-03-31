@@ -1589,7 +1589,115 @@
 
   <div id="sc-sc6" class="subpage">
   <div class="wrap">
-    <div class="info-note">시나리오6 내역은 추후 업데이트됩니다.</div>
+
+    <!-- 설명 카드 -->
+    <div class="card" style="border-left:4px solid #E87722;padding:14px 18px;background:#fffbf7">
+      <div style="font-size:15px;font-weight:700;color:#E87722;margin-bottom:4px">💡 시나리오 6. Seldom Used Customer</div>
+      <div style="font-size:12px;color:#666;line-height:1.8">예상위험 : 사용 빈도가 낮은 거래처를 통한 회계 오류의 가능성이 있는 전표 식별</div>
+    </div>
+
+    <!-- 필터 -->
+    <div class="pg-fbar" style="background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:8px 14px">
+      <span class="flabel">조회기간</span>
+      <input type="date" value="2024-01-01" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <span style="font-size:12px;color:#aaa">~</span>
+      <input type="date" value="2025-09-30" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <button style="padding:3px 14px;background:#1d1d1d;color:#fff;border:none;border-radius:3px;font-size:12px;cursor:pointer;font-family:inherit;margin-left:8px">조회</button>
+    </div>
+
+    <!-- g2: Exception 내역 + 전표 추출 내역 -->
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">시나리오 Exception 내역</div>
+        <div class="tbl-wrap" style="max-height:340px;overflow-y:auto"><table class="tbl-dark">
+          <thead><tr>
+            <th style="text-align:left">거래처</th>
+            <th>빈도수</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>#히밍별라</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>100세동인남동구청</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>137카페</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>1981명진담남개구이</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>21세기민세약국(민항구)</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>21센휴리시티관리단</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>24시홍범빈점</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>2월쓰냄 (대구소성형)</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>4289-9993-0328-6898</td><td><span class="sc-badge">2</span></td></tr>
+            <tr><td>4289-9993-0364-0151</td><td><span class="sc-badge">2</span></td></tr>
+            <tr><td>4289-9993-0407-6868</td><td><span class="sc-badge">3</span></td></tr>
+            <tr><td>4289-9993-0476-5049</td><td><span class="sc-badge">1</span></td></tr>
+            <tr><td>브랜디</td><td><span class="sc-badge">5</span></td></tr>
+            <tr><td>레페리</td><td><span class="sc-badge">3</span></td></tr>
+            <tr><td>ALIPAY</td><td><span class="sc-badge">4</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-title">전표 추출 내역</div>
+        <div class="tbl-wrap" style="max-height:340px;overflow-y:auto"><table class="tbl-dark">
+          <thead><tr>
+            <th style="text-align:left">일자</th>
+            <th style="text-align:left">전표번호</th>
+            <th style="text-align:left">거래처</th>
+            <th>차변</th>
+            <th>대변</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>2025-09-30</td><td>20250930-0002</td><td>브랜디</td><td>595,061</td><td>—</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0002</td><td>브랜디</td><td>329,900</td><td>—</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0002</td><td>브랜디</td><td>59,493</td><td>—</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0002</td><td>브랜디</td><td>—</td><td>1,017,444</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0002</td><td>브랜디</td><td>—</td><td>(32,990)</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0003</td><td>브랜디</td><td>3,841,700</td><td>—</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0003</td><td>브랜디</td><td>—</td><td>349,245</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0003</td><td>브랜디</td><td>—</td><td>4,130,667</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0003</td><td>브랜디</td><td>638,212</td><td>—</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0004</td><td>레페리</td><td>6,122,790</td><td>—</td></tr>
+            <tr><td>2025-09-30</td><td>20250930-0004</td><td>레페리</td><td>612,279</td><td>—</td></tr>
+            <tr class="tr-sum"><td colspan="3">합계</td><td>2,874,380,858,742</td><td>2,874,380,858,742</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- 전표 상세 내역 -->
+    <div class="sec-hd" style="margin-top:4px">
+      <span class="sec-hd-txt">전표 상세 내역</span>
+      <div class="sec-hd-line"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap"><table class="tbl-dark">
+        <thead><tr>
+          <th style="text-align:left">일자</th>
+          <th style="text-align:left">전표번호</th>
+          <th style="text-align:left">계정과목</th>
+          <th style="text-align:left">거래처</th>
+          <th style="text-align:left">적요</th>
+          <th>차변</th>
+          <th>대변</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>2025-09-30</td><td>20250930-0517</td><td>FOC(선수수익)</td><td>사사 홍콩</td><td>[결산조정]FOC 선수수익_HK</td><td>—</td><td>(1,113,139)</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0517</td><td>FOC(선수수익)</td><td>(주)마르코코리아</td><td>[결산조정]FOC 선수수익_RU</td><td>—</td><td>(4,077,670)</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0517</td><td>FOC(선수수익)</td><td>스타일앤코</td><td>[결산조정]FOC 선수수익_스타일앤코</td><td>—</td><td>(2,496,436)</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(제)</td><td>국민건강보험공단</td><td>구매팀, 품질관리팀, 사업지원본부</td><td>2,347,487</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>H&amp;B 팀</td><td>4,540,382</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>경영지원부문</td><td>8,341,655</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>디자인랩</td><td>5,212,753</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>면세팀</td><td>5,125,518</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>온라인영업팀</td><td>1,820,228</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>코스메틱사업부문, 글로벌마케팅팀…</td><td>8,290,789</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>해외영업팀</td><td>1,108,074</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>홈쇼핑특판팀</td><td>1,099,344</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0467</td><td>건강보험(판)</td><td>국민건강보험공단</td><td>화장품학연구소, 상품기획팀</td><td>5,341,350</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0191</td><td>경상개발연구비-기타</td><td>스타벅스커피코리아</td><td>2021-09-24 임상대상자 스타벅스…</td><td>650,000</td><td>—</td></tr>
+          <tr><td>2025-09-30</td><td>20250930-0464</td><td>경상개발연구비-인건비(판)</td><td>0</td><td>202109 디자인랩</td><td>75,405,300</td><td>—</td></tr>
+          <tr class="tr-sum"><td colspan="5">합계</td><td>2,874,380,858,742</td><td>2,874,380,858,742</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
   </div>
   </div>
 
