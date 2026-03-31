@@ -1501,7 +1501,89 @@
 
   <div id="sc-sc5" class="subpage">
   <div class="wrap">
-    <div class="info-note">시나리오5 내역은 추후 업데이트됩니다.</div>
+
+    <!-- 설명 카드 -->
+    <div class="card" style="border-left:4px solid #E87722;padding:14px 18px;background:#fffbf7">
+      <div style="font-size:15px;font-weight:700;color:#E87722;margin-bottom:4px">💡 시나리오 5. 비용 인식과 동시에 현금지급 전표</div>
+      <div style="font-size:12px;color:#666;line-height:1.8">예상위험 : 충당금을 계상하지 않고 비용 인식과 동시에 현금지급, 발생주의 위배 가능성</div>
+    </div>
+
+    <!-- 필터 -->
+    <div class="pg-fbar" style="background:#fff;border:1px solid #e8e8e8;border-radius:3px;padding:8px 14px">
+      <span class="flabel">조회기간</span>
+      <input type="date" value="2024-01-01" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <span style="font-size:12px;color:#aaa">~</span>
+      <input type="date" value="2025-09-30" style="border:1px solid #ddd;border-radius:3px;padding:3px 8px;font-size:12px;font-family:inherit">
+      <button style="padding:3px 14px;background:#1d1d1d;color:#fff;border:none;border-radius:3px;font-size:12px;cursor:pointer;font-family:inherit;margin-left:8px">조회</button>
+    </div>
+
+    <!-- 시나리오 Exception 내역 차트 (full width) -->
+    <div class="card">
+      <div class="card-title">시나리오 Exception 내역</div>
+      <div class="chart-box-xl"><canvas id="ch-sc5"></canvas></div>
+    </div>
+
+    <!-- 전표 추출 내역 -->
+    <div class="sec-hd" style="margin-top:4px">
+      <span class="sec-hd-txt">전표 추출 내역</span>
+      <div class="sec-hd-line"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap"><table class="tbl-dark">
+        <thead><tr>
+          <th style="text-align:left">전표번호</th>
+          <th>비용인식</th>
+          <th>현금지출</th>
+        </tr></thead>
+        <tbody>
+          <tr class="sc5-extract-row" onclick="selectSc5Vch(this,'20250930-0019')"><td>20250930-0019</td><td style="text-align:right">1,500</td><td style="text-align:right">1,430,960,190</td></tr>
+          <tr class="sc5-extract-row" onclick="selectSc5Vch(this,'20250929-0043')"><td>20250929-0043</td><td style="text-align:right">140,589,289</td><td style="text-align:right">154,648,218</td></tr>
+          <tr class="sc5-extract-row" onclick="selectSc5Vch(this,'20250929-0015')"><td>20250929-0015</td><td style="text-align:right">340,037</td><td style="text-align:right">36,718,037</td></tr>
+          <tr class="sc5-extract-row" onclick="selectSc5Vch(this,'20250929-0013')"><td>20250929-0013</td><td style="text-align:right">40,171</td><td style="text-align:right">2,167,271</td></tr>
+          <tr class="sc5-extract-row" onclick="selectSc5Vch(this,'20250929-0012')"><td>20250929-0012</td><td style="text-align:right">40,176</td><td style="text-align:right">25,565,376</td></tr>
+          <tr class="sc5-extract-row" onclick="selectSc5Vch(this,'20250929-0011')"><td>20250929-0011</td><td style="text-align:right">1,000</td><td style="text-align:right">766,512,135</td></tr>
+          <tr class="sc5-extract-row" onclick="selectSc5Vch(this,'20250929-0010')"><td>20250929-0010</td><td style="text-align:right">500</td><td style="text-align:right">98,880,377</td></tr>
+          <tr class="tr-sum"><td>합계</td><td style="text-align:right">241,747,318</td><td style="text-align:right">66,553,657,577</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <!-- 전표 상세 내역 -->
+    <div class="sec-hd" style="margin-top:4px">
+      <span class="sec-hd-txt">전표 상세 내역</span>
+      <div class="sec-hd-line"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tbl-wrap"><table class="tbl-dark">
+        <thead><tr>
+          <th style="text-align:left">일자</th>
+          <th style="text-align:left">전표번호</th>
+          <th style="text-align:left">구분</th>
+          <th style="text-align:left">계정과목</th>
+          <th style="text-align:left">거래처</th>
+          <th style="text-align:left">적요</th>
+          <th>차변</th>
+          <th>대변</th>
+        </tr></thead>
+        <tbody>
+          <tr class="sc5-detail-row" data-vch="20250930-0019"><td>2025-09-30</td><td>20250930-0019</td><td></td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>2021-09-30 ICBC(주거래) 374…</td><td>1,430,958,690</td><td>—</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250930-0019"><td>2025-09-30</td><td>20250930-0019</td><td><span style="color:#dc2626;font-weight:600">현금유출</span></td><td>보통예금(원화)</td><td>신한은행 구베이역점</td><td>2021-09-30 신한-주거래 통장…</td><td>—</td><td>1,430,958,690</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250930-0019"><td>2025-09-30</td><td>20250930-0019</td><td><span style="color:#dc2626;font-weight:600">현금유출</span></td><td>보통예금(원화)</td><td>신한은행 구베이역점</td><td>2021-09-30 신한-주거래 통장…</td><td>—</td><td>1,500</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250930-0019"><td>2025-09-30</td><td>20250930-0019</td><td><span style="color:#26c6ac;font-weight:600">비용인식</span></td><td>지급수수료-기타(판)</td><td>0</td><td>2021-09-30 ICBC(주거래) 374…</td><td>1,500</td><td>—</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0010"><td>2025-09-29</td><td>20250929-0010</td><td></td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>2021-09-29 기업-ICBC(마이너…</td><td>98,879,877</td><td>—</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0010"><td>2025-09-29</td><td>20250929-0010</td><td><span style="color:#dc2626;font-weight:600">현금유출</span></td><td>보통예금(원화)</td><td>중소기업은행 돈암동지점</td><td>2021-09-29 기업-ICBC(마이너…</td><td>—</td><td>98,879,877</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0010"><td>2025-09-29</td><td>20250929-0010</td><td><span style="color:#dc2626;font-weight:600">현금유출</span></td><td>보통예금(원화)</td><td>중소기업은행 돈암동지점</td><td>2021-09-29 기업-ICBC(마이너…</td><td>—</td><td>500</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0010"><td>2025-09-29</td><td>20250929-0010</td><td><span style="color:#26c6ac;font-weight:600">비용인식</span></td><td>지급수수료-기타(판)</td><td>0</td><td>2021-09-29 기업-ICBC(마이너…</td><td>500</td><td>—</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0011"><td>2025-09-29</td><td>20250929-0011</td><td></td><td>보통예금(원화)</td><td>ICBC 구베이금융센터점</td><td>2021-09-29 신한-주거래 통장…</td><td>766,511,135</td><td>—</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0011"><td>2025-09-29</td><td>20250929-0011</td><td><span style="color:#dc2626;font-weight:600">현금유출</span></td><td>보통예금(원화)</td><td>신한은행 구베이역점</td><td>2021-09-29 신한-주거래 통장…</td><td>—</td><td>766,511,135</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0011"><td>2025-09-29</td><td>20250929-0011</td><td><span style="color:#26c6ac;font-weight:600">비용인식</span></td><td>지급수수료-기타(판)</td><td>0</td><td>2021-09-29 신한-주거래 통장…</td><td>1,000</td><td>—</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0043"><td>2025-09-29</td><td>20250929-0043</td><td><span style="color:#dc2626;font-weight:600">현금유출</span></td><td>보통예금(원화)</td><td>이노레드</td><td>광고비 집행_이노레드</td><td>—</td><td>154,648,218</td></tr>
+          <tr class="sc5-detail-row" data-vch="20250929-0043"><td>2025-09-29</td><td>20250929-0043</td><td><span style="color:#26c6ac;font-weight:600">비용인식</span></td><td>광고선전비(판)</td><td>이노레드</td><td>광고비 집행_이노레드</td><td>140,589,289</td><td>—</td></tr>
+          <tr class="tr-sum"><td colspan="6">합계</td><td>66,640,149,148</td><td>66,640,149,148</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
   </div>
   </div>
 
@@ -1693,6 +1775,36 @@ function selectWkndVch(row, vchNo){
     r.classList.toggle('tr-sel', r.dataset.vch===vchNo);
   });
 }
+
+/* ── 시나리오5 클릭 연동 + 차트 ── */
+function selectSc5Vch(row,vchNo){
+  document.querySelectorAll('#sc-sc5 .sc5-extract-row').forEach(r=>r.classList.remove('selected'));
+  row.classList.add('selected');
+  document.querySelectorAll('#sc-sc5 .sc5-detail-row').forEach(r=>{
+    r.classList.toggle('tr-sel',r.dataset.vch===vchNo);
+  });
+}
+(function(){
+  const ctx=document.getElementById('ch-sc5');if(!ctx)return;
+  // 일별 더미 데이터 (천원), x=월 인덱스(0~20), 월당 여러 점
+  const pts=[];
+  // seeded LCG
+  let s=42;const rng=()=>{s=(s*1664525+1013904223)&0x7fffffff;return s/0x7fffffff;};
+  for(let m=0;m<21;m++){const n=Math.floor(rng()*5)+3;for(let i=0;i<n;i++){const v=Math.floor(rng()*120000)+40000;pts.push({x:m+rng()*0.8,y:v});}}
+  // 실제 데이터 추가 (Sep 2025=20)
+  [1430960,154648,36718,2167,25565,766512,98880].forEach(v=>pts.push({x:20+rng()*0.8,y:v}));
+  const lbl=['24-01','24-02','24-03','24-04','24-05','24-06','24-07','24-08','24-09','24-10','24-11','24-12',
+             '25-01','25-02','25-03','25-04','25-05','25-06','25-07','25-08','25-09'];
+  new Chart(ctx,{type:'scatter',data:{datasets:[{
+    data:pts,backgroundColor:'#E87722',pointRadius:4,pointHoverRadius:7
+  }]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>lbl[Math.round(c.parsed.x)]+': '+c.parsed.y.toLocaleString()+'천원'}}},
+    scales:{
+      x:{type:'linear',min:-0.5,max:20.5,grid:{display:false},ticks:{callback:v=>Number.isInteger(v)&&v>=0&&v<=20?lbl[v]:'',stepSize:1,font:{size:9}}},
+      y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>Math.round(v/1000).toLocaleString()+'M천'}}
+    }
+  }});
+})();
 
 /* ── 시나리오4 고액 현금 전표 차트 ── */
 (function(){

@@ -183,3 +183,6 @@ tbody td:first-child{text-align:left;font-weight:600;color:#1d1d1d}
 .big-extract-row{cursor:pointer;transition:background .1s}
 .big-extract-row:hover td{background:rgba(232,119,34,0.06)}
 .big-extract-row.selected td{background:rgba(232,119,34,0.14);font-weight:600}
+.sc5-extract-row{cursor:pointer;transition:background .1s}
+.sc5-extract-row:hover td{background:rgba(232,119,34,0.06)}
+.sc5-extract-row.selected td{background:rgba(232,119,34,0.14);font-weight:600}
