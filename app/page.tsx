@@ -1,66 +1,70 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import Header from "@/components/layout/Header";
+import FilterBar from "@/components/layout/FilterBar";
+import Summary from "@/components/pages/Summary";
+
+const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
+const PLTrend      = dynamic(() => import("@/components/pages/pl/PLTrend"),      { ssr: false });
+const PLAccount    = dynamic(() => import("@/components/pages/pl/PLAccount"),    { ssr: false });
+const PLSales      = dynamic(() => import("@/components/pages/pl/PLSales"),      { ssr: false });
+const PLItems      = dynamic(() => import("@/components/pages/pl/PLItems"),      { ssr: false });
+const BSSummary    = dynamic(() => import("@/components/pages/bs/BSSummary"),    { ssr: false });
+const BSTrend      = dynamic(() => import("@/components/pages/bs/BSTrend"),      { ssr: false });
+const BSAccount    = dynamic(() => import("@/components/pages/bs/BSAccount"),    { ssr: false });
+const VCHAnalysis  = dynamic(() => import("@/components/pages/vch/VCHAnalysis"), { ssr: false });
+const VCHSearch    = dynamic(() => import("@/components/pages/vch/VCHSearch"),   { ssr: false });
+const SC1          = dynamic(() => import("@/components/pages/sc/SC1"),          { ssr: false });
+const SC2          = dynamic(() => import("@/components/pages/sc/SC2"),          { ssr: false });
+const SC3          = dynamic(() => import("@/components/pages/sc/SC3"),          { ssr: false });
+const SC4          = dynamic(() => import("@/components/pages/sc/SC4"),          { ssr: false });
+const SC5          = dynamic(() => import("@/components/pages/sc/SC5"),          { ssr: false });
+const SC6          = dynamic(() => import("@/components/pages/sc/SC6"),          { ssr: false });
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PAGE_MAP: Record<string, React.ComponentType<any>> = {
+  summary:        Summary,
+  "pl-sum":       PLSummary,
+  "pl-trend":     PLTrend,
+  "pl-acct":      PLAccount,
+  "pl-sale":      PLSales,
+  "pl-item":      PLItems,
+  "bs-sum":       BSSummary,
+  "bs-trend":     BSTrend,
+  "bs-acct":      BSAccount,
+  "vch-analysis": VCHAnalysis,
+  "vch-search":   VCHSearch,
+  "sc-dup":       SC1,
+  "sc-cash":      SC2,
+  "sc-wknd":      SC3,
+  "sc-big":       SC4,
+  "sc-sc5":       SC5,
+  "sc-sc6":       SC6,
+};
+
+export default function Page() {
+  const [activeTab, setActiveTab] = useState("summary");
+  const [activeSub, setActiveSub] = useState("summary");
+  const [pageLabel, setPageLabel] = useState("Summary");
+
+  const handleNavigate = (tab: string, sub: string, label: string) => {
+    setActiveTab(tab);
+    setActiveSub(sub);
+    setPageLabel(label);
+  };
+
+  const ActivePage = PAGE_MAP[activeSub] ?? Summary;
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <>
+      <Header activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} />
+      <FilterBar />
+      <div className="ptb">
+        <span className="ptb-title">{pageLabel}</span>
+      </div>
+      <ActivePage />
+    </>
   );
 }
