@@ -63,8 +63,17 @@ export const fetchPLSummary = (f: FilterState) =>
 export const fetchPLTrend = (f: FilterState) =>
   get("/api/pl/trend", { base_ym: f.baseYm, period_type: f.periodType });
 
+export const fetchPLWaterfall = (f: FilterState) =>
+  get("/api/pl/waterfall", { base_ym: f.baseYm });
+
 export const fetchPLAccount = (f: FilterState) =>
   get("/api/pl/account", { base_ym: f.baseYm, period_type: f.periodType });
+
+export const fetchPLTrendByAccount = (f: FilterState) =>
+  get("/api/pl/trend_by_account", { base_ym: f.baseYm });
+
+export const fetchPLAccountDetail = (f: FilterState, mgmt_acct: string) =>
+  get("/api/pl/account_detail", { base_ym: f.baseYm, period_type: f.periodType, mgmt_acct });
 
 export const fetchPLSales = (f: FilterState) =>
   get("/api/pl/sales", { base_ym: f.baseYm, period_type: f.periodType });

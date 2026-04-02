@@ -17,7 +17,9 @@ ChartJS.register(CategoryScale, LinearScale, LineController, BarController,
 const fmt  = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const fmtM = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 
-interface AccountTrend { mgmt_acct: string; cur: Record<string, number>; pri: Record<string, number> }
+interface AccountTrend { mgmt_acct: string; disclosure_acct: string; cur: Record<string, number>; pri: Record<string, number> }
+
+const PL_ORDER = ["매출액", "매출원가", "판매비와관리비", "기타수익", "기타비용", "금융수익", "금융비용", "법인세비용"];
 interface Voucher { date: string; voucher_no: string; counterparty: string; description: string; amount: number; dr_cr: string }
 interface Detail {
   mgmt_acct: string;
@@ -92,10 +94,11 @@ function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
 
 export default function PLTrend() {
   const filter = useFilter();
-  const [accounts, setAccounts]   = useState<AccountTrend[] | null>(null);
-  const [selected, setSelected]   = useState<string | null>(null);
-  const [detail,   setDetail]     = useState<Detail | null>(null);
-  const [loadingD, setLoadingD]   = useState(false);
+  const [accounts, setAccounts]     = useState<AccountTrend[] | null>(null);
+  const [selected, setSelected]     = useState<string | null>(null);
+  const [detail,   setDetail]       = useState<Detail | null>(null);
+  const [loadingD, setLoadingD]     = useState(false);
+  const [discFilter, setDiscFilter] = useState<string>("전체");
   const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -127,6 +130,10 @@ export default function PLTrend() {
   const allMonths = Array.from(new Set(accounts.flatMap(a => Object.keys(a.cur)))).filter(m => m.startsWith(year)).sort();
   const monthLabels = allMonths.map(m => m.slice(5) + "월");
 
+  // 공시용계정 필터 목록 (PL_ORDER 순서 유지)
+  const discAccts = ["전체", ...PL_ORDER.filter(d => accounts.some(a => a.disclosure_acct === d))];
+  const filteredAccounts = discFilter === "전체" ? accounts : accounts.filter(a => a.disclosure_acct === discFilter);
+
   return (
     <div className="wrap">
 
@@ -145,15 +152,35 @@ export default function PLTrend() {
           )}
         </div>
 
+        {/* ── 공시용계정 필터 ── */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+          {discAccts.map(d => (
+            <button
+              key={d}
+              onClick={() => { setDiscFilter(d); setSelected(null); setDetail(null); }}
+              style={{
+                fontSize: 11, fontWeight: discFilter === d ? 700 : 400,
+                padding: "4px 12px", borderRadius: 20, cursor: "pointer",
+                border: discFilter === d ? "1.5px solid #E87722" : "1px solid #E0E0E0",
+                background: discFilter === d ? "#FFF4EC" : "#fff",
+                color: discFilter === d ? "#E87722" : "#666",
+                transition: "all .15s",
+              }}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+
         <div style={{
           display: "grid",
-          gridTemplateColumns: selected ? "repeat(4, 1fr)" : "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(4, 1fr)",
           gap: 10,
           maxHeight: selected ? 340 : "none",
           overflowY: selected ? "auto" : "visible",
           transition: "max-height 0.4s ease",
         }}>
-          {accounts.map((a) => {
+          {filteredAccounts.map((a) => {
             const curVals  = allMonths.map(m => (a.cur[m] ?? 0) / 1_000_000);
             const priVals  = allMonths.map(m => (a.pri[m] ?? 0) / 1_000_000);
             const total    = Object.values(a.cur).reduce((s, v) => s + v, 0);
@@ -172,6 +199,11 @@ export default function PLTrend() {
                   transition: "all .15s",
                 }}
               >
+                {discFilter === "전체" && a.disclosure_acct && (
+                  <div style={{ fontSize: 9, color: "#aaa", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {a.disclosure_acct}
+                  </div>
+                )}
                 <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? "#E87722" : "#555", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {a.mgmt_acct}
                 </div>
