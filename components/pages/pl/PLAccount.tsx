@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Doughnut } from "react-chartjs-2";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const fmtM   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
@@ -21,25 +25,57 @@ interface Detail {
   pri_vouchers: Voucher[];
 }
 
-// ── 상위 거래처 당기 비중 (수평 바) ─────────────────────────
-function TopCounterpartyBar({ data }: { data: Detail["counterparty"] }) {
+const DONUT_COLORS = [
+  "#E87722","#F5A623","#D5476E","#2563EB","#16A34A",
+  "#7C3AED","#0891B2","#DC2626","#78716C","#CA8A04",
+];
+
+// ── 상위 거래처 당기 비중 (도넛 파이차트) ──────────────────────
+function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   const total = data.reduce((s, d) => s + Math.abs(d.cur), 0) || 1;
+  const chartData = {
+    labels: data.map(d => d.name),
+    datasets: [{
+      data: data.map(d => Math.abs(d.cur)),
+      backgroundColor: DONUT_COLORS.slice(0, data.length),
+      borderWidth: 1,
+      borderColor: "#fff",
+    }],
+  };
+  const opts = {
+    responsive: true,
+    maintainAspectRatio: true,
+    animation: false as const,
+    cutout: "55%",
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: { label: string; raw: unknown }) => {
+            const pct = (Number(ctx.raw) / total * 100).toFixed(1);
+            return ` ${ctx.label}: ${pct}%`;
+          },
+        },
+      },
+    },
+  };
   return (
-    <div>
-      {data.map((d, i) => {
-        const pct = Math.abs(d.cur) / total * 100;
-        return (
-          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-            <div style={{ width: 18, fontSize: 10, color: "#bbb", textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
-            <div style={{ width: 100, fontSize: 11, color: "#555", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
-            <div style={{ flex: 1, height: 14, background: "#F5F5F5", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ width: `${pct}%`, height: "100%", background: "#E87722", borderRadius: 3 }} />
+    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+      <div style={{ width: 130, flexShrink: 0 }}>
+        <Doughnut data={chartData} options={opts} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {data.map((d, i) => {
+          const pct = (Math.abs(d.cur) / total * 100).toFixed(1);
+          return (
+            <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: DONUT_COLORS[i], flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: "#555", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+              <span style={{ fontSize: 10, color: "#888", flexShrink: 0 }}>{pct}%</span>
             </div>
-            <div style={{ width: 50, fontSize: 10, color: "#888", textAlign: "right", flexShrink: 0 }}>{pct.toFixed(1)}%</div>
-            <div style={{ width: 70, fontSize: 10, color: "#E87722", fontWeight: 700, textAlign: "right", flexShrink: 0 }}>{fmtM(Math.abs(d.cur))}백만</div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -271,7 +307,7 @@ export default function PLAccount() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                   <div className="card">
                     <div className="card-title">상위 거래처 당기 비중</div>
-                    <TopCounterpartyBar data={detail.counterparty} />
+                    <TopCounterpartyPie data={detail.counterparty} />
                   </div>
                   <div className="card">
                     <div className="card-title">거래처별 당기/전기</div>
