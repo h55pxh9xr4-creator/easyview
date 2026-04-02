@@ -3,10 +3,90 @@
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Plugin } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
+
+// ── 폴리라인 외부 라벨 플러그인 (충돌감지 포함) ────────────────
+const MIN_PCT_LABEL = 2; // 이 % 이상만 라벨 표시
+const LINE_GAP = 14;     // 라벨 최소 간격(px)
+
+const polylineLabelPlugin: Plugin<"doughnut"> = {
+  id: "polylineLabel",
+  afterDraw(chart) {
+    const { ctx } = chart;
+    const ds    = chart.data.datasets[0];
+    const meta  = chart.getDatasetMeta(0);
+    const total = (ds.data as number[]).reduce((s, v) => s + v, 0) || 1;
+    const colors = ds.backgroundColor as string[];
+    const labels = (chart.data.labels ?? []) as string[];
+
+    type Lbl = { i: number; pct: number; color: string; name: string;
+                 isRight: boolean; x1: number; y1: number;
+                 x2: number; y2: number; x3: number; y3: number; };
+
+    // 1. 초기 좌표 계산
+    const all: Lbl[] = [];
+    meta.data.forEach((arc, i) => {
+      const val = (ds.data as number[])[i];
+      const pct = val / total * 100;
+      if (pct < MIN_PCT_LABEL) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const a   = arc as any;
+      const mid = (a.startAngle + a.endAngle) / 2;
+      const r   = a.outerRadius;
+      const cx  = a.x, cy = a.y;
+      const isRight = Math.cos(mid) >= 0;
+      const x1 = cx + Math.cos(mid) * (r + 3);
+      const y1 = cy + Math.sin(mid) * (r + 3);
+      const x2 = cx + Math.cos(mid) * (r + 18);
+      const y2 = cy + Math.sin(mid) * (r + 18);
+      const x3 = x2 + (isRight ? 16 : -16);
+      all.push({ i, pct, color: colors[i], name: labels[i] ?? "",
+                 isRight, x1, y1, x2, y2, x3, y3: y2 });
+    });
+
+    // 2. 충돌 감지 — 좌/우 각각 y 정렬 후 겹치면 밀어냄
+    const settle = (group: Lbl[]) => {
+      group.sort((a, b) => a.y3 - b.y3);
+      // 아래쪽으로 밀기
+      for (let k = 1; k < group.length; k++) {
+        if (group[k].y3 - group[k-1].y3 < LINE_GAP)
+          group[k].y3 = group[k-1].y3 + LINE_GAP;
+      }
+      // 위쪽으로 밀기 (역방향)
+      for (let k = group.length - 2; k >= 0; k--) {
+        if (group[k+1].y3 - group[k].y3 < LINE_GAP)
+          group[k].y3 = group[k+1].y3 - LINE_GAP;
+      }
+    };
+    settle(all.filter(l =>  l.isRight));
+    settle(all.filter(l => !l.isRight));
+
+    // 3. 그리기
+    ctx.save();
+    all.forEach(lbl => {
+      const short = lbl.name.length > 9 ? lbl.name.slice(0, 9) + "…" : lbl.name;
+      const text  = `${short} ${lbl.pct.toFixed(1)}%`;
+
+      ctx.beginPath();
+      ctx.moveTo(lbl.x1, lbl.y1);
+      ctx.lineTo(lbl.x2, lbl.y2);
+      ctx.lineTo(lbl.x3, lbl.y3);
+      ctx.strokeStyle = lbl.color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle   = "#333";
+      ctx.font        = "10px Inter, sans-serif";
+      ctx.textAlign   = lbl.isRight ? "left" : "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, lbl.x3 + (lbl.isRight ? 3 : -3), lbl.y3);
+    });
+    ctx.restore();
+  },
+};
 
 const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const fmtM   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
@@ -30,10 +110,11 @@ const DONUT_COLORS = [
   "#7C3AED","#0891B2","#DC2626","#78716C","#CA8A04",
 ];
 
-// ── 상위 거래처 당기 비중 (도넛 + 우측 범례) ────────────────────
+// ── 상위 거래처 당기 비중 (도넛 + 폴리라인 라벨) ────────────────
 function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   const total = data.reduce((s, d) => s + Math.abs(d.cur), 0) || 1;
   const pcts  = data.map(d => Math.abs(d.cur) / total * 100);
+  const small = data.filter((_, i) => pcts[i] < MIN_PCT_LABEL);
 
   const chartData = {
     labels: data.map(d => d.name),
@@ -42,7 +123,7 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
       backgroundColor: DONUT_COLORS.slice(0, data.length),
       borderWidth: 2,
       borderColor: "#fff",
-      hoverOffset: 6,
+      hoverOffset: 8,
     }],
   };
 
@@ -50,7 +131,8 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
     responsive: true,
     maintainAspectRatio: true,
     animation: false as const,
-    cutout: "52%",
+    cutout: "50%",
+    layout: { padding: 55 },   // 외부 라벨 공간
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -65,21 +147,24 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   };
 
   return (
-    <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-      {/* 도넛 */}
-      <div style={{ width: 120, flexShrink: 0 }}>
-        <Doughnut data={chartData} options={opts} />
-      </div>
-      {/* 범례 리스트 */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {data.map((d, i) => (
-          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: DONUT_COLORS[i], flexShrink: 0, display: "inline-block" }} />
-            <span style={{ fontSize: 11, color: "#444", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: DONUT_COLORS[i], flexShrink: 0, minWidth: 36, textAlign: "right" }}>{pcts[i].toFixed(1)}%</span>
-          </div>
-        ))}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <Doughnut data={chartData} options={opts} plugins={[polylineLabelPlugin]} />
+      {/* 작은 슬라이스 보조 범례 (툴팁 안내) */}
+      {small.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
+          {small.map(d => {
+            const i = data.indexOf(d);
+            return (
+              <div key={d.name} title={`${d.name}: ${pcts[i].toFixed(1)}%`}
+                style={{ display: "flex", alignItems: "center", gap: 4, cursor: "default" }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: DONUT_COLORS[i], display: "inline-block", flexShrink: 0 }} />
+                <span style={{ fontSize: 9, color: "#aaa", whiteSpace: "nowrap", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
+                <span style={{ fontSize: 9, color: "#bbb" }}>{pcts[i].toFixed(1)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
