@@ -89,7 +89,18 @@ export default function PLAccount() {
   const [selected, setSelected] = useState<string | null>(null);   // mgmt_acct
   const [detail,   setDetail]   = useState<Detail | null>(null);
   const [loadingD, setLoadingD] = useState(false);
+  const [leftH,    setLeftH]    = useState<number | undefined>(undefined);
   const detailRef = useRef<HTMLDivElement>(null);
+  const leftRef   = useRef<HTMLDivElement>(null);
+
+  // 왼쪽 카드 높이 실시간 측정
+  useEffect(() => {
+    const el = leftRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(entries => setLeftH(entries[0].contentRect.height));
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [selected]);
 
   useEffect(() => {
     setRows(null); setSelected(null); setDetail(null);
@@ -136,10 +147,10 @@ export default function PLAccount() {
   return (
     <div className="wrap">
 
-      <div style={{ display: "grid", gridTemplateColumns: selected ? "2fr 3fr" : "1fr", gap: 14, alignItems: "stretch" }}>
+      <div style={{ display: "grid", gridTemplateColumns: selected ? "2fr 3fr" : "1fr", gap: 14, alignItems: "start" }}>
 
         {/* ── 손익계산서 테이블 ── */}
-        <div className="card" style={{ minWidth: 0 }}>
+        <div ref={leftRef} className="card" style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div className="card-title" style={{ marginBottom: 0 }}>손익항목</div>
             {selected && (
@@ -226,7 +237,7 @@ export default function PLAccount() {
 
         {/* ── 우측 상세패널 (선택 시) ── */}
         {selected && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, height: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, height: leftH, overflow: "hidden" }}>
 
             {loadingD && (
               <div style={{ padding: 30, color: "#aaa", textAlign: "center" }}>로딩 중...</div>
