@@ -3,11 +3,60 @@
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Plugin } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
-import ChartDataLabels from "chartjs-plugin-datalabels";
 
-ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+// ── 폴리라인 외부 라벨 플러그인 ────────────────────────────────
+const LABEL_MIN_PCT = 3;
+const polylineLabelPlugin: Plugin<"doughnut"> = {
+  id: "polylineLabel",
+  afterDraw(chart) {
+    const { ctx } = chart;
+    const ds   = chart.data.datasets[0];
+    const meta = chart.getDatasetMeta(0);
+    const total = (ds.data as number[]).reduce((s, v) => s + v, 0) || 1;
+
+    meta.data.forEach((arc, i) => {
+      const value = (ds.data as number[])[i];
+      const pct   = value / total * 100;
+      if (pct < LABEL_MIN_PCT) return;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const a = arc as any;
+      const mid = (a.startAngle + a.endAngle) / 2;
+      const r   = a.outerRadius;
+      const cx  = a.x, cy = a.y;
+      const color = (ds.backgroundColor as string[])[i];
+
+      const x1 = cx + Math.cos(mid) * (r + 4);
+      const y1 = cy + Math.sin(mid) * (r + 4);
+      const x2 = cx + Math.cos(mid) * (r + 16);
+      const y2 = cy + Math.sin(mid) * (r + 16);
+      const right = Math.cos(mid) >= 0;
+      const x3 = x2 + (right ? 10 : -10);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      const name = String(chart.data.labels?.[i] ?? "");
+      const short = name.length > 7 ? name.slice(0, 7) + "…" : name;
+      ctx.fillStyle = "#333";
+      ctx.font = "10px Inter, sans-serif";
+      ctx.textAlign = right ? "left" : "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${short} ${pct.toFixed(1)}%`, x3 + (right ? 3 : -3), y2);
+      ctx.restore();
+    });
+  },
+};
 
 const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const fmtM   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
@@ -31,9 +80,7 @@ const DONUT_COLORS = [
   "#7C3AED","#0891B2","#DC2626","#78716C","#CA8A04",
 ];
 
-// ── 상위 거래처 당기 비중 (도넛 파이차트 — 라벨 + 툴팁) ────────
-const LABEL_THRESHOLD = 4; // 이 % 이상인 슬라이스만 라벨 표시
-
+// ── 상위 거래처 당기 비중 (도넛 — 외부 폴리라인 라벨) ───────────
 function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   const total = data.reduce((s, d) => s + Math.abs(d.cur), 0) || 1;
   const pcts  = data.map(d => Math.abs(d.cur) / total * 100);
@@ -52,8 +99,8 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
     responsive: true,
     maintainAspectRatio: true,
     animation: false as const,
-    cutout: "48%",
-    layout: { padding: 28 },
+    cutout: "50%",
+    layout: { padding: 48 },       // 외부 라벨 공간 확보
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -64,37 +111,31 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
           },
         },
       },
-      datalabels: {
-        display: (ctx: { dataIndex: number }) => pcts[ctx.dataIndex] >= LABEL_THRESHOLD,
-        color: "#fff",
-        font: { size: 10, weight: "bold" as const },
-        formatter: (value: number, ctx: { dataIndex: number }) => {
-          const name = data[ctx.dataIndex].name;
-          const pct  = (value / total * 100).toFixed(1);
-          // 이름이 6자 초과면 잘라서 표시
-          const label = name.length > 6 ? name.slice(0, 6) + "…" : name;
-          return `${label}\n${pct}%`;
-        },
-        anchor: "center" as const,
-        align:  "center" as const,
-        textAlign: "center" as const,
-      },
     },
   };
 
+  // 작은 슬라이스(라벨 없는 것)만 하단 범례에 표시
+  const smallSlices = data.filter((_, i) => pcts[i] < LABEL_MIN_PCT);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <Doughnut data={chartData} options={opts} />
-      {/* 범례 — 작은 슬라이스 포함 전체 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px" }}>
-        {data.map((d, i) => (
-          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: DONUT_COLORS[i], flexShrink: 0 }} />
-            <span style={{ fontSize: 10, color: "#555", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-            <span style={{ fontSize: 10, color: "#888", flexShrink: 0, marginLeft: 2 }}>{pcts[i].toFixed(1)}%</span>
-          </div>
-        ))}
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ width: "100%", maxWidth: 260, margin: "0 auto" }}>
+        <Doughnut data={chartData} options={opts} plugins={[polylineLabelPlugin]} />
       </div>
+      {/* 작은 슬라이스 보조 범례 */}
+      {smallSlices.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 10px", paddingTop: 2 }}>
+          {smallSlices.map(d => {
+            const i = data.indexOf(d);
+            return (
+              <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: DONUT_COLORS[i], flexShrink: 0 }} />
+                <span style={{ fontSize: 9, color: "#888", whiteSpace: "nowrap" }}>{d.name} {pcts[i].toFixed(1)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
