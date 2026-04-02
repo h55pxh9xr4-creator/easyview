@@ -85,7 +85,12 @@ def get_pl_trend(
         SELECT year_month,
             -ROUND(SUM(CASE WHEN disclosure_acct='매출액' THEN signed_amount ELSE 0 END),0) AS rev,
             ROUND(SUM(CASE WHEN disclosure_acct='매출원가' THEN signed_amount ELSE 0 END),0) AS cogs,
-            ROUND(SUM(CASE WHEN disclosure_acct='판매비와관리비' THEN signed_amount ELSE 0 END),0) AS sga
+            ROUND(SUM(CASE WHEN disclosure_acct='판매비와관리비' THEN signed_amount ELSE 0 END),0) AS sga,
+            -ROUND(SUM(CASE WHEN disclosure_acct='기타수익' THEN signed_amount ELSE 0 END),0) AS other_inc,
+            ROUND(SUM(CASE WHEN disclosure_acct='기타비용' THEN signed_amount ELSE 0 END),0) AS other_exp,
+            -ROUND(SUM(CASE WHEN disclosure_acct='금융수익' THEN signed_amount ELSE 0 END),0) AS fin_inc,
+            ROUND(SUM(CASE WHEN disclosure_acct='금융비용' THEN signed_amount ELSE 0 END),0) AS fin_exp,
+            ROUND(SUM(CASE WHEN disclosure_acct='법인세비용' THEN signed_amount ELSE 0 END),0) AS tax_exp
         FROM je WHERE section='PL'
         AND (substr(year_month,1,4)='{year}' OR substr(year_month,1,4)='{pri_year}')
         AND substr(year_month,6,2)<='{month}'
@@ -94,15 +99,162 @@ def get_pl_trend(
 
     result = []
     for r in rows:
-        ym, rev, cogs, sga = r
+        ym, rev, cogs, sga, other_inc, other_exp, fin_inc, fin_exp, tax_exp = r
         gross = rev - cogs
         op = gross - sga
+        net = op + other_inc - other_exp + fin_inc - fin_exp - tax_exp
         result.append({
             "year_month": ym,
-            "revenue": rev, "gross_profit": gross, "operating_income": op,
+            "revenue": rev, "gross_profit": gross, "operating_income": op, "net_income": net,
             "is_current_year": ym.startswith(year),
         })
     return result
+
+
+@router.get("/waterfall")
+def get_pl_waterfall(
+    base_ym: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """손익 Waterfall — 월별 손익 분해 (월별 고정)"""
+    year, month = base_ym.split("-")
+
+    rows = db.execute(text(f"""
+        SELECT year_month,
+            -ROUND(SUM(CASE WHEN disclosure_acct='매출액' THEN signed_amount ELSE 0 END),0) AS rev,
+            ROUND(SUM(CASE WHEN disclosure_acct='매출원가' THEN signed_amount ELSE 0 END),0) AS cogs,
+            ROUND(SUM(CASE WHEN disclosure_acct='판매비와관리비' THEN signed_amount ELSE 0 END),0) AS sga,
+            -ROUND(SUM(CASE WHEN disclosure_acct IN ('기타수익','금융수익') THEN signed_amount ELSE 0 END),0) AS other_inc,
+            ROUND(SUM(CASE WHEN disclosure_acct IN ('기타비용','금융비용','법인세비용') THEN signed_amount ELSE 0 END),0) AS other_exp
+        FROM je WHERE section='PL'
+        AND substr(year_month,1,4)='{year}'
+        AND substr(year_month,6,2)<='{month}'
+        GROUP BY year_month ORDER BY year_month
+    """)).fetchall()
+
+    result = []
+    for r in rows:
+        ym, rev, cogs, sga, other_inc, other_exp = r
+        gross = rev - cogs
+        op    = gross - sga
+        other = other_inc - other_exp
+        net   = op + other
+        result.append({
+            "year_month":       ym,
+            "revenue":          float(rev   or 0),
+            "cogs":             float(cogs  or 0),
+            "sga":              float(sga   or 0),
+            "gross_profit":     float(gross or 0),
+            "other_net":        float(other or 0),
+            "operating_income": float(op    or 0),
+            "net_income":       float(net   or 0),
+        })
+    return result
+
+
+@router.get("/trend_by_account")
+def get_pl_trend_by_account(
+    base_ym: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """계정별 월별 추이 — 미니차트용 (공시용계정 포함)"""
+    year, month = base_ym.split("-")
+    pri_year = str(int(year) - 1)
+
+    PL_ORDER = ["매출액", "매출원가", "판매비와관리비", "기타수익", "기타비용", "금융수익", "금융비용", "법인세비용"]
+
+    rows = db.execute(text(f"""
+        SELECT mgmt_acct,
+               disclosure_acct,
+               year_month,
+               -ROUND(SUM(signed_amount), 0) AS net
+        FROM je
+        WHERE section='PL'
+          AND (substr(year_month,1,4)='{year}' OR substr(year_month,1,4)='{pri_year}')
+          AND substr(year_month,6,2)<='{month}'
+          AND mgmt_acct IS NOT NULL
+        GROUP BY mgmt_acct, disclosure_acct, year_month
+        ORDER BY mgmt_acct, year_month
+    """)).fetchall()
+
+    from collections import defaultdict
+    result: dict = defaultdict(lambda: {"disclosure_acct": "", "cur": {}, "pri": {}})
+    for r in rows:
+        acct, disc, ym, net = r[0], r[1], r[2], float(r[3] or 0)
+        result[acct]["disclosure_acct"] = disc or ""
+        if ym.startswith(year):
+            result[acct]["cur"][ym] = net
+        else:
+            result[acct]["pri"][ym] = net
+
+    items = [{"mgmt_acct": k, **v} for k, v in result.items()]
+    # PL_ORDER 기준으로 정렬
+    order_map = {d: i for i, d in enumerate(PL_ORDER)}
+    items.sort(key=lambda x: order_map.get(x["disclosure_acct"], 99))
+    return items
+
+
+@router.get("/account_detail")
+def get_pl_account_detail(
+    base_ym: str = Query(...),
+    mgmt_acct: str = Query(...),
+    period_type: str = Query("cumulative"),
+    db: Session = Depends(get_db),
+):
+    """계정 클릭 시 — 거래처별 증감 + 당기/전기 기표 내역"""
+    year, month = base_ym.split("-")
+    pri_year = str(int(year) - 1)
+
+    if period_type == "monthly":
+        cur_where = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)='{month}'"
+        pri_where = f"substr(year_month,1,4)='{pri_year}' AND substr(year_month,6,2)='{month}'"
+    else:
+        cur_where = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'"
+        pri_where = f"substr(year_month,1,4)='{pri_year}' AND substr(year_month,6,2)<='{month}'"
+
+    # 거래처별 증감
+    cp_rows = db.execute(text(f"""
+        SELECT counterparty,
+               -SUM(CASE WHEN {cur_where} THEN signed_amount ELSE 0 END) AS cur,
+               -SUM(CASE WHEN {pri_where} THEN signed_amount ELSE 0 END) AS pri
+        FROM je
+        WHERE mgmt_acct=:acct AND counterparty IS NOT NULL
+        GROUP BY counterparty
+        ORDER BY ABS(cur) DESC
+        LIMIT 10
+    """), {"acct": mgmt_acct}).fetchall()
+
+    counterparty = [
+        {"name": r[0], "cur": float(r[1] or 0), "pri": float(r[2] or 0), "change": float(r[1] or 0) - float(r[2] or 0)}
+        for r in cp_rows
+    ]
+
+    # 당기 기표 내역
+    cur_vouchers = db.execute(text(f"""
+        SELECT date, voucher_no, counterparty, description, amount, dr_cr
+        FROM je
+        WHERE mgmt_acct=:acct AND {cur_where}
+        ORDER BY date DESC LIMIT 50
+    """), {"acct": mgmt_acct}).fetchall()
+
+    # 전기 기표 내역
+    pri_vouchers = db.execute(text(f"""
+        SELECT date, voucher_no, counterparty, description, amount, dr_cr
+        FROM je
+        WHERE mgmt_acct=:acct AND {pri_where}
+        ORDER BY date DESC LIMIT 50
+    """), {"acct": mgmt_acct}).fetchall()
+
+    def vrow(r):
+        return {"date": r[0], "voucher_no": r[1], "counterparty": r[2],
+                "description": r[3], "amount": float(r[4] or 0), "dr_cr": r[5]}
+
+    return {
+        "mgmt_acct": mgmt_acct,
+        "counterparty": counterparty,
+        "cur_vouchers": [vrow(r) for r in cur_vouchers],
+        "pri_vouchers": [vrow(r) for r in pri_vouchers],
+    }
 
 
 @router.get("/account")
