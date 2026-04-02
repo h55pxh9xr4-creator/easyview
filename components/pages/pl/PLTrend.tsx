@@ -1,129 +1,262 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
-import { fetchPLTrend } from "@/lib/api";
+import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
-  BarElement, LineElement, PointElement, Tooltip, Legend,
+  LineController, BarController,
+  LineElement, BarElement, PointElement,
+  Tooltip, Filler,
 } from "chart.js";
 import { Chart } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, LineController, BarController,
+  LineElement, BarElement, PointElement, Tooltip, Filler);
 
-interface TrendRow {
-  year_month: string;
-  revenue: number;
-  gross_profit: number;
-  operating_income: number;
-  is_current_year: boolean;
+const fmt  = (n: number) => Math.round(n).toLocaleString("ko-KR");
+const fmtM = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
+
+interface AccountTrend { mgmt_acct: string; cur: Record<string, number>; pri: Record<string, number> }
+interface Voucher { date: string; voucher_no: string; counterparty: string; description: string; amount: number; dr_cr: string }
+interface Detail {
+  mgmt_acct: string;
+  counterparty: { name: string; cur: number; pri: number; change: number }[];
+  cur_vouchers: Voucher[];
+  pri_vouchers: Voucher[];
 }
 
-const fmtB = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
+// ── 미니 스파크라인 ─────────────────────────────────────────
+function MiniLine({ cur, pri, months }: { cur: number[]; pri: number[]; months: string[] }) {
+  const allVals = [...cur, ...pri].filter(Boolean);
+  const min = Math.min(...allVals, 0);
+  const max = Math.max(...allVals, 1);
+  const data = {
+    labels: months,
+    datasets: [
+      { type: "line" as const, data: cur, borderColor: "#E87722", borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
+      { type: "line" as const, data: pri, borderColor: "#CCCCCC", borderWidth: 1,   pointRadius: 0, tension: 0.3, fill: false, borderDash: [3,3] },
+    ],
+  };
+  const opts = {
+    responsive: true, maintainAspectRatio: false, animation: false as const,
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      x: { display: false },
+      y: { display: false, min: min * 0.9, max: max * 1.1 },
+    },
+  };
+  return <Chart type="line" data={data} options={opts} />;
+}
+
+// ── 거래처별 가로 바차트 (당기/전기) ────────────────────────
+function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
+  const maxVal = Math.max(...data.flatMap(d => [Math.abs(d.cur), Math.abs(d.pri)]), 1);
+  return (
+    <div>
+      {/* 범례 */}
+      <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 10, color: "#888" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ display: "inline-block", width: 10, height: 10, background: "#E87722", borderRadius: 2 }} />당기금액
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ display: "inline-block", width: 10, height: 10, background: "rgba(160,160,160,0.35)", border: "1px solid #ccc", borderRadius: 2 }} />전기금액
+        </span>
+      </div>
+      {data.map((d) => {
+        const curPct = Math.abs(d.cur) / maxVal * 100;
+        const priPct = Math.abs(d.pri) / maxVal * 100;
+        return (
+          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 110, fontSize: 11, color: "#555", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
+            <div style={{ flex: 1, position: "relative", height: 28 }}>
+              {/* 전기 — 회색, 하단 */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 12, background: "#F0F0F0", borderRadius: 3 }}>
+                <div style={{ width: `${priPct}%`, height: "100%", background: "rgba(160,160,160,0.4)", border: "1px solid #D0D0D0", borderRadius: 3, boxSizing: "border-box" }} />
+              </div>
+              {/* 당기 — 주황, 상단 */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 12, background: "#F5F5F5", borderRadius: 3 }}>
+                <div style={{ width: `${curPct}%`, height: "100%", background: "#E87722", borderRadius: 3 }} />
+              </div>
+            </div>
+            <div style={{ width: 72, fontSize: 10, color: "#777", textAlign: "right", flexShrink: 0, lineHeight: 1.6 }}>
+              <div style={{ color: "#E87722", fontWeight: 700 }}>{fmtM(Math.abs(d.cur))}백만</div>
+              <div>{fmtM(Math.abs(d.pri))}백만</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function PLTrend() {
   const filter = useFilter();
-  const [rows, setRows] = useState<TrendRow[] | null>(null);
+  const [accounts, setAccounts]   = useState<AccountTrend[] | null>(null);
+  const [selected, setSelected]   = useState<string | null>(null);
+  const [detail,   setDetail]     = useState<Detail | null>(null);
+  const [loadingD, setLoadingD]   = useState(false);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchPLTrend(filter).then((d) => setRows(d as TrendRow[])).catch(console.error);
+    setAccounts(null);
+    setSelected(null);
+    setDetail(null);
+    fetchPLTrendByAccount(filter).then(d => setAccounts(d as AccountTrend[])).catch(console.error);
   }, [filter.baseYm, filter.periodType]);
 
-  if (!rows) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
+  useEffect(() => {
+    if (!selected) { setDetail(null); return; }
+    setLoadingD(true);
+    fetchPLAccountDetail(filter, selected)
+      .then(d => { setDetail(d as Detail); setLoadingD(false); })
+      .catch(() => setLoadingD(false));
+  }, [selected, filter.baseYm, filter.periodType]);
 
-  const cur = rows.filter((r) => r.is_current_year);
-  const pri = rows.filter((r) => !r.is_current_year);
-  const labels = cur.map((r) => r.year_month.slice(5) + "월");
+  // 디테일 열릴 때 스크롤
+  useEffect(() => {
+    if (detail && detailRef.current) {
+      detailRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [detail]);
 
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        type: "bar" as const,
-        label: "당기 매출액",
-        data: cur.map((r) => Math.round(r.revenue / 1_000_000)),
-        backgroundColor: "rgba(79,195,247,0.7)",
-        yAxisID: "y",
-      },
-      {
-        type: "bar" as const,
-        label: "전기 매출액",
-        data: pri.map((r) => Math.round(r.revenue / 1_000_000)),
-        backgroundColor: "rgba(79,195,247,0.25)",
-        yAxisID: "y",
-      },
-      {
-        type: "line" as const,
-        label: "당기 영업이익",
-        data: cur.map((r) => Math.round(r.operating_income / 1_000_000)),
-        borderColor: "#ffb74d",
-        backgroundColor: "#ffb74d",
-        tension: 0.3,
-        yAxisID: "y",
-        pointRadius: 4,
-      },
-      {
-        type: "line" as const,
-        label: "전기 영업이익",
-        data: pri.map((r) => Math.round(r.operating_income / 1_000_000)),
-        borderColor: "rgba(255,183,77,0.4)",
-        backgroundColor: "rgba(255,183,77,0.4)",
-        tension: 0.3,
-        borderDash: [4, 4],
-        yAxisID: "y",
-        pointRadius: 3,
-      },
-    ],
-  };
+  if (!accounts) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: { labels: { color: "#ccc", font: { size: 12 } } },
-      tooltip: {
-        callbacks: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          label: (ctx: any) =>
-            `${ctx.dataset.label}: ${fmtB((ctx.parsed.y ?? 0) * 1_000_000)} 백만`,
-        },
-      },
-    },
-    scales: {
-      x: { ticks: { color: "#aaa" }, grid: { color: "#2a2a3a" } },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      y: { ticks: { color: "#aaa", callback: (v: any) => `${Number(v).toLocaleString()}` }, grid: { color: "#2a2a3a" } },
-    },
-  };
+  // 월 목록 (당기)
+  const year = filter.baseYm.split("-")[0];
+  const allMonths = Array.from(new Set(accounts.flatMap(a => Object.keys(a.cur)))).filter(m => m.startsWith(year)).sort();
+  const monthLabels = allMonths.map(m => m.slice(5) + "월");
 
   return (
     <div className="wrap">
-      <div className="card">
-        <div className="card-title">PL 추이분석 (월별)</div>
-        <Chart type="bar" data={chartData} options={options} />
-      </div>
 
-      {/* 테이블 */}
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="card-title">월별 상세</div>
-        <div className="tbl-wrap">
-          <table>
-            <thead>
-              <tr><th>연월</th><th>매출액 (백만)</th><th>매출총이익 (백만)</th><th>영업이익 (백만)</th><th>구분</th></tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.year_month} style={{ opacity: r.is_current_year ? 1 : 0.6 }}>
-                  <td>{r.year_month}</td>
-                  <td>{fmtB(r.revenue)}</td>
-                  <td>{fmtB(r.gross_profit)}</td>
-                  <td className={r.operating_income >= 0 ? "up-t" : "dn-t"}>{fmtB(r.operating_income)}</td>
-                  <td style={{ color: r.is_current_year ? "#4fc3f7" : "#888" }}>{r.is_current_year ? "당기" : "전기"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* ── 월별 손익 Trend 그리드 ── */}
+      <div>
+        <div className="sec-hd">
+          <span className="sec-hd-txt">월별 손익 Trend</span>
+          <div className="sec-hd-line" />
+          {selected && (
+            <button
+              onClick={() => { setSelected(null); setDetail(null); }}
+              style={{ fontSize: 11, color: "#aaa", background: "none", border: "1px solid #E0E0E0", borderRadius: 4, padding: "2px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              선택 해제
+            </button>
+          )}
+        </div>
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: selected ? "repeat(4, 1fr)" : "repeat(4, 1fr)",
+          gap: 10,
+          maxHeight: selected ? 340 : "none",
+          overflowY: selected ? "auto" : "visible",
+          transition: "max-height 0.4s ease",
+        }}>
+          {accounts.map((a) => {
+            const curVals  = allMonths.map(m => (a.cur[m] ?? 0) / 1_000_000);
+            const priVals  = allMonths.map(m => (a.pri[m] ?? 0) / 1_000_000);
+            const total    = Object.values(a.cur).reduce((s, v) => s + v, 0);
+            const isActive = selected === a.mgmt_acct;
+            return (
+              <div
+                key={a.mgmt_acct}
+                onClick={() => setSelected(isActive ? null : a.mgmt_acct)}
+                style={{
+                  background: "#fff",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  border: isActive ? "2px solid #E87722" : "1px solid #EDEDED",
+                  boxShadow: isActive ? "0 2px 8px rgba(232,119,34,.2)" : "0 1px 3px rgba(0,0,0,.05)",
+                  transition: "all .15s",
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? "#E87722" : "#555", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {a.mgmt_acct}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#2C2C2C", marginBottom: 6 }}>
+                  {fmtM(total)}<span style={{ fontSize: 10, fontWeight: 400, color: "#bbb", marginLeft: 2 }}>백만</span>
+                </div>
+                <div style={{ height: 56 }}>
+                  <MiniLine cur={curVals} pri={priVals} months={monthLabels} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
+
+      {/* ── 디테일 패널 (슬라이드인) ── */}
+      <div
+        ref={detailRef}
+        style={{
+          overflow: "hidden",
+          maxHeight: selected ? 2000 : 0,
+          opacity: selected ? 1 : 0,
+          transition: "max-height 0.45s ease, opacity 0.3s ease",
+        }}
+      >
+        {loadingD && (
+          <div style={{ padding: 30, color: "#aaa", textAlign: "center" }}>로딩 중...</div>
+        )}
+        {detail && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
+
+            {/* 거래처별 증감 */}
+            <div className="card">
+              <div className="card-title">{detail.mgmt_acct} — 거래처별 당기/전기</div>
+              <CounterpartyBar data={detail.counterparty} />
+            </div>
+
+            {/* 당기 / 전기 기표 내역 */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {[
+                { title: "당기 기표 내역", vouchers: detail.cur_vouchers },
+                { title: "전기 기표 내역", vouchers: detail.pri_vouchers },
+              ].map(({ title, vouchers }) => (
+                <div key={title} className="card">
+                  <div className="card-title">{title}</div>
+                  <div className="tbl-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>차/대</th><th>금액</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vouchers.length === 0 && (
+                          <tr><td colSpan={6} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
+                        )}
+                        {vouchers.map((v, i) => (
+                          <tr key={i}>
+                            <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
+                            <td>{v.voucher_no}</td>
+                            <td>{v.counterparty ?? "-"}</td>
+                            <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
+                            <td style={{ color: v.dr_cr === "차변" ? "#2563EB" : "#DC2626", fontWeight: 600 }}>{v.dr_cr}</td>
+                            <td>{fmt(v.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      {vouchers.length > 0 && (
+                        <tfoot>
+                          <tr className="tr-sum">
+                            <td colSpan={5}>합계</td>
+                            <td>{fmt(vouchers.reduce((s, v) => s + v.amount, 0))}</td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
