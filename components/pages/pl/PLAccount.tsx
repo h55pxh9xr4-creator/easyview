@@ -136,7 +136,7 @@ export default function PLAccount() {
   return (
     <div className="wrap">
 
-      <div style={{ display: "grid", gridTemplateColumns: selected ? "2fr 3fr" : "1fr", gap: 14, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: selected ? "2fr 3fr" : "1fr", gap: 14, alignItems: "stretch" }}>
 
         {/* ── 손익계산서 테이블 ── */}
         <div className="card" style={{ minWidth: 0 }}>
@@ -226,7 +226,7 @@ export default function PLAccount() {
 
         {/* ── 우측 상세패널 (선택 시) ── */}
         {selected && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, height: "100%" }}>
 
             {loadingD && (
               <div style={{ padding: 30, color: "#aaa", textAlign: "center" }}>로딩 중...</div>
@@ -268,15 +268,15 @@ export default function PLAccount() {
                   </div>
                 </div>
 
-                {/* 전표 내역 — 당기/전기 위아래, 각각 스크롤 */}
-                <div ref={detailRef} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* 전표 내역 — 당기/전기 위아래, 남은 공간 반반 */}
+                <div ref={detailRef} style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minHeight: 0 }}>
                   {[
                     { title: "당기 전표 내역", vouchers: detail.cur_vouchers },
                     { title: "전기 전표 내역", vouchers: detail.pri_vouchers },
                   ].map(({ title, vouchers }) => (
-                    <div key={title} className="card">
+                    <div key={title} className="card" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                       <div className="card-title">{title}</div>
-                      <div className="tbl-wrap" style={{ maxHeight: 320, overflowY: "auto" }}>
+                      <div className="tbl-wrap" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
                         <table>
                           <thead>
                             <tr><th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>차/대</th><th>금액</th></tr>
