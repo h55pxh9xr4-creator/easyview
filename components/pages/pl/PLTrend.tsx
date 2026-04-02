@@ -237,6 +237,8 @@ export default function PLTrend() {
           const totalCur = selAcct ? Object.values(selAcct.cur).reduce((s, v) => s + v, 0) : 0;
           const totalPri = selAcct ? Object.values(selAcct.pri).reduce((s, v) => s + v, 0) : 0;
           const totalChg = totalCur - totalPri;
+          const month = filter.baseYm.split("-")[1].replace(/^0/, "");
+          const periodLabel = filter.periodType === "cumulative" ? `${month}월 누적` : `${month}월 당월`;
           return (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
 
@@ -245,7 +247,10 @@ export default function PLTrend() {
 
               {/* 좌측 — 당기/전기/증감 요약 */}
               <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 0 }}>
-                <div className="card-title" style={{ marginBottom: 12 }}>{detail.mgmt_acct}</div>
+                <div className="card-title" style={{ marginBottom: 12 }}>
+                  {detail.mgmt_acct}
+                  <span style={{ fontSize: 11, fontWeight: 400, color: "#aaa", marginLeft: 6 }}>{periodLabel}</span>
+                </div>
                 {[
                   { label: "당기금액",  value: totalCur, color: "#2C2C2C" },
                   { label: "전기금액",  value: totalPri, color: "#2C2C2C" },
