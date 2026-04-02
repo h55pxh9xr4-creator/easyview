@@ -268,45 +268,47 @@ export default function PLAccount() {
                   </div>
                 </div>
 
-                {/* 전표 내역 — 위아래로 */}
-                {[
-                  { title: "당기 전표 내역", vouchers: detail.cur_vouchers },
-                  { title: "전기 전표 내역", vouchers: detail.pri_vouchers },
-                ].map(({ title, vouchers }) => (
-                  <div key={title} className="card" ref={title === "당기 전표 내역" ? detailRef : undefined}>
-                    <div className="card-title">{title}</div>
-                    <div className="tbl-wrap">
-                      <table>
-                        <thead>
-                          <tr><th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>차/대</th><th>금액</th></tr>
-                        </thead>
-                        <tbody>
-                          {vouchers.length === 0 && (
-                            <tr><td colSpan={6} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
+                {/* 전표 내역 — 당기/전기 나란히, 각각 스크롤 */}
+                <div ref={detailRef} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  {[
+                    { title: "당기 전표 내역", vouchers: detail.cur_vouchers },
+                    { title: "전기 전표 내역", vouchers: detail.pri_vouchers },
+                  ].map(({ title, vouchers }) => (
+                    <div key={title} className="card">
+                      <div className="card-title">{title}</div>
+                      <div className="tbl-wrap" style={{ maxHeight: 320, overflowY: "auto" }}>
+                        <table>
+                          <thead>
+                            <tr><th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>차/대</th><th>금액</th></tr>
+                          </thead>
+                          <tbody>
+                            {vouchers.length === 0 && (
+                              <tr><td colSpan={6} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
+                            )}
+                            {vouchers.map((v, i) => (
+                              <tr key={i}>
+                                <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
+                                <td>{v.voucher_no}</td>
+                                <td>{v.counterparty ?? "-"}</td>
+                                <td style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
+                                <td style={{ color: v.dr_cr === "차변" ? "#2563EB" : "#DC2626", fontWeight: 600 }}>{v.dr_cr}</td>
+                                <td>{fmt(v.amount)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          {vouchers.length > 0 && (
+                            <tfoot>
+                              <tr className="tr-sum">
+                                <td colSpan={5}>합계</td>
+                                <td>{fmt(vouchers.reduce((s, v) => s + v.amount, 0))}</td>
+                              </tr>
+                            </tfoot>
                           )}
-                          {vouchers.map((v, i) => (
-                            <tr key={i}>
-                              <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
-                              <td>{v.voucher_no}</td>
-                              <td>{v.counterparty ?? "-"}</td>
-                              <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
-                              <td style={{ color: v.dr_cr === "차변" ? "#2563EB" : "#DC2626", fontWeight: 600 }}>{v.dr_cr}</td>
-                              <td>{fmt(v.amount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        {vouchers.length > 0 && (
-                          <tfoot>
-                            <tr className="tr-sum">
-                              <td colSpan={5}>합계</td>
-                              <td>{fmt(vouchers.reduce((s, v) => s + v.amount, 0))}</td>
-                            </tr>
-                          </tfoot>
-                        )}
-                      </table>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </>
             )}
           </div>
