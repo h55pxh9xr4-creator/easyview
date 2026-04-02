@@ -5,8 +5,9 @@ import { useFilter } from "@/hooks/useFilter";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const fmtM   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
@@ -30,23 +31,29 @@ const DONUT_COLORS = [
   "#7C3AED","#0891B2","#DC2626","#78716C","#CA8A04",
 ];
 
-// ── 상위 거래처 당기 비중 (도넛 파이차트) ──────────────────────
+// ── 상위 거래처 당기 비중 (도넛 파이차트 — 라벨 + 툴팁) ────────
+const LABEL_THRESHOLD = 4; // 이 % 이상인 슬라이스만 라벨 표시
+
 function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   const total = data.reduce((s, d) => s + Math.abs(d.cur), 0) || 1;
+  const pcts  = data.map(d => Math.abs(d.cur) / total * 100);
+
   const chartData = {
     labels: data.map(d => d.name),
     datasets: [{
       data: data.map(d => Math.abs(d.cur)),
       backgroundColor: DONUT_COLORS.slice(0, data.length),
-      borderWidth: 1,
+      borderWidth: 2,
       borderColor: "#fff",
     }],
   };
+
   const opts = {
     responsive: true,
     maintainAspectRatio: true,
     animation: false as const,
-    cutout: "55%",
+    cutout: "48%",
+    layout: { padding: 28 },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -57,24 +64,36 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
           },
         },
       },
+      datalabels: {
+        display: (ctx: { dataIndex: number }) => pcts[ctx.dataIndex] >= LABEL_THRESHOLD,
+        color: "#fff",
+        font: { size: 10, weight: "bold" as const },
+        formatter: (value: number, ctx: { dataIndex: number }) => {
+          const name = data[ctx.dataIndex].name;
+          const pct  = (value / total * 100).toFixed(1);
+          // 이름이 6자 초과면 잘라서 표시
+          const label = name.length > 6 ? name.slice(0, 6) + "…" : name;
+          return `${label}\n${pct}%`;
+        },
+        anchor: "center" as const,
+        align:  "center" as const,
+        textAlign: "center" as const,
+      },
     },
   };
+
   return (
-    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-      <div style={{ width: 130, flexShrink: 0 }}>
-        <Doughnut data={chartData} options={opts} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {data.map((d, i) => {
-          const pct = (Math.abs(d.cur) / total * 100).toFixed(1);
-          return (
-            <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: DONUT_COLORS[i], flexShrink: 0 }} />
-              <span style={{ fontSize: 10, color: "#555", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-              <span style={{ fontSize: 10, color: "#888", flexShrink: 0 }}>{pct}%</span>
-            </div>
-          );
-        })}
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <Doughnut data={chartData} options={opts} />
+      {/* 범례 — 작은 슬라이스 포함 전체 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px" }}>
+        {data.map((d, i) => (
+          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: DONUT_COLORS[i], flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: "#555", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+            <span style={{ fontSize: 10, color: "#888", flexShrink: 0, marginLeft: 2 }}>{pcts[i].toFixed(1)}%</span>
+          </div>
+        ))}
       </div>
     </div>
   );
