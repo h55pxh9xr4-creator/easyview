@@ -232,13 +232,39 @@ export default function PLTrend() {
         {loadingD && (
           <div style={{ padding: 30, color: "#aaa", textAlign: "center" }}>로딩 중...</div>
         )}
-        {detail && (
+        {detail && (() => {
+          const selAcct = accounts.find(a => a.mgmt_acct === detail.mgmt_acct);
+          const totalCur = selAcct ? Object.values(selAcct.cur).reduce((s, v) => s + v, 0) : 0;
+          const totalPri = selAcct ? Object.values(selAcct.pri).reduce((s, v) => s + v, 0) : 0;
+          const totalChg = totalCur - totalPri;
+          return (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
 
-            {/* 거래처별 증감 */}
-            <div className="card">
-              <div className="card-title">{detail.mgmt_acct} — 거래처별 당기/전기</div>
-              <CounterpartyBar data={detail.counterparty} />
+            {/* 요약카드 + 거래처별 차트 */}
+            <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 14 }}>
+
+              {/* 좌측 — 당기/전기/증감 요약 */}
+              <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 0 }}>
+                <div className="card-title" style={{ marginBottom: 12 }}>{detail.mgmt_acct}</div>
+                {[
+                  { label: "당기금액",  value: totalCur, color: "#2C2C2C" },
+                  { label: "전기금액",  value: totalPri, color: "#2C2C2C" },
+                  { label: "증감액",    value: totalChg, color: totalChg >= 0 ? "#E87722" : "#2563EB" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ background: "#F9F9F9", borderRadius: 6, padding: "10px 14px", marginBottom: 8, textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color, letterSpacing: "-0.5px" }}>
+                      {value >= 0 ? "" : "-"}{Math.abs(Math.round(value)).toLocaleString("ko-KR")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 우측 — 거래처별 당기/전기 */}
+              <div className="card">
+                <div className="card-title">{detail.mgmt_acct} — 거래처별 당기/전기</div>
+                <CounterpartyBar data={detail.counterparty} />
+              </div>
             </div>
 
             {/* 당기 / 전기 기표 내역 */}
@@ -286,7 +312,8 @@ export default function PLTrend() {
             </div>
 
           </div>
-        )}
+          );
+        })()}
       </div>
 
     </div>
