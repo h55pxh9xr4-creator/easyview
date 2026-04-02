@@ -268,8 +268,8 @@ export default function PLAccount() {
                   </div>
                 </div>
 
-                {/* 전표 내역 — 당기/전기 나란히, 각각 스크롤 */}
-                <div ref={detailRef} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {/* 전표 내역 — 당기/전기 위아래, 각각 스크롤 */}
+                <div ref={detailRef} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   {[
                     { title: "당기 전표 내역", vouchers: detail.cur_vouchers },
                     { title: "전기 전표 내역", vouchers: detail.pri_vouchers },
