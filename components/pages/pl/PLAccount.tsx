@@ -147,24 +147,8 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ maxWidth: 300, margin: "0 auto" }}>
       <Doughnut data={chartData} options={opts} plugins={[polylineLabelPlugin]} />
-      {/* 작은 슬라이스 보조 범례 (툴팁 안내) */}
-      {small.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
-          {small.map(d => {
-            const i = data.indexOf(d);
-            return (
-              <div key={d.name} title={`${d.name}: ${pcts[i].toFixed(1)}%`}
-                style={{ display: "flex", alignItems: "center", gap: 4, cursor: "default" }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: DONUT_COLORS[i], display: "inline-block", flexShrink: 0 }} />
-                <span style={{ fontSize: 9, color: "#aaa", whiteSpace: "nowrap", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
-                <span style={{ fontSize: 9, color: "#bbb" }}>{pcts[i].toFixed(1)}%</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -380,7 +364,7 @@ export default function PLAccount() {
                     {[
                       { label: "당기금액", value: selCur, color: "#2C2C2C" },
                       { label: "전기금액", value: selPri, color: "#2C2C2C" },
-                      { label: "증감액",   value: selChg, color: selChg >= 0 ? "#E87722" : "#2563EB" },
+                      { label: "증감액",   value: selChg, color: selChg >= 0 ? "#c0392b" : "#2563EB" },
                     ].map(({ label, value, color }) => (
                       <div key={label} style={{ background: "#F9F9F9", borderRadius: 6, padding: "10px 14px", textAlign: "center" }}>
                         <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4 }}>{label}</div>

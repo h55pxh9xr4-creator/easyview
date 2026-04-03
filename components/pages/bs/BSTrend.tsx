@@ -113,9 +113,8 @@ function CpPie({ items, colors }: {
   if (items.length === 0) return <div style={{ color:"#bbb", fontSize:12 }}>해당 없음</div>;
   const top   = [...items].sort((a, b) => b.amount - a.amount).slice(0, 10);
   const total = top.reduce((s, i) => s + i.amount, 0);
-  const small = top.filter(i => (i.amount / total * 100) < MIN_PCT_LABEL);
   return (
-    <div>
+    <div style={{ maxWidth: 260, margin: "0 auto" }}>
       <Doughnut
         data={{
           labels: top.map(i => i.name),
@@ -144,19 +143,6 @@ function CpPie({ items, colors }: {
         }}
         plugins={[polylineLabelPlugin]}
       />
-      {small.length > 0 && (
-        <div style={{ display:"flex", flexWrap:"wrap", gap:"3px 10px", marginTop:4 }}>
-          {small.map((item) => {
-            const i = top.indexOf(item);
-            return (
-              <div key={item.name} style={{ display:"flex", alignItems:"center", gap:4, fontSize:10, color:"#666" }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:colors[i], display:"inline-block", flexShrink:0 }} />
-                {item.name} {(item.amount / total * 100).toFixed(1)}%
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
