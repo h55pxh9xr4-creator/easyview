@@ -376,7 +376,7 @@ export default function BSTrend() {
           ) : detail && (
             <>
               {/* ── 거래처 구성(차변) + 거래처 구성(대변) + 상대계정 — 3열 ── */}
-              <div style={{ display:"grid", gridTemplateColumns:"280px 280px 1fr", gap:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"320px 320px 1fr", gap:14 }}>
                 <div className="card" style={{ height:340, display:"flex", flexDirection:"column", justifyContent:"center" }}>
                   <div className="card-title">거래처 구성 (차변)</div>
                   <CpPie items={detail.counterparty_dr} colors={DONUT_COLORS_DR} />
