@@ -436,27 +436,41 @@ def get_bs_daily_balance(
 def get_bs_daily_detail(
     disclosure_acct: str = Query(...),
     account_name: str = Query(None),
-    date: str = Query(...),   # YYYY-MM-DD
+    date: str = Query(None),       # YYYY-MM-DD (특정 날짜 클릭 시)
+    date_from: str = Query(None),  # YYYY-MM-DD (전체 기간 조회 시)
+    date_to: str = Query(None),    # YYYY-MM-DD (전체 기간 조회 시)
     db: Session = Depends(get_db),
 ):
-    """날짜 클릭 상세 — 거래처 구성(차/대) + 상대계정 + 전표내역"""
+    """날짜 클릭 or 전체기간 상세 — 거래처 구성(차/대) + 상대계정 + 전표내역"""
     acct_filter = "disclosure_acct=:da"
-    params: dict = {"da": disclosure_acct, "dt": date}
+    params: dict = {"da": disclosure_acct}
+
     if account_name:
         acct_filter += " AND account_name=:an"
         params["an"] = account_name
 
+    # 날짜 범위 조건
+    if date:
+        date_cond = "date=:dt"
+        params["dt"] = date
+    elif date_from and date_to:
+        date_cond = "date >= :df AND date <= :dt"
+        params["df"] = date_from
+        params["dt"] = date_to
+    else:
+        date_cond = "1=1"
+
     # ── 거래처 구성 (차변) ──
     cp_dr = db.execute(text(f"""
         SELECT counterparty, SUM(amount) AS total
-        FROM je WHERE section='BS' AND date=:dt AND dr_cr='차변' AND {acct_filter}
+        FROM je WHERE section='BS' AND {date_cond} AND dr_cr='차변' AND {acct_filter}
         GROUP BY counterparty ORDER BY total DESC LIMIT 20
     """), params).fetchall()
 
     # ── 거래처 구성 (대변) ──
     cp_cr = db.execute(text(f"""
         SELECT counterparty, SUM(amount) AS total
-        FROM je WHERE section='BS' AND date=:dt AND dr_cr='대변' AND {acct_filter}
+        FROM je WHERE section='BS' AND {date_cond} AND dr_cr='대변' AND {acct_filter}
         GROUP BY counterparty ORDER BY total DESC LIMIT 20
     """), params).fetchall()
 
@@ -466,10 +480,10 @@ def get_bs_daily_detail(
                SUM(CASE WHEN j2.dr_cr='차변' THEN j2.amount ELSE 0 END) AS dr,
                SUM(CASE WHEN j2.dr_cr='대변' THEN j2.amount ELSE 0 END) AS cr
         FROM je j2
-        WHERE j2.section='BS' AND j2.date=:dt
+        WHERE j2.section='BS' AND {date_cond}
           AND j2.voucher_no IN (
               SELECT DISTINCT voucher_no FROM je
-              WHERE section='BS' AND date=:dt AND {acct_filter}
+              WHERE section='BS' AND {date_cond} AND {acct_filter}
           )
           AND NOT ({acct_filter})
         GROUP BY j2.account_name, j2.disclosure_acct
@@ -482,9 +496,9 @@ def get_bs_daily_detail(
         SELECT date, voucher_no, account_name, disclosure_acct,
                counterparty, description, dr_cr, amount
         FROM je
-        WHERE section='BS' AND date=:dt AND {acct_filter}
-        ORDER BY voucher_no, record_id
-        LIMIT 200
+        WHERE section='BS' AND {date_cond} AND {acct_filter}
+        ORDER BY date, voucher_no, record_id
+        LIMIT 500
     """), params).fetchall()
 
     return {
