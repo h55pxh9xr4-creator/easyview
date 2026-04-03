@@ -128,6 +128,15 @@ export const fetchBSTrend = (f: FilterState) =>
 export const fetchBSAccount = (f: FilterState, category?: string) =>
   get("/api/bs/account", { base_ym: f.baseYm, bs_base: f.bsBase, category });
 
+export interface BSDisclosureDetail {
+  account_items: { mgmt_acct: string; account_name: string; ending: number; opening: number }[];
+  monthly_trend: { year_month: string; ending: number }[];
+  counterparty_changes: { name: string; dr: number; cr: number; net: number }[];
+  vouchers: { date: string; voucher_no: string; account_name: string; counterparty: string; description: string; dr_cr: string; amount: number }[];
+}
+export const fetchBSDisclosureDetail = (f: FilterState, disclosureAcct: string) =>
+  get<BSDisclosureDetail>("/api/bs/disclosure_detail", { base_ym: f.baseYm, disclosure_acct: disclosureAcct });
+
 export const fetchBSDisclosures = () =>
   get<string[]>("/api/bs/disclosures");
 
