@@ -353,6 +353,90 @@ def get_bs_activity(base_ym: str = Query(...), db: Session = Depends(get_db)):
     return {"current": current, "trend": trend}
 
 
+@router.get("/disclosure_detail")
+def get_bs_disclosure_detail(
+    base_ym: str = Query(...),
+    disclosure_acct: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """공시용계정 클릭 상세 — 계정과목 테이블 + 월별추이 + 거래처 증감 + 전표"""
+    year, month = base_ym.split("-")
+    base_year = int(year)
+    sq = _bs_ending(db, year, month)
+
+    # ── 계정과목 상세 ──
+    items = db.execute(text(f"""
+        SELECT mgmt_acct, account_name, SUM(ending) AS ending, SUM(opening) AS opening
+        FROM ({sq}) sub
+        WHERE disclosure_acct = :da
+        GROUP BY mgmt_acct, account_name
+        ORDER BY ABS(ending) DESC
+    """), {"da": disclosure_acct}).fetchall()
+
+    # ── 월별 잔액 추이 ──
+    months = db.execute(text(f"""
+        SELECT DISTINCT year_month FROM je WHERE section='BS'
+        AND (substr(year_month,1,4)='{base_year-1}' OR
+             (substr(year_month,1,4)='{base_year}' AND substr(year_month,6,2)<='{month}'))
+        ORDER BY year_month
+    """)).fetchall()
+
+    monthly_trend = []
+    for (ym,) in months:
+        y, m = ym.split("-")
+        val = db.execute(text(f"""
+            SELECT SUM((t.opening_signed + COALESCE(j.net, 0)) *
+                       CASE t.category WHEN '자산' THEN 1 ELSE -1 END)
+            FROM tb_account t
+            LEFT JOIN (
+                SELECT account_code, SUM(signed_amount) AS net FROM je
+                WHERE section='BS' AND substr(year_month,1,4)='{y}'
+                AND substr(year_month,6,2)<='{m}' GROUP BY account_code
+            ) j ON t.account_code = j.account_code
+            WHERE t.section='BS' AND t.disclosure_acct = :da
+        """), {"da": disclosure_acct}).scalar() or 0
+        monthly_trend.append({"year_month": ym, "ending": round(float(val))})
+
+    # ── 거래처별 증감 (당기 누적) ──
+    cp_rows = db.execute(text(f"""
+        SELECT counterparty,
+               SUM(CASE WHEN dr_cr='차변' THEN amount ELSE 0 END) AS dr,
+               SUM(CASE WHEN dr_cr='대변' THEN amount ELSE 0 END) AS cr,
+               SUM(signed_amount) AS net
+        FROM je
+        WHERE section='BS' AND disclosure_acct=:da
+        AND substr(year_month,1,4)=:y AND substr(year_month,6,2)<=:m
+        GROUP BY counterparty ORDER BY ABS(net) DESC LIMIT 20
+    """), {"da": disclosure_acct, "y": year, "m": month}).fetchall()
+
+    # ── 당기 전표 ──
+    vouchers = db.execute(text(f"""
+        SELECT date, voucher_no, account_name, counterparty, description, dr_cr, amount
+        FROM je
+        WHERE section='BS' AND disclosure_acct=:da
+        AND substr(year_month,1,4)=:y AND substr(year_month,6,2)<=:m
+        ORDER BY date DESC, voucher_no, record_id LIMIT 500
+    """), {"da": disclosure_acct, "y": year, "m": month}).fetchall()
+
+    return {
+        "account_items": [
+            {"mgmt_acct": r[0], "account_name": r[1],
+             "ending": float(r[2] or 0), "opening": float(r[3] or 0)}
+            for r in items
+        ],
+        "monthly_trend": monthly_trend,
+        "counterparty_changes": [
+            {"name": r[0] or "(없음)", "dr": float(r[1]), "cr": float(r[2]), "net": float(r[3])}
+            for r in cp_rows
+        ],
+        "vouchers": [
+            {"date": str(r[0]), "voucher_no": r[1], "account_name": r[2],
+             "counterparty": r[3], "description": r[4], "dr_cr": r[5], "amount": float(r[6])}
+            for r in vouchers
+        ],
+    }
+
+
 @router.get("/disclosures")
 def get_bs_disclosures(db: Session = Depends(get_db)):
     """BS 공시용계정 목록"""
