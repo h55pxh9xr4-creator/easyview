@@ -35,6 +35,7 @@ export default function BSAccount() {
   const [selected, setSelected] = useState<string | null>(null);   // disclosure_acct
   const [detail,   setDetail]   = useState<BSDisclosureDetail | null>(null);
   const [loadingD, setLoadingD] = useState(false);
+  const [detailErr, setDetailErr] = useState(false);
   const [leftH,    setLeftH]    = useState<number | undefined>(undefined);
   const leftRef   = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -55,10 +56,10 @@ export default function BSAccount() {
 
   useEffect(() => {
     if (!selected) { setDetail(null); return; }
-    setLoadingD(true);
+    setLoadingD(true); setDetailErr(false);
     fetchBSDisclosureDetail(filter, selected)
       .then(d => { setDetail(d); setLoadingD(false); })
-      .catch(() => setLoadingD(false));
+      .catch(() => { setLoadingD(false); setDetailErr(true); });
   }, [selected, filter.baseYm]);
 
   useEffect(() => {
@@ -202,6 +203,12 @@ export default function BSAccount() {
               <div className="card" style={{ padding: 40, color: "#aaa", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 로딩 중...
+              </div>
+            )}
+            {detailErr && (
+              <div className="card" style={{ padding: 30, color: "#DC2626", fontSize: 13, textAlign: "center" }}>
+                ⚠️ 상세 데이터를 불러오지 못했습니다.<br />
+                <span style={{ fontSize: 11, color: "#999", marginTop: 6, display: "block" }}>백엔드 배포 후 이용 가능합니다.</span>
               </div>
             )}
 
