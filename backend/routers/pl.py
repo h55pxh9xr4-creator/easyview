@@ -315,6 +315,192 @@ def get_pl_sales(
              "change": float(r[1] or 0) - float(r[2] or 0)} for r in rows]
 
 
+@router.get("/sales/kpi")
+def get_pl_sales_kpi(
+    base_ym: str = Query(...),
+    period_type: str = Query("cumulative"),
+    db: Session = Depends(get_db),
+):
+    cur_filter = _build_ym_filter(base_ym, period_type)
+    pri_filter = _build_ym_filter(base_ym, period_type, year_offset=-1)
+    year, month = base_ym.split("-")
+    pm = int(month) - 1
+    py = int(year)
+    if pm == 0:
+        pm, py = 12, py - 1
+    pm_filter = f"substr(year_month,1,4)='{py}' AND substr(year_month,6,2)='{pm:02d}'"
+
+    cur_rev = _signed_sum(db, cur_filter, "매출액")
+    pri_rev = _signed_sum(db, pri_filter, "매출액")
+    pm_rev = _signed_sum(db, pm_filter, "매출액")
+
+    def count_cp(f):
+        r = db.execute(text(f"""
+            SELECT COUNT(DISTINCT counterparty) FROM je
+            WHERE disclosure_acct='매출액' AND counterparty IS NOT NULL AND {f}
+        """)).scalar()
+        return int(r or 0)
+
+    cur_cnt = count_cp(cur_filter)
+    pri_cnt = count_cp(pri_filter)
+    pm_cnt = count_cp(pm_filter)
+
+    return {
+        "revenue": {
+            "current": cur_rev,
+            "prior": pri_rev,
+            "change": cur_rev - pri_rev,
+            "change_pct": round((cur_rev - pri_rev) / abs(pri_rev), 4) if pri_rev else 0,
+            "vs_prev_month": cur_rev - pm_rev,
+        },
+        "counterparty_count": {
+            "current": cur_cnt,
+            "prior": pri_cnt,
+            "change": cur_cnt - pri_cnt,
+            "change_pct": round((cur_cnt - pri_cnt) / abs(pri_cnt), 4) if pri_cnt else 0,
+            "vs_prev_month": cur_cnt - pm_cnt,
+        },
+    }
+
+
+@router.get("/sales/trend")
+def get_pl_sales_trend(
+    base_ym: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    year = base_ym.split("-")[0]
+    pri_year = str(int(year) - 1)
+    rows = db.execute(text("""
+        SELECT substr(year_month,6,2) AS mo,
+               -ROUND(SUM(CASE WHEN substr(year_month,1,4)=:yr THEN signed_amount ELSE 0 END),0) AS cur,
+               -ROUND(SUM(CASE WHEN substr(year_month,1,4)=:pr THEN signed_amount ELSE 0 END),0) AS pri
+        FROM je WHERE disclosure_acct='매출액'
+          AND (substr(year_month,1,4)=:yr OR substr(year_month,1,4)=:pr)
+        GROUP BY mo ORDER BY mo
+    """), {"yr": year, "pr": pri_year}).fetchall()
+    return [{"month": int(r[0]), "current": float(r[1] or 0), "prior": float(r[2] or 0)} for r in rows]
+
+
+@router.get("/sales/top_donut")
+def get_pl_sales_top_donut(
+    base_ym: str = Query(...),
+    period_type: str = Query("cumulative"),
+    top_n: int = Query(10),
+    db: Session = Depends(get_db),
+):
+    cur_filter = _build_ym_filter(base_ym, period_type)
+    rows = db.execute(text(f"""
+        SELECT counterparty, -ROUND(SUM(signed_amount),0) AS cur
+        FROM je WHERE disclosure_acct='매출액' AND counterparty IS NOT NULL AND {cur_filter}
+        GROUP BY counterparty ORDER BY cur DESC
+    """)).fetchall()
+
+    all_rows = [{"counterparty": r[0], "amount": float(r[1] or 0)} for r in rows]
+    total = sum(r["amount"] for r in all_rows)
+    top = all_rows[:top_n]
+    top_total = sum(r["amount"] for r in top)
+    other = total - top_total
+
+    result = [
+        {"counterparty": r["counterparty"], "amount": r["amount"],
+         "pct": round(r["amount"] / total * 100, 2) if total else 0}
+        for r in top
+    ]
+    if other > 0:
+        result.append({"counterparty": "기타", "amount": other,
+                        "pct": round(other / total * 100, 2) if total else 0})
+    return {"items": result, "top_total": top_total,
+            "top_pct": round(top_total / total * 100, 2) if total else 0}
+
+
+@router.get("/sales/top_change")
+def get_pl_sales_top_change(
+    base_ym: str = Query(...),
+    period_type: str = Query("cumulative"),
+    top_n: int = Query(10),
+    db: Session = Depends(get_db),
+):
+    cur_filter = _build_ym_filter(base_ym, period_type)
+    pri_filter = _build_ym_filter(base_ym, period_type, year_offset=-1)
+    rows = db.execute(text(f"""
+        SELECT counterparty,
+               -ROUND(SUM(CASE WHEN {cur_filter} THEN signed_amount ELSE 0 END),0) AS cur,
+               -ROUND(SUM(CASE WHEN {pri_filter} THEN signed_amount ELSE 0 END),0) AS pri
+        FROM je WHERE disclosure_acct='매출액' AND counterparty IS NOT NULL
+        GROUP BY counterparty
+    """)).fetchall()
+
+    items = [{"counterparty": r[0], "current": float(r[1] or 0), "prior": float(r[2] or 0),
+              "change": float(r[1] or 0) - float(r[2] or 0)} for r in rows]
+    increased = sorted([x for x in items if x["change"] > 0], key=lambda x: -x["change"])[:top_n]
+    decreased = sorted([x for x in items if x["change"] < 0], key=lambda x: x["change"])[:top_n]
+    return {"increased": increased, "decreased": decreased}
+
+
+@router.get("/sales/counterparty_list")
+def get_pl_sales_counterparty_list(
+    base_ym: str = Query(...),
+    period_type: str = Query("cumulative"),
+    db: Session = Depends(get_db),
+):
+    cur_filter = _build_ym_filter(base_ym, period_type)
+    rows = db.execute(text(f"""
+        SELECT counterparty, -ROUND(SUM(signed_amount),0) AS cur
+        FROM je WHERE disclosure_acct='매출액' AND counterparty IS NOT NULL AND {cur_filter}
+        GROUP BY counterparty ORDER BY cur DESC
+    """)).fetchall()
+    return [r[0] for r in rows]
+
+
+@router.get("/sales/counterparty_trend")
+def get_pl_sales_counterparty_trend(
+    base_ym: str = Query(...),
+    cp1: str = Query(None),
+    cp2: str = Query(None),
+    db: Session = Depends(get_db),
+):
+    year = base_ym.split("-")[0]
+    pri_year = str(int(year) - 1)
+    results: dict = {}
+    for label, cp in [("cp1", cp1), ("cp2", cp2)]:
+        if not cp:
+            results[label] = []
+            results[f"{label}_prior"] = []
+            continue
+        rows = db.execute(text("""
+            SELECT substr(year_month,6,2) AS mo,
+                   -ROUND(SUM(CASE WHEN substr(year_month,1,4)=:yr  THEN signed_amount ELSE 0 END),0) AS cur,
+                   -ROUND(SUM(CASE WHEN substr(year_month,1,4)=:pr  THEN signed_amount ELSE 0 END),0) AS pri
+            FROM je WHERE disclosure_acct='매출액' AND counterparty=:cp
+              AND (substr(year_month,1,4)=:yr OR substr(year_month,1,4)=:pr)
+            GROUP BY mo ORDER BY mo
+        """), {"cp": cp, "yr": year, "pr": pri_year}).fetchall()
+        results[label]            = [{"month": int(r[0]), "amount": float(r[1] or 0)} for r in rows]
+        results[f"{label}_prior"] = [{"month": int(r[0]), "amount": float(r[2] or 0)} for r in rows]
+    return results
+
+
+@router.get("/sales/vouchers")
+def get_pl_sales_vouchers(
+    base_ym: str = Query(...),
+    period_type: str = Query("cumulative"),
+    db: Session = Depends(get_db),
+):
+    cur_filter = _build_ym_filter(base_ym, period_type)
+    pri_filter = _build_ym_filter(base_ym, period_type, year_offset=-1)
+
+    def fetch(f):
+        rows = db.execute(text(f"""
+            SELECT date, voucher_no, counterparty, description, amount, dr_cr
+            FROM je WHERE disclosure_acct='매출액' AND {f}
+            ORDER BY date DESC, voucher_no LIMIT 500
+        """)).fetchall()
+        return [{"date": str(r[0]), "voucher_no": r[1], "counterparty": r[2],
+                 "description": r[3], "amount": float(r[4] or 0), "dr_cr": r[5]} for r in rows]
+
+    return {"current": fetch(cur_filter), "prior": fetch(pri_filter)}
+
+
 @router.get("/items")
 def get_pl_items(
     base_ym: str = Query(...),
