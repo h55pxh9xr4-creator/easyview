@@ -364,14 +364,16 @@ def get_bs_disclosure_detail(
     base_year = int(year)
     sq = _bs_ending(db, year, month)
 
+    da = disclosure_acct.replace("'", "''")   # 단순 SQL 이스케이프
+
     # ── 계정과목 상세 ──
     items = db.execute(text(f"""
         SELECT mgmt_acct, account_name, SUM(ending) AS ending, SUM(opening) AS opening
         FROM ({sq}) sub
-        WHERE disclosure_acct = :da
+        WHERE disclosure_acct = '{da}'
         GROUP BY mgmt_acct, account_name
         ORDER BY ABS(ending) DESC
-    """), {"da": disclosure_acct}).fetchall()
+    """)).fetchall()
 
     # ── 월별 잔액 추이 ──
     months = db.execute(text(f"""
@@ -393,8 +395,8 @@ def get_bs_disclosure_detail(
                 WHERE section='BS' AND substr(year_month,1,4)='{y}'
                 AND substr(year_month,6,2)<='{m}' GROUP BY account_code
             ) j ON t.account_code = j.account_code
-            WHERE t.section='BS' AND t.disclosure_acct = :da
-        """), {"da": disclosure_acct}).scalar() or 0
+            WHERE t.section='BS' AND t.disclosure_acct = '{da}'
+        """)).scalar() or 0
         monthly_trend.append({"year_month": ym, "ending": round(float(val))})
 
     # ── 거래처별 증감 (당기 누적) ──
@@ -404,19 +406,19 @@ def get_bs_disclosure_detail(
                SUM(CASE WHEN dr_cr='대변' THEN amount ELSE 0 END) AS cr,
                SUM(signed_amount) AS net
         FROM je
-        WHERE section='BS' AND disclosure_acct=:da
-        AND substr(year_month,1,4)=:y AND substr(year_month,6,2)<=:m
+        WHERE section='BS' AND disclosure_acct='{da}'
+        AND substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'
         GROUP BY counterparty ORDER BY ABS(net) DESC LIMIT 20
-    """), {"da": disclosure_acct, "y": year, "m": month}).fetchall()
+    """)).fetchall()
 
     # ── 당기 전표 ──
     vouchers = db.execute(text(f"""
         SELECT date, voucher_no, account_name, counterparty, description, dr_cr, amount
         FROM je
-        WHERE section='BS' AND disclosure_acct=:da
-        AND substr(year_month,1,4)=:y AND substr(year_month,6,2)<=:m
+        WHERE section='BS' AND disclosure_acct='{da}'
+        AND substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'
         ORDER BY date DESC, voucher_no, record_id LIMIT 500
-    """), {"da": disclosure_acct, "y": year, "m": month}).fetchall()
+    """)).fetchall()
 
     return {
         "account_items": [
