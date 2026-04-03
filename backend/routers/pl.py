@@ -534,3 +534,118 @@ def get_pl_items(
         chg = round((cur - pri) / abs(pri), 4) if pri else 0.0
         result.append({"account": acct, "current": cur, "prior": pri, "change_pct": chg})
     return result
+
+
+@router.get("/items/table")
+def get_pl_items_table(
+    base_ym: str = Query(...),
+    view_type: str = Query("quarter"),  # month | quarter | year
+    db: Session = Depends(get_db),
+):
+    """손익계산서 테이블 — 월/분기/연도별 컬럼, 공시용계정>관리계정 2단계"""
+
+    DISCLOSURE_ORDER = [
+        "매출액", "제조원가", "매출원가", "판매비와관리비",
+        "기타수익", "기타비용", "금융수익", "금융비용", "법인세비용",
+    ]
+    INCOME_ACCT = {"매출액", "기타수익", "금융수익"}
+    SUBTOTALS = {
+        "매출총이익":  (["매출액"], ["제조원가", "매출원가"]),
+        "당기순이익": (["매출액", "기타수익", "금융수익"],
+                      ["제조원가", "매출원가", "판매비와관리비",
+                       "기타비용", "금융비용", "법인세비용"]),
+    }
+
+    base_year = int(base_ym[:4])
+
+    # 컬럼 정의
+    if view_type == "month":
+        cols = [(base_year - 1, m) for m in range(1, 13)] + [(base_year, m) for m in range(1, 13)]
+        col_filter = lambda y, m: f"substr(year_month,1,4)='{y}' AND substr(year_month,6,2)='{m:02d}'"
+        col_label  = lambda y, m: f"{y % 100}/{m}월"
+    elif view_type == "year":
+        cols = [(base_year - 1, 0), (base_year, 0)]
+        col_filter = lambda y, _: f"substr(year_month,1,4)='{y}'"
+        col_label  = lambda y, _: f"{y}년"
+    else:  # quarter
+        cols = [(base_year - 1, q) for q in range(1, 5)] + [(base_year, q) for q in range(1, 5)]
+        def col_filter(y, q):
+            m1, m2, m3 = (q-1)*3+1, (q-1)*3+2, q*3
+            return (f"substr(year_month,1,4)='{y}' AND "
+                    f"substr(year_month,6,2) IN ('{m1:02d}','{m2:02d}','{m3:02d}')")
+        col_label = lambda y, q: f"{y % 100}/Q{q}"
+
+    col_labels = [col_label(y, p) for y, p in cols]
+
+    # 원시 집계: disclosure_acct, mgmt_acct, 컬럼별 합계
+    case_parts = ", ".join(
+        f"-ROUND(SUM(CASE WHEN {col_filter(y,p)} THEN signed_amount ELSE 0 END),0) AS c{i}"
+        for i, (y, p) in enumerate(cols)
+    )
+    rows = db.execute(text(f"""
+        SELECT disclosure_acct, mgmt_acct, {case_parts}
+        FROM je WHERE section='PL'
+        GROUP BY disclosure_acct, mgmt_acct
+        ORDER BY disclosure_acct, mgmt_acct
+    """)).fetchall()
+
+    # disclosure_acct → sign
+    sign_map = {}
+    for r in rows:
+        da = r[0]
+        if da not in sign_map:
+            sign_map[da] = 1 if da in INCOME_ACCT else -1
+
+    # 집계: {disclosure_acct: {mgmt_acct: [col값...]}}
+    from collections import defaultdict
+    da_mgmt: dict = defaultdict(lambda: defaultdict(lambda: [0.0] * len(cols)))
+    da_total: dict = defaultdict(lambda: [0.0] * len(cols))
+
+    for r in rows:
+        da, ma = r[0], r[1]
+        sgn = sign_map.get(da, -1)
+        for i in range(len(cols)):
+            val = float(r[2 + i] or 0) * sgn
+            da_mgmt[da][ma][i] += val
+            da_total[da][i]    += val
+
+    # 소계 계산
+    def subtotal_vals(add_accts, sub_accts):
+        result = [0.0] * len(cols)
+        for da in add_accts:
+            for i in range(len(cols)):
+                result[i] += da_total.get(da, [0.0]*len(cols))[i]
+        for da in sub_accts:
+            for i in range(len(cols)):
+                result[i] -= da_total.get(da, [0.0]*len(cols))[i]
+        return result
+
+    # 결과 조립
+    result_rows = []
+    for da in DISCLOSURE_ORDER:
+        if da not in da_total:
+            continue
+        # 소계 헤더 삽입 위치
+        if da == "기타수익":
+            result_rows.append({"type": "subtotal", "label": "매출총이익",
+                                 "values": subtotal_vals(["매출액"], ["제조원가", "매출원가"])})
+        if da == "법인세비용":
+            result_rows.append({"type": "subtotal", "label": "영업이익",
+                                 "values": subtotal_vals(
+                                     ["매출액", "기타수익"],
+                                     ["제조원가", "매출원가", "판매비와관리비", "기타비용"])})
+
+        result_rows.append({"type": "disclosure", "label": da,
+                             "values": [round(v) for v in da_total[da]]})
+        for ma, vals in sorted(da_mgmt[da].items()):
+            result_rows.append({"type": "mgmt", "label": ma,
+                                 "values": [round(v) for v in vals]})
+
+    # 맨 마지막 당기순이익
+    result_rows.append({"type": "subtotal", "label": "당기순이익",
+                         "values": [round(v) for v in subtotal_vals(
+                             ["매출액", "기타수익", "금융수익"],
+                             ["제조원가", "매출원가", "판매비와관리비",
+                              "기타비용", "금융비용", "법인세비용"])]})
+
+    return {"columns": col_labels, "rows": result_rows}
