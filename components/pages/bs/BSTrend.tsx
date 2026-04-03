@@ -357,7 +357,7 @@ export default function BSTrend() {
 
       {/* ── 상세 패널 (항상 표시) ─────────────────────────────── */}
       {selDisclosure && (
-        <div>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div className="sec-hd">
             <span className="sec-hd-txt">{detailTitle}</span>
             <div className="sec-hd-line" />
