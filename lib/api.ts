@@ -151,11 +151,13 @@ export interface DailyDetailData {
   vouchers: { date: string; voucher_no: string; account_name: string; disclosure_acct: string; counterparty: string; description: string; dr_cr: string; amount: number }[];
 }
 export const fetchBSDailyDetail = (
-  disclosureAcct: string, accountName: string | null, date: string,
+  disclosureAcct: string,
+  accountName: string | null,
+  opts: { date: string } | { dateFrom: string; dateTo: string },
 ) => get<DailyDetailData>("/api/bs/daily_detail", {
   disclosure_acct: disclosureAcct,
   account_name: accountName ?? undefined,
-  date,
+  ...("date" in opts ? { date: opts.date } : { date_from: opts.dateFrom, date_to: opts.dateTo }),
 });
 
 // ── VCH ──────────────────────────────────────────────────────
