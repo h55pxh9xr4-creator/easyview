@@ -152,6 +152,20 @@ def get_bs_account(
     sq = _bs_ending(db, year, month)
     where = f"WHERE sub.category='{category}'" if category else ""
 
+    BS_ORDER = [
+        # 자산 — 유동성 높은 순
+        "현금및현금성자산", "단기금융상품", "FVPL 금융자산", "매출채권",
+        "재고자산", "기타유동금융자산", "기타유동자산",
+        "유형자산", "사용권자산", "무형자산", "종속기업투자주식",
+        "이연법인세자산", "기타비유동금융자산",
+        # 부채 — 유동성 높은 순
+        "매입채무", "당기법인세부채", "리스유동부채", "기타유동금융부채", "기타유동부채",
+        "충당부채", "리스비유동부채", "이연법인세부채",
+        # 자본
+        "자본금", "주식발행초과금", "이익잉여금",
+    ]
+    order_map = {d: i for i, d in enumerate(BS_ORDER)}
+
     rows = db.execute(text(f"""
         SELECT sub.category, sub.sum_acct, sub.mgmt_acct,
                sub.disclosure_acct,
@@ -159,7 +173,6 @@ def get_bs_account(
         FROM ({sq}) sub
         {where}
         GROUP BY sub.category, sub.sum_acct, sub.mgmt_acct, sub.disclosure_acct
-        ORDER BY sub.category, sub.sum_acct, sub.ending DESC
     """)).fetchall()
 
     result = []
@@ -170,6 +183,7 @@ def get_bs_account(
             "category": r[0], "sum_acct": r[1], "mgmt_acct": r[2],
             "disclosure_acct": r[3], "ending": end, "opening": opn, "change_pct": chg,
         })
+    result.sort(key=lambda x: order_map.get(x["disclosure_acct"], 99))
     return result
 
 
