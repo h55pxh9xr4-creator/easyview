@@ -78,18 +78,85 @@ export const fetchPLAccountDetail = (f: FilterState, mgmt_acct: string) =>
 export const fetchPLSales = (f: FilterState) =>
   get("/api/pl/sales", { base_ym: f.baseYm, period_type: f.periodType });
 
+export const fetchPLSalesKPI = (f: FilterState) =>
+  get("/api/pl/sales/kpi", { base_ym: f.baseYm, period_type: f.periodType });
+
+export const fetchPLSalesTrend = (f: FilterState) =>
+  get("/api/pl/sales/trend", { base_ym: f.baseYm });
+
+export const fetchPLSalesTopDonut = (f: FilterState, top_n: number) =>
+  get("/api/pl/sales/top_donut", { base_ym: f.baseYm, period_type: f.periodType, top_n });
+
+export const fetchPLSalesTopChange = (f: FilterState, top_n: number) =>
+  get("/api/pl/sales/top_change", { base_ym: f.baseYm, period_type: f.periodType, top_n });
+
+export const fetchPLSalesCounterpartyList = (f: FilterState) =>
+  get<string[]>("/api/pl/sales/counterparty_list", { base_ym: f.baseYm, period_type: f.periodType });
+
+export const fetchPLSalesCounterpartyTrend = (f: FilterState, cp1?: string, cp2?: string) =>
+  get("/api/pl/sales/counterparty_trend", { base_ym: f.baseYm, cp1, cp2 });
+
+export const fetchPLSalesVouchers = (f: FilterState) =>
+  get("/api/pl/sales/vouchers", { base_ym: f.baseYm, period_type: f.periodType });
+
 export const fetchPLItems = (f: FilterState) =>
   get("/api/pl/items", { base_ym: f.baseYm, period_type: f.periodType });
+
+export type ViewType = "month" | "quarter" | "year";
+export const fetchPLItemsTable = (f: FilterState, view_type: ViewType) =>
+  get("/api/pl/items/table", { base_ym: f.baseYm, view_type });
 
 // ── BS ───────────────────────────────────────────────────────
 export const fetchBSSummary = (f: FilterState) =>
   get("/api/bs/summary", { base_ym: f.baseYm, bs_base: f.bsBase });
+
+export const fetchBSKPI = (f: FilterState) =>
+  get("/api/bs/kpi", { base_ym: f.baseYm });
+
+export const fetchBSTrendDetail = (f: FilterState) =>
+  get("/api/bs/trend_detail", { base_ym: f.baseYm });
+
+export const fetchBSRatios = (f: FilterState) =>
+  get("/api/bs/ratios", { base_ym: f.baseYm });
+
+export const fetchBSActivity = (f: FilterState) =>
+  get("/api/bs/activity", { base_ym: f.baseYm });
 
 export const fetchBSTrend = (f: FilterState) =>
   get("/api/bs/trend", { base_ym: f.baseYm });
 
 export const fetchBSAccount = (f: FilterState, category?: string) =>
   get("/api/bs/account", { base_ym: f.baseYm, bs_base: f.bsBase, category });
+
+export const fetchBSDisclosures = () =>
+  get<string[]>("/api/bs/disclosures");
+
+export const fetchBSAcctNames = (disclosureAcct: string) =>
+  get<string[]>("/api/bs/acct_names", { disclosure_acct: disclosureAcct });
+
+export interface DailyBalanceRow { date: string; balance: number }
+export const fetchBSDailyBalance = (
+  disclosureAcct: string, accountName: string | null, dateFrom: string, dateTo: string,
+) => get<DailyBalanceRow[]>("/api/bs/daily_balance", {
+  disclosure_acct: disclosureAcct,
+  account_name: accountName ?? undefined,
+  date_from: dateFrom,
+  date_to: dateTo,
+});
+
+export interface DailyDetailData {
+  counterparty_dr: { name: string; amount: number }[];
+  counterparty_cr: { name: string; amount: number }[];
+  counter_accounts: { account_name: string; disclosure_acct: string; dr: number; cr: number }[];
+  vouchers: { date: string; voucher_no: string; account_name: string; disclosure_acct: string; counterparty: string; description: string; dr_cr: string; amount: number }[];
+}
+export const fetchBSDailyDetail = (
+  disclosureAcct: string, accountName: string | null, date: string,
+) => get<DailyDetailData>("/api/bs/daily_detail", {
+  disclosure_acct: disclosureAcct,
+  account_name: accountName ?? undefined,
+  date,
+});
 
 // ── VCH ──────────────────────────────────────────────────────
 export const fetchVCHAnalysis = (f: FilterState) =>
