@@ -11,23 +11,90 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale,
   LineController, LineElement, PointElement,
   ArcElement, DoughnutController,
-  Filler, Tooltip, Legend,
+  Filler, Tooltip, Legend, Plugin,
   type ChartOptions,
 } from "chart.js";
 import { Line, Doughnut } from "react-chartjs-2";
 
 ChartJS.register(CategoryScale, LinearScale, LineController, LineElement, PointElement, ArcElement, DoughnutController, Filler, Tooltip, Legend);
 
-const ORANGE = "rgba(232,119,34,0.9)";
+const ORANGE      = "rgba(232,119,34,0.9)";
 const ORANGE_FILL = "rgba(232,119,34,0.15)";
-const BLUE   = "rgba(37,99,235,1)";
-const RED    = "rgba(220,38,38,1)";
+const BLUE        = "rgba(37,99,235,1)";
+const RED         = "rgba(220,38,38,1)";
 
 const fmtAmt = (n: number) => Math.round(n / 10000).toLocaleString("ko-KR");
 
-// 색상 팔레트
-const BLUE_PALETTE = ["#1d4ed8","#2563eb","#3b82f6","#60a5fa","#93c5fd","#bfdbfe","#dbeafe"];
-const RED_PALETTE  = ["#b91c1c","#dc2626","#ef4444","#f87171","#fca5a5","#fecaca","#fee2e2"];
+// PLAccount와 동일한 도넛 색상
+const DONUT_COLORS_DR = ["#1d4ed8","#2563eb","#3b82f6","#60a5fa","#93c5fd","#bfdbfe","#dbeafe"];
+const DONUT_COLORS_CR = ["#b91c1c","#dc2626","#ef4444","#f87171","#fca5a5","#fecaca","#fee2e2"];
+
+// ── 폴리라인 외부 라벨 플러그인 (PLAccount와 동일) ────────────────
+const MIN_PCT_LABEL = 2;
+const LINE_GAP = 14;
+
+const polylineLabelPlugin: Plugin<"doughnut"> = {
+  id: "polylineLabel",
+  afterDraw(chart) {
+    const { ctx } = chart;
+    const ds    = chart.data.datasets[0];
+    const meta  = chart.getDatasetMeta(0);
+    const total = (ds.data as number[]).reduce((s, v) => s + v, 0) || 1;
+    const colors = ds.backgroundColor as string[];
+    const labels = (chart.data.labels ?? []) as string[];
+
+    type Lbl = { pct: number; color: string; name: string;
+                 isRight: boolean; x1: number; y1: number;
+                 x2: number; y2: number; x3: number; y3: number };
+
+    const all: Lbl[] = [];
+    meta.data.forEach((arc, i) => {
+      const val = (ds.data as number[])[i];
+      const pct = val / total * 100;
+      if (pct < MIN_PCT_LABEL) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const a   = arc as any;
+      const mid = (a.startAngle + a.endAngle) / 2;
+      const r   = a.outerRadius;
+      const cx  = a.x, cy = a.y;
+      const isRight = Math.cos(mid) >= 0;
+      const x1 = cx + Math.cos(mid) * (r + 3);
+      const y1 = cy + Math.sin(mid) * (r + 3);
+      const x2 = cx + Math.cos(mid) * (r + 18);
+      const y2 = cy + Math.sin(mid) * (r + 18);
+      const x3 = x2 + (isRight ? 16 : -16);
+      all.push({ pct, color: colors[i], name: labels[i] ?? "", isRight, x1, y1, x2, y2, x3, y3: y2 });
+    });
+
+    const settle = (group: Lbl[]) => {
+      group.sort((a, b) => a.y3 - b.y3);
+      for (let k = 1; k < group.length; k++)
+        if (group[k].y3 - group[k-1].y3 < LINE_GAP) group[k].y3 = group[k-1].y3 + LINE_GAP;
+      for (let k = group.length - 2; k >= 0; k--)
+        if (group[k+1].y3 - group[k].y3 < LINE_GAP) group[k].y3 = group[k+1].y3 - LINE_GAP;
+    };
+    settle(all.filter(l =>  l.isRight));
+    settle(all.filter(l => !l.isRight));
+
+    ctx.save();
+    all.forEach(lbl => {
+      const short = lbl.name.length > 9 ? lbl.name.slice(0, 9) + "…" : lbl.name;
+      ctx.beginPath();
+      ctx.moveTo(lbl.x1, lbl.y1);
+      ctx.lineTo(lbl.x2, lbl.y2);
+      ctx.lineTo(lbl.x3, lbl.y3);
+      ctx.strokeStyle = lbl.color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = "#333";
+      ctx.font = "10px Inter, sans-serif";
+      ctx.textAlign = lbl.isRight ? "left" : "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${short} ${lbl.pct.toFixed(1)}%`, lbl.x3 + (lbl.isRight ? 3 : -3), lbl.y3);
+    });
+    ctx.restore();
+  },
+};
 
 function Spinner() {
   return (
@@ -38,53 +105,58 @@ function Spinner() {
   );
 }
 
-// ── 파이차트 ────────────────────────────────────────────────────
-function CpPie({ items, palette }: {
+// ── 파이차트 (폴리라인 외부 라벨, PLAccount 동일 스타일) ──────────
+function CpPie({ items, colors }: {
   items: { name: string; amount: number }[];
-  palette: string[];
+  colors: string[];
 }) {
   if (items.length === 0) return <div style={{ color:"#bbb", fontSize:12 }}>해당 없음</div>;
-  const top = [...items].sort((a, b) => b.amount - a.amount).slice(0, 7);
-  const total = items.reduce((s, i) => s + i.amount, 0);
+  const top   = [...items].sort((a, b) => b.amount - a.amount).slice(0, 10);
+  const total = top.reduce((s, i) => s + i.amount, 0);
+  const small = top.filter(i => (i.amount / total * 100) < MIN_PCT_LABEL);
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-      <div style={{ width:160, height:160, flexShrink:0 }}>
-        <Doughnut
-          data={{
-            labels: top.map(i => i.name),
-            datasets: [{
-              data: top.map(i => i.amount),
-              backgroundColor: top.map((_, i) => palette[i % palette.length]),
-              borderWidth: 1,
-              borderColor: "#fff",
-            }],
-          }}
-          options={{
-            responsive: true, maintainAspectRatio: true,
-            cutout: "50%",
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: ctx => {
-                    const v = ctx.parsed as number;
-                    return ` ${ctx.label}: ${fmtAmt(v)}만원 (${((v / total) * 100).toFixed(1)}%)`;
-                  },
+    <div>
+      <Doughnut
+        data={{
+          labels: top.map(i => i.name),
+          datasets: [{
+            data: top.map(i => i.amount),
+            backgroundColor: colors.slice(0, top.length),
+            borderWidth: 2, borderColor: "#fff", hoverOffset: 6,
+          }],
+        }}
+        options={{
+          responsive: true, maintainAspectRatio: true,
+          animation: false,
+          cutout: "50%",
+          layout: { padding: 55 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const v = ctx.parsed as number;
+                  return ` ${ctx.label}: ${fmtAmt(v)}만원 (${(v / total * 100).toFixed(1)}%)`;
                 },
               },
             },
-          }}
-        />
-      </div>
-      <div style={{ flex:1, display:"flex", flexDirection:"column", gap:5 }}>
-        {top.map((item, i) => (
-          <div key={item.name} style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, flexShrink:0, backgroundColor:palette[i % palette.length] }} />
-            <span style={{ fontSize:11, color:"#444", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.name}</span>
-            <span style={{ fontSize:11, color:"#888", flexShrink:0 }}>{((item.amount / total) * 100).toFixed(1)}%</span>
-          </div>
-        ))}
-      </div>
+          },
+        }}
+        plugins={[polylineLabelPlugin]}
+      />
+      {small.length > 0 && (
+        <div style={{ display:"flex", flexWrap:"wrap", gap:"3px 10px", marginTop:4 }}>
+          {small.map((item) => {
+            const i = top.indexOf(item);
+            return (
+              <div key={item.name} style={{ display:"flex", alignItems:"center", gap:4, fontSize:10, color:"#666" }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background:colors[i], display:"inline-block", flexShrink:0 }} />
+                {item.name} {(item.amount / total * 100).toFixed(1)}%
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -317,20 +389,16 @@ export default function BSTrend() {
             </div>
           ) : detail && (
             <>
-              {/* ── 거래처 구성(좌) + 상대계정(우) ──────────── */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, alignItems:"start" }}>
-                {/* 왼쪽: 파이차트 2개 */}
-                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                  <div className="card">
-                    <div className="card-title">거래처 구성 (차변)</div>
-                    <CpPie items={detail.counterparty_dr} palette={BLUE_PALETTE} />
-                  </div>
-                  <div className="card">
-                    <div className="card-title">거래처 구성 (대변)</div>
-                    <CpPie items={detail.counterparty_cr} palette={RED_PALETTE} />
-                  </div>
+              {/* ── 거래처 구성(차변) + 거래처 구성(대변) + 상대계정 — 3열 ── */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, alignItems:"start" }}>
+                <div className="card">
+                  <div className="card-title">거래처 구성 (차변)</div>
+                  <CpPie items={detail.counterparty_dr} colors={DONUT_COLORS_DR} />
                 </div>
-                {/* 오른쪽: 상대계정 */}
+                <div className="card">
+                  <div className="card-title">거래처 구성 (대변)</div>
+                  <CpPie items={detail.counterparty_cr} colors={DONUT_COLORS_CR} />
+                </div>
                 <div className="card">
                   <div className="card-title">상대계정</div>
                   {detail.counter_accounts.length === 0 ? (
@@ -376,7 +444,7 @@ export default function BSTrend() {
               {/* ── 전표 상세내역 ──────────────────────────── */}
               <div className="card">
                 <div className="card-title">전표 상세내역</div>
-                <div className="tbl-wrap">
+                <div style={{ overflowY:"auto", maxHeight:320, overflowX:"auto" }}>
                   <table>
                     <thead>
                       <tr>
