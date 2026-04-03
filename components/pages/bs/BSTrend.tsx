@@ -10,12 +10,13 @@ import {
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   LineController, LineElement, PointElement,
+  ArcElement, DoughnutController,
   Filler, Tooltip, Legend,
   type ChartOptions,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { Line, Doughnut } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, LineController, LineElement, PointElement, Filler, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, LineController, LineElement, PointElement, ArcElement, DoughnutController, Filler, Tooltip, Legend);
 
 const ORANGE = "rgba(232,119,34,0.9)";
 const ORANGE_FILL = "rgba(232,119,34,0.15)";
@@ -25,8 +26,8 @@ const RED    = "rgba(220,38,38,1)";
 const fmtAmt = (n: number) => Math.round(n / 10000).toLocaleString("ko-KR");
 
 // 색상 팔레트
-const BLUE_PALETTE  = ["#1d4ed8","#2563eb","#3b82f6","#60a5fa","#93c5fd","#bfdbfe"];
-const RED_PALETTE   = ["#b91c1c","#dc2626","#ef4444","#f87171","#fca5a5","#fecaca"];
+const BLUE_PALETTE = ["#1d4ed8","#2563eb","#3b82f6","#60a5fa","#93c5fd","#bfdbfe","#dbeafe"];
+const RED_PALETTE  = ["#b91c1c","#dc2626","#ef4444","#f87171","#fca5a5","#fecaca","#fee2e2"];
 
 function Spinner() {
   return (
@@ -37,97 +38,50 @@ function Spinner() {
   );
 }
 
-// ── 이진 분할 트리맵 ────────────────────────────────────────────
-interface TmRect { name: string; amount: number; x: number; y: number; w: number; h: number }
-
-function splitRect(
-  items: { name: string; amount: number }[],
-  x: number, y: number, w: number, h: number,
-): TmRect[] {
-  if (items.length === 0) return [];
-  if (items.length === 1) return [{ ...items[0], x, y, w, h }];
-
-  const total = items.reduce((s, i) => s + i.amount, 0);
-  let sum1 = 0;
-  let splitIdx = 0;
-  for (let i = 0; i < items.length - 1; i++) {
-    sum1 += items[i].amount;
-    splitIdx = i + 1;
-    if (sum1 >= total / 2) break;
-  }
-  const ratio1 = sum1 / total;
-
-  if (w >= h) {
-    const w1 = w * ratio1;
-    return [
-      ...splitRect(items.slice(0, splitIdx), x,      y, w1,    h),
-      ...splitRect(items.slice(splitIdx),    x + w1, y, w - w1, h),
-    ];
-  } else {
-    const h1 = h * ratio1;
-    return [
-      ...splitRect(items.slice(0, splitIdx), x, y,      w, h1),
-      ...splitRect(items.slice(splitIdx),    x, y + h1, w, h - h1),
-    ];
-  }
-}
-
-function Treemap({ items, palette, height = 160 }: {
+// ── 파이차트 ────────────────────────────────────────────────────
+function CpPie({ items, palette }: {
   items: { name: string; amount: number }[];
   palette: string[];
-  height?: number;
 }) {
-  const sorted = [...items].sort((a, b) => b.amount - a.amount).slice(0, 12);
-  if (sorted.length === 0) return <div style={{ color:"#bbb", fontSize:12 }}>해당 없음</div>;
-
-  const total = sorted.reduce((s, i) => s + i.amount, 0);
-  const W = 100, H = height;
-  const rects = splitRect(sorted, 0, 0, W, H);
-
+  if (items.length === 0) return <div style={{ color:"#bbb", fontSize:12 }}>해당 없음</div>;
+  const top = [...items].sort((a, b) => b.amount - a.amount).slice(0, 7);
+  const total = items.reduce((s, i) => s + i.amount, 0);
   return (
-    <div style={{ position:"relative", width:"100%", height, overflow:"hidden", borderRadius:4 }}>
-      <svg width="100%" height={height} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-        {rects.map((r, i) => (
-          <g key={r.name}>
-            <rect
-              x={r.x + 0.3} y={r.y + 0.3}
-              width={Math.max(0, r.w - 0.6)} height={Math.max(0, r.h - 0.6)}
-              fill={palette[i % palette.length]}
-              rx="0.5"
-            />
-            {r.w > 12 && r.h > 8 && (
-              <text
-                x={r.x + r.w / 2} y={r.y + r.h / 2 - (r.h > 14 ? 3 : 0)}
-                textAnchor="middle" dominantBaseline="middle"
-                fontSize={Math.min(3.5, r.w / 6, r.h / 3)}
-                fill="white" fontWeight="600"
-                style={{ pointerEvents:"none" }}
-              >
-                {r.name.length > 8 ? r.name.slice(0, 7) + "…" : r.name}
-              </text>
-            )}
-            {r.w > 12 && r.h > 14 && (
-              <text
-                x={r.x + r.w / 2} y={r.y + r.h / 2 + Math.min(3, r.h / 6)}
-                textAnchor="middle" dominantBaseline="middle"
-                fontSize={Math.min(2.8, r.w / 8, r.h / 4)}
-                fill="rgba(255,255,255,0.85)"
-                style={{ pointerEvents:"none" }}
-              >
-                {((r.amount / total) * 100).toFixed(1)}%
-              </text>
-            )}
-            <title>{`${r.name}: ${fmtAmt(r.amount)}만원 (${((r.amount / total) * 100).toFixed(1)}%)`}</title>
-          </g>
-        ))}
-      </svg>
-      {/* 범례 */}
-      <div style={{ display:"flex", flexWrap:"wrap", gap:"3px 10px", marginTop:8 }}>
-        {rects.map((r, i) => (
-          <div key={r.name} style={{ display:"flex", alignItems:"center", gap:4, fontSize:10, color:"#555" }}>
-            <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, backgroundColor:palette[i % palette.length] }} />
-            <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.name}</span>
-            <span style={{ color:"#999" }}>{((r.amount / total) * 100).toFixed(1)}%</span>
+    <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+      <div style={{ width:160, height:160, flexShrink:0 }}>
+        <Doughnut
+          data={{
+            labels: top.map(i => i.name),
+            datasets: [{
+              data: top.map(i => i.amount),
+              backgroundColor: top.map((_, i) => palette[i % palette.length]),
+              borderWidth: 1,
+              borderColor: "#fff",
+            }],
+          }}
+          options={{
+            responsive: true, maintainAspectRatio: true,
+            cutout: "50%",
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => {
+                    const v = ctx.parsed as number;
+                    return ` ${ctx.label}: ${fmtAmt(v)}만원 (${((v / total) * 100).toFixed(1)}%)`;
+                  },
+                },
+              },
+            },
+          }}
+        />
+      </div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", gap:5 }}>
+        {top.map((item, i) => (
+          <div key={item.name} style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, flexShrink:0, backgroundColor:palette[i % palette.length] }} />
+            <span style={{ fontSize:11, color:"#444", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.name}</span>
+            <span style={{ fontSize:11, color:"#888", flexShrink:0 }}>{((item.amount / total) * 100).toFixed(1)}%</span>
           </div>
         ))}
       </div>
@@ -366,11 +320,11 @@ export default function BSTrend() {
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                 <div className="card">
                   <div className="card-title">거래처 구성 (차변)</div>
-                  <Treemap items={detail.counterparty_dr} palette={BLUE_PALETTE} height={160} />
+                  <CpPie items={detail.counterparty_dr} palette={BLUE_PALETTE} />
                 </div>
                 <div className="card">
                   <div className="card-title">거래처 구성 (대변)</div>
-                  <Treemap items={detail.counterparty_cr} palette={RED_PALETTE} height={160} />
+                  <CpPie items={detail.counterparty_cr} palette={RED_PALETTE} />
                 </div>
               </div>
 
