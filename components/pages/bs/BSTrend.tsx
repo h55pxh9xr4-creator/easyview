@@ -112,7 +112,8 @@ export default function BSTrend() {
   useEffect(() => {
     fetchBSDisclosures().then(list => {
       setDisclosures(list);
-      if (list.length > 0) setSelDisclosure(list[0]);
+      const def = list.includes("현금및현금성자산") ? "현금및현금성자산" : list[0] ?? "";
+      setSelDisclosure(def);
     }).catch(console.error);
   }, []);
 
@@ -316,58 +317,60 @@ export default function BSTrend() {
             </div>
           ) : detail && (
             <>
-              {/* ── 거래처 구성 ────────────────────────────── */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-                <div className="card">
-                  <div className="card-title">거래처 구성 (차변)</div>
-                  <CpPie items={detail.counterparty_dr} palette={BLUE_PALETTE} />
-                </div>
-                <div className="card">
-                  <div className="card-title">거래처 구성 (대변)</div>
-                  <CpPie items={detail.counterparty_cr} palette={RED_PALETTE} />
-                </div>
-              </div>
-
-              {/* ── 상대계정 ───────────────────────────────── */}
-              <div className="card">
-                <div className="card-title">상대계정</div>
-                {detail.counter_accounts.length === 0 ? (
-                  <div style={{ fontSize:12, color:"#bbb" }}>해당 없음</div>
-                ) : (
-                  <div className="tbl-wrap">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>계정과목</th>
-                          <th>공시용계정</th>
-                          <th style={{ textAlign:"right" }}>차변</th>
-                          <th style={{ textAlign:"right" }}>대변</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detail.counter_accounts.map((r, i) => (
-                          <tr key={i}>
-                            <td>{r.account_name}</td>
-                            <td style={{ color:"#888" }}>{r.disclosure_acct}</td>
-                            <td style={{ textAlign:"right", color: r.dr ? BLUE : "#ccc" }}>
-                              {r.dr ? fmtAmt(r.dr) : "-"}
-                            </td>
-                            <td style={{ textAlign:"right", color: r.cr ? RED : "#ccc" }}>
-                              {r.cr ? fmtAmt(r.cr) : "-"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ fontWeight:700, backgroundColor:"#FFF7F0" }}>
-                          <td colSpan={2}>합계</td>
-                          <td style={{ textAlign:"right", color:BLUE }}>{fmtAmt(caTotalDr)}</td>
-                          <td style={{ textAlign:"right", color:RED }}>{fmtAmt(caTotalCr)}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
+              {/* ── 거래처 구성(좌) + 상대계정(우) ──────────── */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, alignItems:"start" }}>
+                {/* 왼쪽: 파이차트 2개 */}
+                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                  <div className="card">
+                    <div className="card-title">거래처 구성 (차변)</div>
+                    <CpPie items={detail.counterparty_dr} palette={BLUE_PALETTE} />
                   </div>
-                )}
+                  <div className="card">
+                    <div className="card-title">거래처 구성 (대변)</div>
+                    <CpPie items={detail.counterparty_cr} palette={RED_PALETTE} />
+                  </div>
+                </div>
+                {/* 오른쪽: 상대계정 */}
+                <div className="card">
+                  <div className="card-title">상대계정</div>
+                  {detail.counter_accounts.length === 0 ? (
+                    <div style={{ fontSize:12, color:"#bbb" }}>해당 없음</div>
+                  ) : (
+                    <div className="tbl-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>계정과목</th>
+                            <th>공시용계정</th>
+                            <th style={{ textAlign:"right" }}>차변</th>
+                            <th style={{ textAlign:"right" }}>대변</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {detail.counter_accounts.map((r, i) => (
+                            <tr key={i}>
+                              <td>{r.account_name}</td>
+                              <td style={{ color:"#888" }}>{r.disclosure_acct}</td>
+                              <td style={{ textAlign:"right", color: r.dr ? BLUE : "#ccc" }}>
+                                {r.dr ? fmtAmt(r.dr) : "-"}
+                              </td>
+                              <td style={{ textAlign:"right", color: r.cr ? RED : "#ccc" }}>
+                                {r.cr ? fmtAmt(r.cr) : "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ fontWeight:700, backgroundColor:"#FFF7F0" }}>
+                            <td colSpan={2}>합계</td>
+                            <td style={{ textAlign:"right", color:BLUE }}>{fmtAmt(caTotalDr)}</td>
+                            <td style={{ textAlign:"right", color:RED }}>{fmtAmt(caTotalCr)}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* ── 전표 상세내역 ──────────────────────────── */}
