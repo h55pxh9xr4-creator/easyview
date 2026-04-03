@@ -60,7 +60,7 @@ def _bs_ending(db, year: str, month: str) -> str:
     """기말잔액 계산용 서브쿼리 생성"""
     return f"""
         SELECT t.account_code, t.category, t.sum_acct, t.mgmt_acct,
-               t.disclosure_acct, t.opening_signed, t.opening_balance,
+               t.disclosure_acct, t.account_name, t.opening_signed, t.opening_balance,
                (t.opening_signed + COALESCE(je_c.net, 0)) *
                    CASE t.category WHEN '자산' THEN 1 ELSE -1 END AS ending,
                t.opening_balance AS opening
