@@ -11,7 +11,7 @@ def sc1_detail(
     base_ym: str = Query(...),
     db: Session = Depends(get_db),
 ):
-    """SC1: 동일금액 중복 전표"""
+    """SC1: 동일금액 중복 전표 (레거시)"""
     rows = db.execute(text(f"""
         SELECT j.date, j.voucher_no, j.account_name, j.counterparty,
                j.description, j.amount, j.dr_cr, cnt
@@ -26,11 +26,156 @@ def sc1_detail(
         ORDER BY j.amount DESC, j.date
         LIMIT 500
     """)).fetchall()
-
     return [{"date": str(r[0]), "voucher_no": r[1], "account_name": r[2],
              "counterparty": r[3], "description": r[4],
              "amount": float(r[5] or 0), "dr_cr": r[6], "dup_count": r[7]}
             for r in rows]
+
+
+@router.get("/1/exceptions")
+def sc1_exceptions(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    min_amount: float = Query(0),
+    max_amount: float = Query(9999999999999),
+    db: Session = Depends(get_db),
+):
+    """SC1: 예외 그룹 (연월·계정·금액 기준 중복 집계)"""
+    rows = db.execute(text(f"""
+        SELECT year_month, account_name, amount,
+               SUM(CASE WHEN dr_cr='차변' THEN 1 ELSE 0 END) AS dr_cnt,
+               SUM(CASE WHEN dr_cr='대변' THEN 1 ELSE 0 END) AS cr_cnt,
+               COUNT(*) AS total_cnt
+        FROM je
+        WHERE date >= '{date_from}' AND date <= '{date_to}'
+          AND amount >= {min_amount} AND amount <= {max_amount}
+        GROUP BY year_month, account_name, amount
+        HAVING total_cnt >= 2
+        ORDER BY amount DESC, year_month
+    """)).fetchall()
+    return [{"year_month": r[0], "account_name": r[1], "amount": float(r[2] or 0),
+             "dr_cnt": int(r[3]), "cr_cnt": int(r[4]), "total_cnt": int(r[5])}
+            for r in rows]
+
+
+@router.get("/1/extract")
+def sc1_extract(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    year_month: str = Query(...),
+    account_name: str = Query(...),
+    amount: float = Query(...),
+    db: Session = Depends(get_db),
+):
+    """SC1: 선택 그룹의 전표 추출 내역 (계정·거래처별 집계)"""
+    an = account_name.replace("'", "''")
+    rows = db.execute(text(f"""
+        SELECT year_month, account_name, counterparty,
+               ROUND(SUM(CASE WHEN dr_cr='차변' THEN amount ELSE 0 END), 0) AS dr,
+               ROUND(SUM(CASE WHEN dr_cr='대변' THEN amount ELSE 0 END), 0) AS cr
+        FROM je
+        WHERE date >= '{date_from}' AND date <= '{date_to}'
+          AND year_month='{year_month}' AND account_name='{an}' AND amount={amount}
+        GROUP BY year_month, account_name, counterparty
+        ORDER BY (dr + cr) DESC
+    """)).fetchall()
+    return [{"year_month": r[0], "account_name": r[1], "counterparty": r[2],
+             "dr": float(r[3] or 0), "cr": float(r[4] or 0)} for r in rows]
+
+
+@router.get("/1/lines")
+def sc1_lines(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    year_month: str = Query(...),
+    account_name: str = Query(...),
+    amount: float = Query(...),
+    db: Session = Depends(get_db),
+):
+    """SC1: 선택 그룹의 전표 상세 라인"""
+    an = account_name.replace("'", "''")
+    rows = db.execute(text(f"""
+        SELECT date, voucher_no, account_name, counterparty, description, dr_cr, amount
+        FROM je
+        WHERE date >= '{date_from}' AND date <= '{date_to}'
+          AND year_month='{year_month}' AND account_name='{an}' AND amount={amount}
+        ORDER BY date, voucher_no
+    """)).fetchall()
+    return [{"date": str(r[0]), "voucher_no": r[1], "account_name": r[2],
+             "counterparty": r[3], "description": r[4], "dr_cr": r[5],
+             "amount": float(r[6] or 0)} for r in rows]
+
+
+@router.get("/2/exceptions")
+def sc2_exceptions(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    min_amount: float = Query(0),
+    max_amount: float = Query(9999999999999),
+    db: Session = Depends(get_db),
+):
+    """SC2: 예외 그룹 (연월·금액 기준, 현금대변+부채대변 동시 존재)"""
+    rows = db.execute(text(f"""
+        SELECT year_month, amount, COUNT(DISTINCT voucher_no) AS vch_cnt
+        FROM je
+        WHERE date >= '{date_from}' AND date <= '{date_to}'
+          AND amount >= {min_amount} AND amount <= {max_amount}
+        GROUP BY year_month, amount
+        HAVING SUM(CASE WHEN is_cash=1 AND dr_cr='대변' THEN 1 ELSE 0 END) > 0
+           AND SUM(CASE WHEN category='부채' AND dr_cr='대변' THEN 1 ELSE 0 END) > 0
+        ORDER BY amount DESC, year_month
+    """)).fetchall()
+    return [{"year_month": r[0], "amount": float(r[1] or 0), "vch_cnt": int(r[2])}
+            for r in rows]
+
+
+@router.get("/2/extract")
+def sc2_extract(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    year_month: str = Query(...),
+    amount: float = Query(...),
+    db: Session = Depends(get_db),
+):
+    """SC2: 선택 그룹의 전표 추출 내역"""
+    rows = db.execute(text(f"""
+        SELECT date,
+               CASE WHEN is_cash=1 AND dr_cr='대변' THEN '현금지급' ELSE '부채인식' END AS type,
+               voucher_no, account_name, counterparty, amount
+        FROM je
+        WHERE date >= '{date_from}' AND date <= '{date_to}'
+          AND year_month='{year_month}' AND amount={amount}
+          AND ((is_cash=1 AND dr_cr='대변') OR (category='부채' AND dr_cr='대변'))
+        ORDER BY date, type DESC
+    """)).fetchall()
+    return [{"date": str(r[0]), "type": r[1], "voucher_no": r[2],
+             "account_name": r[3], "counterparty": r[4], "amount": float(r[5] or 0)}
+            for r in rows]
+
+
+@router.get("/2/lines")
+def sc2_lines(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    year_month: str = Query(...),
+    amount: float = Query(...),
+    db: Session = Depends(get_db),
+):
+    """SC2: 선택 그룹의 전표 상세 라인 (해당 전표번호 전체)"""
+    rows = db.execute(text(f"""
+        SELECT date, voucher_no, account_name, counterparty, description, dr_cr, amount
+        FROM je
+        WHERE voucher_no IN (
+            SELECT DISTINCT voucher_no FROM je
+            WHERE date >= '{date_from}' AND date <= '{date_to}'
+              AND year_month='{year_month}' AND amount={amount}
+              AND ((is_cash=1 AND dr_cr='대변') OR (category='부채' AND dr_cr='대변'))
+        )
+        ORDER BY date, voucher_no, dr_cr DESC
+    """)).fetchall()
+    return [{"date": str(r[0]), "voucher_no": r[1], "account_name": r[2],
+             "counterparty": r[3], "description": r[4], "dr_cr": r[5],
+             "amount": float(r[6] or 0)} for r in rows]
 
 
 @router.get("/2/detail")
@@ -61,6 +206,48 @@ def sc2_detail(
     return [{"date": str(r[0]), "voucher_no": r[1], "account_name": r[2],
              "counterparty": r[3], "description": r[4],
              "amount": float(r[5] or 0), "dr_cr": r[6], "type": r[7]}
+            for r in rows]
+
+
+@router.get("/3/summary")
+def sc3_summary(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """SC3: 주말 현금지급 일별 집계 (차트용)"""
+    rows = db.execute(text(f"""
+        SELECT date, COUNT(*) AS cnt, SUM(amount) AS total_amount
+        FROM je
+        WHERE date >= '{date_from}' AND date <= '{date_to}'
+          AND is_weekend=1 AND is_cash=1 AND dr_cr='대변'
+        GROUP BY date
+        ORDER BY date
+    """)).fetchall()
+    return [{"date": str(r[0]), "cnt": int(r[1]), "total_amount": float(r[2] or 0)}
+            for r in rows]
+
+
+@router.get("/3/extract")
+def sc3_extract(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    selected_date: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """SC3: 선택 날짜의 전표 추출 내역"""
+    rows = db.execute(text(f"""
+        SELECT voucher_no, account_name, counterparty,
+               SUM(amount) AS total_amount
+        FROM je
+        WHERE date >= '{date_from}' AND date <= '{date_to}'
+          AND date = '{selected_date}'
+          AND is_weekend=1 AND is_cash=1 AND dr_cr='대변'
+        GROUP BY voucher_no, account_name, counterparty
+        ORDER BY total_amount DESC
+    """)).fetchall()
+    return [{"voucher_no": r[0], "account_name": r[1], "counterparty": r[2],
+             "total_amount": float(r[3] or 0)}
             for r in rows]
 
 
