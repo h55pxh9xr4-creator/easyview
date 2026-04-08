@@ -85,7 +85,12 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
     responsive: true, maintainAspectRatio: false,
     plugins: {
       legend: { display: true, labels: { color: "#888", font: { size: 10 }, boxWidth: 8, padding: 6 } },
-      tooltip: { enabled: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: {dataset: {label: string}; parsed: {y: number}}) =>
+            `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString("ko-KR")}백만`,
+        },
+      },
     },
     scales: {
       x: { ticks: { color: "#bbb", font: { size: 9 } }, grid: { display: false } },
