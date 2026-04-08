@@ -60,7 +60,7 @@ body{font-family:'Inter','Malgun Gothic','맑은 고딕',sans-serif;background:#
 .kpi::after{content:'';position:absolute;right:-16px;top:-16px;width:64px;height:64px;border-radius:50%;background:rgba(232,119,34,.06)}
 .kpi-lbl{font-size:11px;font-weight:600;color:#999;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}
 .kpi-val{font-size:30px;font-weight:800;color:#2C2C2C;line-height:1;letter-spacing:-1px}
-.kpi-val .u{font-size:12px;color:#bbb;font-weight:400;margin-left:3px;letter-spacing:0}
+.kpi-val .u{font-size:13px;color:inherit;font-weight:700;margin-left:3px;letter-spacing:0;opacity:.75}
 .kpi-chg{margin-top:10px;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
 .kpi-chg.up{background:#FDECEA;color:#EF4444}
 .kpi-chg.dn{background:#EBF0FD;color:#2563EB}
@@ -112,7 +112,7 @@ tbody td:first-child{text-align:left;font-weight:600;color:#2C2C2C}
 .vc{background:#fff;border-radius:10px;padding:14px 16px;border-left:4px solid #E87722;box-shadow:0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)}
 .vc-lbl{font-size:11px;color:#9fa1a4;line-height:1.5;margin-bottom:8px;min-height:0;font-weight:500}
 .vc-val{font-size:28px;font-weight:800;color:#E87722;letter-spacing:-1px;line-height:1}
-.vc-unit{font-size:11px;color:#bbb;margin-top:3px}
+.vc-unit{font-size:13px;color:#E87722;font-weight:700;margin-top:3px}
 .vc-link{cursor:pointer;position:relative;overflow:hidden;transition:box-shadow .18s}
 .vc-link:hover{box-shadow:0 4px 14px rgba(232,119,34,.22)}
 .vc-hover-badge{
