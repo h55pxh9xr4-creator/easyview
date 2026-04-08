@@ -114,8 +114,6 @@ const DONUT_COLORS = [
 function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   const total = data.reduce((s, d) => s + Math.abs(d.cur), 0) || 1;
   const pcts  = data.map(d => Math.abs(d.cur) / total * 100);
-  const small = data.filter((_, i) => pcts[i] < MIN_PCT_LABEL);
-
   const chartData = {
     labels: data.map(d => d.name),
     datasets: [{
@@ -269,6 +267,16 @@ export default function PLAccount() {
               >선택 해제</button>
             )}
           </div>
+          {!selected && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "rgba(232,119,34,0.07)", borderRadius: 6,
+              padding: "7px 12px", marginBottom: 10, fontSize: 11, color: "#E87722",
+            }}>
+              <span style={{ fontSize: 14 }}>👆</span>
+              관리계정 행을 클릭하면 거래처별 증감 및 전표 내역을 확인할 수 있습니다.
+            </div>
+          )}
           <div className="tbl-wrap">
             <table>
               <thead>
