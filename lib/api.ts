@@ -78,8 +78,8 @@ export const fetchPLAccountDetail = (f: FilterState, mgmt_acct: string, base_ym_
 export const fetchPLSales = (f: FilterState) =>
   get("/api/pl/sales", { base_ym: f.baseYm, period_type: f.periodType });
 
-export const fetchPLSalesKPI = (f: FilterState) =>
-  get("/api/pl/sales/kpi", { base_ym: f.baseYm, period_type: f.periodType });
+export const fetchPLSalesKPI = (f: FilterState, base_ym_override?: string, period_type_override?: string) =>
+  get("/api/pl/sales/kpi", { base_ym: base_ym_override ?? f.baseYm, period_type: period_type_override ?? f.periodType });
 
 export const fetchPLSalesTrend = (f: FilterState) =>
   get("/api/pl/sales/trend", { base_ym: f.baseYm });

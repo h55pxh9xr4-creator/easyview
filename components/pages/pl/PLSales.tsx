@@ -311,6 +311,7 @@ export default function PLSales() {
   const [selectedCpTrend, setSelectedCpTrend] = useState<{ cur: { month: number; amount: number }[]; pri: { month: number; amount: number }[] } | null>(null);
   const [barRace, setBarRace] = useState<BarRaceData | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [monthlyKpi, setMonthlyKpi] = useState<KPIData | null>(null);
 
   // 기본 데이터 로드
   useEffect(() => {
@@ -324,6 +325,14 @@ export default function PLSales() {
     fetchPLSalesVouchers(filter).then(d => setVouchers(d as VoucherData)).catch(console.error);
     fetchPLSalesBarRace(filter, 15).then(d => setBarRace(d as BarRaceData)).catch(console.error);
   }, [filter.baseYm, filter.periodType]);
+
+  // 월 선택 시 해당 월 KPI 조회
+  useEffect(() => {
+    if (selectedMonth === null) { setMonthlyKpi(null); return; }
+    const year = filter.baseYm.split("-")[0];
+    const monthYm = `${year}-${String(selectedMonth).padStart(2, "0")}`;
+    fetchPLSalesKPI(filter, monthYm, "monthly").then(d => setMonthlyKpi(d as KPIData)).catch(console.error);
+  }, [selectedMonth, filter.baseYm]);
 
   // 도넛 / 변화 — topN 또는 selectedMonth 변경 시 재조회
   useEffect(() => {
@@ -410,31 +419,10 @@ export default function PLSales() {
 
   if (!kpi) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
 
-  // 월 선택 시 해당 월 데이터, 미선택 시 전체 KPI
-  const revCur = selectedMonth !== null
-    ? (trend.find(r => r.month === selectedMonth)?.current ?? 0)
-    : kpi.revenue.current;
-  const revPri = selectedMonth !== null
-    ? (trend.find(r => r.month === selectedMonth)?.prior ?? 0)
-    : kpi.revenue.prior;
-  const revChange = revCur - revPri;
-  const revChangePct = revPri !== 0 ? revChange / revPri : 0;
-  // 전월 대비: 선택 월이면 직전월 cur와 비교
-  const prevMonthCur = selectedMonth !== null && selectedMonth > 1
-    ? (trend.find(r => r.month === selectedMonth - 1)?.current ?? 0)
-    : null;
-  const revVsPrev = selectedMonth !== null
-    ? (prevMonthCur !== null ? revCur - prevMonthCur : 0)
-    : kpi.revenue.vs_prev_month;
-
-  const rev = {
-    current: revCur,
-    prior: revPri,
-    change: revChange,
-    change_pct: revChangePct,
-    vs_prev_month: revVsPrev,
-  };
-  const cnt = kpi.counterparty_count;
+  // 월 선택 시 monthlyKpi 사용, 미선택 시 전체 KPI
+  const activeKpi = (selectedMonth !== null && monthlyKpi) ? monthlyKpi : kpi;
+  const rev = activeKpi.revenue;
+  const cnt = activeKpi.counterparty_count;
   const kpiLabel = selectedMonth !== null ? `${selectedMonth}월 매출액` : "매출액";
 
   return (
