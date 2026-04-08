@@ -72,8 +72,8 @@ export const fetchPLAccount = (f: FilterState) =>
 export const fetchPLTrendByAccount = (f: FilterState) =>
   get("/api/pl/trend_by_account", { base_ym: f.baseYm });
 
-export const fetchPLAccountDetail = (f: FilterState, mgmt_acct: string) =>
-  get("/api/pl/account_detail", { base_ym: f.baseYm, period_type: f.periodType, mgmt_acct });
+export const fetchPLAccountDetail = (f: FilterState, mgmt_acct: string, base_ym_override?: string, period_type_override?: string) =>
+  get("/api/pl/account_detail", { base_ym: base_ym_override ?? f.baseYm, period_type: period_type_override ?? f.periodType, mgmt_acct });
 
 export const fetchPLSales = (f: FilterState) =>
   get("/api/pl/sales", { base_ym: f.baseYm, period_type: f.periodType });
@@ -84,8 +84,8 @@ export const fetchPLSalesKPI = (f: FilterState) =>
 export const fetchPLSalesTrend = (f: FilterState) =>
   get("/api/pl/sales/trend", { base_ym: f.baseYm });
 
-export const fetchPLSalesTopDonut = (f: FilterState, top_n: number) =>
-  get("/api/pl/sales/top_donut", { base_ym: f.baseYm, period_type: f.periodType, top_n });
+export const fetchPLSalesTopDonut = (f: FilterState, top_n: number, base_ym_override?: string, period_type_override?: string) =>
+  get("/api/pl/sales/top_donut", { base_ym: base_ym_override ?? f.baseYm, period_type: period_type_override ?? f.periodType, top_n });
 
 export const fetchPLSalesTopChange = (f: FilterState, top_n: number) =>
   get("/api/pl/sales/top_change", { base_ym: f.baseYm, period_type: f.periodType, top_n });
@@ -98,6 +98,9 @@ export const fetchPLSalesCounterpartyTrend = (f: FilterState, cp1?: string, cp2?
 
 export const fetchPLSalesVouchers = (f: FilterState) =>
   get("/api/pl/sales/vouchers", { base_ym: f.baseYm, period_type: f.periodType });
+
+export const fetchPLSalesBarRace = (f: FilterState, top_n: number) =>
+  get("/api/pl/sales/bar_race", { base_ym: f.baseYm, top_n });
 
 export const fetchPLItems = (f: FilterState) =>
   get("/api/pl/items", { base_ym: f.baseYm, period_type: f.periodType });
