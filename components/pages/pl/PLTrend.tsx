@@ -39,7 +39,7 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
 }) {
   const option = {
     animation: false,
-    grid: { top: expanded ? 16 : 4, bottom: expanded ? 24 : 4, left: expanded ? 40 : 4, right: expanded ? 16 : 4 },
+    grid: { top: expanded ? 16 : 4, bottom: expanded ? 44 : 4, left: expanded ? 40 : 4, right: expanded ? 16 : 4 },
     xAxis: {
       type: "category" as const,
       data: months,
@@ -113,7 +113,13 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
         return `<span style="font-size:10px;color:#999">${mo}</span><br/>${lines.join("<br/>")}`;
       },
     },
-    legend: { show: false },
+    legend: expanded ? {
+      show: true,
+      bottom: 0,
+      left: "center",
+      textStyle: { color: "#888", fontSize: 10 },
+      itemWidth: 16, itemHeight: 8,
+    } : { show: false },
   };
   return (
     <ReactECharts
