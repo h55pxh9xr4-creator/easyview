@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchBSAccount, fetchBSDisclosureDetail, BSDisclosureDetail } from "@/lib/api";
 import {
@@ -36,7 +36,6 @@ export default function BSAccount() {
   const [detail,   setDetail]   = useState<BSDisclosureDetail | null>(null);
   const [loadingD, setLoadingD] = useState(false);
   const [detailErr, setDetailErr] = useState(false);
-  const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setRows(null); setSelected(null); setDetail(null);
@@ -51,10 +50,6 @@ export default function BSAccount() {
       .catch(() => { setLoadingD(false); setDetailErr(true); });
   }, [selected, filter.baseYm]);
 
-  useEffect(() => {
-    if (detail && detailRef.current)
-      detailRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [detail]);
 
   if (!rows) return (
     <div className="wrap" style={{ padding: 40, color: "#aaa", display: "flex", gap: 8, alignItems: "center" }}>
@@ -185,8 +180,7 @@ export default function BSAccount() {
 
         {/* ── 우측 상세 패널 ───────────────────────────────────── */}
         {selected && (
-          <div ref={detailRef}
-            style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
 
             {loadingD && (
               <div className="card" style={{ padding: 40, color: "#aaa", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -206,22 +200,16 @@ export default function BSAccount() {
                 {/* 요약카드 */}
                 <div className="card">
                   <div className="card-title" style={{ marginBottom: 12 }}>{selected}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
                     {[
-                      { label: "기말금액",  value: selEnd,  color: "#2C2C2C" },
-                      { label: "기초금액",  value: selOpn,  color: "#2C2C2C" },
-                      { label: "증감액",    value: selChg,  color: selChg >= 0 ? "#EF4444" : "#2563EB" },
-                    ].map(({ label, value, color }) => (
+                      { label: "기말금액", display: <>{fmtB(selEnd)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span></>, color: "#2C2C2C" },
+                      { label: "기초금액", display: <>{fmtB(selOpn)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span></>, color: "#2C2C2C" },
+                      { label: "증감액",   display: <>{fmtB(selChg)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span></>, color: selChg >= 0 ? "#EF4444" : "#2563EB" },
+                      { label: "증감률",   display: <>{fmtChg(selChgPct)}</>, color: selChgPct >= 0 ? "#EF4444" : "#2563EB" },
+                    ].map(({ label, display, color }) => (
                       <div key={label} style={{ background: "#FAFAFA", borderRadius: 8, padding: "10px 14px", textAlign: "center" }}>
                         <div style={{ fontSize: 10, color: "#999", marginBottom: 4 }}>{label}</div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color }}>
-                          {fmtB(value)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span>
-                        </div>
-                        {label === "기말금액" && (
-                          <div style={{ fontSize: 10, marginTop: 3, color: selChgPct >= 0 ? "#EF4444" : "#2563EB" }}>
-                            {fmtChg(selChgPct)}
-                          </div>
-                        )}
+                        <div style={{ fontSize: 16, fontWeight: 800, color }}>{display}</div>
                       </div>
                     ))}
                   </div>
