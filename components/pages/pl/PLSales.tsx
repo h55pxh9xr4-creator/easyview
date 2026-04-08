@@ -525,18 +525,17 @@ export default function PLSales() {
                       itemStyle: { color: selectedMonth === i + 1 ? "#2563EB" : ORANGE, borderRadius: [3, 3, 0, 0] },
                     })),
                     markPoint: {
-                      symbolSize: 40,
-                      label: { fontSize: 9, color: "#fff" },
+                      symbol: "pin",
+                      symbolSize: 52,
+                      itemStyle: { color: ORANGE },
+                      label: {
+                        fontSize: 10, color: "#fff", fontWeight: 700,
+                        formatter: (p: {value: number}) => `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+                      },
                       data: [
                         { type: "max", name: "최대" },
                         { type: "min", name: "최소" },
                       ],
-                    },
-                    markLine: {
-                      silent: true,
-                      lineStyle: { color: ORANGE, type: "dashed", width: 1 },
-                      label: { formatter: (p: {value: number}) => `평균 ${p.value.toLocaleString("ko-KR")}`, fontSize: 9, color: ORANGE },
-                      data: [{ type: "average", name: "평균" }],
                     },
                   },
                   {
@@ -545,21 +544,20 @@ export default function PLSales() {
                     barMaxWidth: 24,
                     data: priData.map(v => ({
                       value: v,
-                      itemStyle: { color: "rgba(180,180,180,0.4)", borderRadius: [3, 3, 0, 0] },
+                      itemStyle: { color: "rgba(180,180,180,0.45)", borderRadius: [3, 3, 0, 0] },
                     })),
                     markPoint: {
-                      symbolSize: 40,
-                      label: { fontSize: 9, color: "#fff" },
+                      symbol: "pin",
+                      symbolSize: 52,
+                      itemStyle: { color: "#999" },
+                      label: {
+                        fontSize: 10, color: "#fff", fontWeight: 700,
+                        formatter: (p: {value: number}) => `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+                      },
                       data: [
                         { type: "max", name: "최대" },
                         { type: "min", name: "최소" },
                       ],
-                    },
-                    markLine: {
-                      silent: true,
-                      lineStyle: { color: "#aaa", type: "dashed", width: 1 },
-                      label: { formatter: (p: {value: number}) => `평균 ${p.value.toLocaleString("ko-KR")}`, fontSize: 9, color: "#aaa" },
-                      data: [{ type: "average", name: "평균" }],
                     },
                   },
                 ],
