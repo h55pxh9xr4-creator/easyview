@@ -89,7 +89,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
   );
 }
 
-export default function Summary() {
+export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
   const filter = useFilter();
   const [kpi,        setKpi]        = useState<KPIData | null>(null);
   const [top3,       setTop3]       = useState<Top3Data | null>(null);
@@ -332,14 +332,20 @@ export default function Summary() {
         <div className="card-title" style={{ marginBottom: 10 }}>시나리오 전표수</div>
         <div className="vc-row">
           {[
-            { key: "sc1", label: "동일금액 중복" },
-            { key: "sc2", label: "현금지급 後 부채인식" },
-            { key: "sc3", label: "주말현금지급" },
-            { key: "sc4", label: "고액현금지급" },
-            { key: "sc5", label: "현금지급 및 비용인식" },
-            { key: "sc6", label: "희소 거래처" },
-          ].map(({ key, label }) => (
-            <div key={key} className="vc">
+            { key: "sc1", label: "동일금액 중복 전표",           sub: "sc-dup",  tab: "sc" },
+            { key: "sc2", label: "현금지급 後 부채인식",           sub: "sc-cash", tab: "sc" },
+            { key: "sc3", label: "주말 현금지급",                  sub: "sc-wknd", tab: "sc" },
+            { key: "sc4", label: "고액 현금지급",                  sub: "sc-big",  tab: "sc" },
+            { key: "sc5", label: "현금지급·비용인식 동시 발생",   sub: "sc-sc5",  tab: "sc" },
+            { key: "sc6", label: "Seldom Used Customer",           sub: "sc-sc6",  tab: "sc" },
+          ].map(({ key, label, sub, tab }) => (
+            <div
+              key={key} className="vc"
+              onClick={() => onNavigate?.(tab, sub, label)}
+              style={{ cursor: "pointer", transition: "box-shadow .15s" }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(232,119,34,.18)")}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = "")}
+            >
               <div className="vc-lbl">{label}</div>
               <div className="vc-val">{scCount[key]}</div>
               <div className="vc-unit">건</div>

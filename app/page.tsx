@@ -64,7 +64,7 @@ export default function Page() {
       <div className="ptb">
         <span className="ptb-sub">{pageLabel}</span>
       </div>
-      <ActivePage />
+      <ActivePage onNavigate={handleNavigate} />
     </>
   );
 }
