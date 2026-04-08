@@ -113,6 +113,17 @@ tbody td:first-child{text-align:left;font-weight:600;color:#2C2C2C}
 .vc-lbl{font-size:11px;color:#9fa1a4;line-height:1.5;margin-bottom:8px;min-height:0;font-weight:500}
 .vc-val{font-size:28px;font-weight:800;color:#E87722;letter-spacing:-1px;line-height:1}
 .vc-unit{font-size:11px;color:#bbb;margin-top:3px}
+.vc-link{cursor:pointer;position:relative;overflow:hidden;transition:box-shadow .18s}
+.vc-link:hover{box-shadow:0 4px 14px rgba(232,119,34,.22)}
+.vc-hover-badge{
+  position:absolute;top:-28px;left:0;right:0;
+  background:rgba(232,119,34,.92);color:#fff;
+  font-size:11px;font-weight:700;text-align:center;
+  padding:5px 0;
+  transition:top .2s ease;
+  pointer-events:none;
+}
+.vc-link:hover .vc-hover-badge{top:0}
 
 /* ── Chart containers ── */
 .chart-box{position:relative;height:200px}

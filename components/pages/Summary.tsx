@@ -340,12 +340,10 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
             { key: "sc6", label: "Seldom Used Customer",           sub: "sc-sc6",  tab: "sc" },
           ].map(({ key, label, sub, tab }) => (
             <div
-              key={key} className="vc"
+              key={key} className="vc vc-link"
               onClick={() => onNavigate?.(tab, sub, label)}
-              style={{ cursor: "pointer", transition: "box-shadow .15s" }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(232,119,34,.18)")}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = "")}
             >
+              <div className="vc-hover-badge">자세히 보기 →</div>
               <div className="vc-lbl">{label}</div>
               <div className="vc-val">{scCount[key]}</div>
               <div className="vc-unit">건</div>
