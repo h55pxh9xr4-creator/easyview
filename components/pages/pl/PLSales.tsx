@@ -345,6 +345,23 @@ export default function PLSales() {
   return (
     <div className="wrap">
 
+      {/* ── 상단 요약 KPI 행 ─────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+        {[
+          { label: "당기금액", value: rev.current.toLocaleString("ko-KR"), unit: "원", color: "#222" },
+          { label: "전기금액", value: rev.prior.toLocaleString("ko-KR"), unit: "원", color: "#888" },
+          { label: "증감액",   value: (rev.change >= 0 ? "+" : "") + Math.round(rev.change).toLocaleString("ko-KR"), unit: "원", color: rev.change >= 0 ? "#EF4444" : "#2563EB" },
+          { label: "증감률",   value: (rev.change_pct >= 0 ? "+" : "") + (rev.change_pct * 100).toFixed(1), unit: "%", color: rev.change_pct >= 0 ? "#EF4444" : "#2563EB" },
+        ].map(({ label, value, unit, color }) => (
+          <div key={label} className="card" style={{ flex: 1, padding: "14px 20px" }}>
+            <div style={{ fontSize: 11, color: "#aaa", marginBottom: 6 }}>{label}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color, fontFamily: "monospace", letterSpacing: "-0.5px" }}>
+              {value}<span style={{ fontSize: 12, fontWeight: 400, marginLeft: 3, color }}>{unit}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* ── 전체 레이아웃: 2열 그리드 2행 ───────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gridTemplateRows: "auto auto", gap: 14 }}>
 
