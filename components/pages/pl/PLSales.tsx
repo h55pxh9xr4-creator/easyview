@@ -476,54 +476,110 @@ export default function PLSales() {
               </div>
             )}
           </div>
-          <div style={{ height: 200, cursor: "pointer" }}>
-            <Bar
-              data={{
-                labels: trendLabels,
-                datasets: selectedCp && selectedCpTrend ? [
+          <div style={{ height: 220, cursor: "pointer" }}>
+            {(() => {
+              const curData = selectedCp && selectedCpTrend
+                ? trendLabels.map((_, i) => {
+                    const row = selectedCpTrend.cur.find(r => r.month === i + 1);
+                    return row ? Math.round(row.amount / 1_000_000) : 0;
+                  })
+                : trendCur;
+              const priData = selectedCp && selectedCpTrend
+                ? trendLabels.map((_, i) => {
+                    const row = selectedCpTrend.pri.find(r => r.month === i + 1);
+                    return row ? Math.round(row.amount / 1_000_000) : 0;
+                  })
+                : trendPri;
+
+              const trendOption = {
+                grid: { top: 36, bottom: 24, left: 8, right: 16, containLabel: true },
+                tooltip: {
+                  trigger: "axis",
+                  formatter: (params: {seriesName: string; value: number}[]) =>
+                    params.map(p => `${p.seriesName}: ${p.value.toLocaleString("ko-KR")}백만`).join("<br/>"),
+                },
+                legend: {
+                  data: ["당기", "전기"],
+                  textStyle: { color: "#888", fontSize: 10 },
+                  itemWidth: 10, itemHeight: 10,
+                },
+                xAxis: {
+                  type: "category",
+                  data: trendLabels,
+                  axisLabel: { color: "#bbb", fontSize: 10 },
+                  axisTick: { show: false },
+                  axisLine: { lineStyle: { color: "#eee" } },
+                },
+                yAxis: {
+                  type: "value",
+                  axisLabel: { color: "#bbb", fontSize: 10 },
+                  splitLine: { lineStyle: { color: "#f0f0f0" } },
+                },
+                series: [
                   {
-                    label: "당기",
-                    data: trendLabels.map((_, i) => {
-                      const row = selectedCpTrend.cur.find(r => r.month === i + 1);
-                      return row ? Math.round(row.amount / 1_000_000) : 0;
-                    }),
-                    backgroundColor: trendLabels.map((_, i) => selectedMonth === i + 1 ? "#2563EB" : ORANGE),
-                    barPercentage: 0.6, categoryPercentage: 0.7,
+                    name: "당기",
+                    type: "bar",
+                    barMaxWidth: 24,
+                    data: curData.map((v, i) => ({
+                      value: v,
+                      itemStyle: { color: selectedMonth === i + 1 ? "#2563EB" : ORANGE, borderRadius: [3, 3, 0, 0] },
+                    })),
+                    markPoint: {
+                      symbolSize: 40,
+                      label: { fontSize: 9, color: "#fff" },
+                      data: [
+                        { type: "max", name: "최대" },
+                        { type: "min", name: "최소" },
+                      ],
+                    },
+                    markLine: {
+                      silent: true,
+                      lineStyle: { color: ORANGE, type: "dashed", width: 1 },
+                      label: { formatter: (p: {value: number}) => `평균 ${p.value.toLocaleString("ko-KR")}`, fontSize: 9, color: ORANGE },
+                      data: [{ type: "average", name: "평균" }],
+                    },
                   },
                   {
-                    label: "전기",
-                    data: trendLabels.map((_, i) => {
-                      const row = selectedCpTrend.pri.find(r => r.month === i + 1);
-                      return row ? Math.round(row.amount / 1_000_000) : 0;
-                    }),
-                    backgroundColor: GRAY, barPercentage: 0.6, categoryPercentage: 0.7,
+                    name: "전기",
+                    type: "bar",
+                    barMaxWidth: 24,
+                    data: priData.map(v => ({
+                      value: v,
+                      itemStyle: { color: "rgba(180,180,180,0.4)", borderRadius: [3, 3, 0, 0] },
+                    })),
+                    markPoint: {
+                      symbolSize: 40,
+                      label: { fontSize: 9, color: "#fff" },
+                      data: [
+                        { type: "max", name: "최대" },
+                        { type: "min", name: "최소" },
+                      ],
+                    },
+                    markLine: {
+                      silent: true,
+                      lineStyle: { color: "#aaa", type: "dashed", width: 1 },
+                      label: { formatter: (p: {value: number}) => `평균 ${p.value.toLocaleString("ko-KR")}`, fontSize: 9, color: "#aaa" },
+                      data: [{ type: "average", name: "평균" }],
+                    },
                   },
-                ] : [
-                  {
-                    label: "당기", data: trendCur,
-                    backgroundColor: trendLabels.map((_, i) => selectedMonth === i + 1 ? "#2563EB" : ORANGE),
-                    barPercentage: 0.6, categoryPercentage: 0.7,
-                  },
-                  { label: "전기", data: trendPri, backgroundColor: GRAY, barPercentage: 0.6, categoryPercentage: 0.7 },
                 ],
-              }}
-              options={{
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                  legend: { labels: { color: "#888", font: { size: 10 }, boxWidth: 8 } },
-                  tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toLocaleString("ko-KR")}백만` } },
-                },
-                scales: {
-                  x: { ticks: { color: "#bbb", font: { size: 10 } }, grid: { display: false } },
-                  y: { ticks: { color: "#bbb", font: { size: 10 } }, grid: { color: "#f0f0f0" } },
-                },
-                onClick(_evt, elements) {
-                  if (!elements || elements.length === 0) { setSelectedMonth(null); return; }
-                  const mo = elements[0].index + 1;
-                  setSelectedMonth(prev => prev === mo ? null : mo);
-                },
-              }}
-            />
+              };
+
+              return (
+                <ReactECharts
+                  option={trendOption}
+                  style={{ height: "100%" }}
+                  notMerge={true}
+                  onEvents={{
+                    click: (params: { componentType: string; dataIndex: number }) => {
+                      if (params.componentType !== "series") { setSelectedMonth(null); return; }
+                      const mo = params.dataIndex + 1;
+                      setSelectedMonth(prev => prev === mo ? null : mo);
+                    },
+                  }}
+                />
+              );
+            })()}
           </div>
         </div>
 
