@@ -87,8 +87,8 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
         data: pri,
         smooth: true,
         symbol: "none",
-        lineStyle: { color: "#ccc", width: 1, type: "dashed" as const },
-        itemStyle: { color: "#ccc" },
+        lineStyle: { color: "#999", width: 1.5, type: "dashed" as const },
+        itemStyle: { color: "#999" },
       },
     ],
     tooltip: expanded ? {
@@ -423,7 +423,7 @@ export default function PLTrend() {
         {detail && (() => {
           const selAcct = accounts.find(a => a.mgmt_acct === detail.mgmt_acct);
           const curArr = allMonths.map(m => selAcct?.cur[m] ?? 0);
-          const priArr = allMonths.map(m => selAcct?.pri[m] ?? 0);
+          const priArr = allMonths.map(m => selAcct?.pri[toPriYm(m)] ?? 0);
 
           const kpiCur = chartMonthIdx != null ? curArr[chartMonthIdx] : curArr.reduce((s, v) => s + v, 0);
           const kpiPri = chartMonthIdx != null ? priArr[chartMonthIdx] : priArr.reduce((s, v) => s + v, 0);
