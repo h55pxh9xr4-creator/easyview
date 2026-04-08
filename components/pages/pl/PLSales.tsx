@@ -500,6 +500,8 @@ export default function PLSales() {
                 },
                 legend: {
                   data: ["당기", "전기"],
+                  top: 4,
+                  left: "center",
                   textStyle: { color: "#888", fontSize: 10 },
                   itemWidth: 10, itemHeight: 10,
                 },
@@ -519,6 +521,7 @@ export default function PLSales() {
                   {
                     name: "당기",
                     type: "bar",
+                    color: ORANGE,
                     barMaxWidth: 24,
                     data: curData.map((v, i) => ({
                       value: v,
@@ -541,6 +544,7 @@ export default function PLSales() {
                   {
                     name: "전기",
                     type: "bar",
+                    color: "rgba(180,180,180,0.45)",
                     barMaxWidth: 24,
                     data: priData.map(v => ({
                       value: v,
