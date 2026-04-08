@@ -11,91 +11,18 @@ import {
 import ReactECharts from "echarts-for-react";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
-  BarController, LineController, DoughnutController,
-  BarElement, LineElement, PointElement, ArcElement,
-  Tooltip, Legend, Plugin,
+  BarController, LineController,
+  BarElement, LineElement, PointElement,
+  Tooltip, Legend,
 } from "chart.js";
-import { Bar, Doughnut, Line } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 
 ChartJS.register(
   CategoryScale, LinearScale,
-  BarController, LineController, DoughnutController,
-  BarElement, LineElement, PointElement, ArcElement,
+  BarController, LineController,
+  BarElement, LineElement, PointElement,
   Tooltip, Legend,
 );
-
-// ── 폴리라인 외부 라벨 플러그인 (PLAccount와 동일) ──────────────
-const MIN_PCT_LABEL = 2;
-const LINE_GAP = 14;
-
-const polylineLabelPlugin: Plugin<"doughnut"> = {
-  id: "polylineLabel",
-  afterDraw(chart) {
-    const { ctx } = chart;
-    const ds    = chart.data.datasets[0];
-    const meta  = chart.getDatasetMeta(0);
-    const total = (ds.data as number[]).reduce((s, v) => s + v, 0) || 1;
-    const colors = ds.backgroundColor as string[];
-    const labels = (chart.data.labels ?? []) as string[];
-
-    type Lbl = { i: number; pct: number; color: string; name: string;
-                 isRight: boolean; x1: number; y1: number;
-                 x2: number; y2: number; x3: number; y3: number; };
-
-    const all: Lbl[] = [];
-    meta.data.forEach((arc, i) => {
-      const val = (ds.data as number[])[i];
-      const pct = val / total * 100;
-      if (pct < MIN_PCT_LABEL) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const a   = arc as any;
-      const mid = (a.startAngle + a.endAngle) / 2;
-      const r   = a.outerRadius;
-      const cx  = a.x, cy = a.y;
-      const isRight = Math.cos(mid) >= 0;
-      const x1 = cx + Math.cos(mid) * (r + 3);
-      const y1 = cy + Math.sin(mid) * (r + 3);
-      const x2 = cx + Math.cos(mid) * (r + 18);
-      const y2 = cy + Math.sin(mid) * (r + 18);
-      const x3 = x2 + (isRight ? 16 : -16);
-      all.push({ i, pct, color: colors[i], name: labels[i] ?? "",
-                 isRight, x1, y1, x2, y2, x3, y3: y2 });
-    });
-
-    const settle = (group: Lbl[]) => {
-      group.sort((a, b) => a.y3 - b.y3);
-      for (let k = 1; k < group.length; k++) {
-        if (group[k].y3 - group[k-1].y3 < LINE_GAP)
-          group[k].y3 = group[k-1].y3 + LINE_GAP;
-      }
-      for (let k = group.length - 2; k >= 0; k--) {
-        if (group[k+1].y3 - group[k].y3 < LINE_GAP)
-          group[k].y3 = group[k+1].y3 - LINE_GAP;
-      }
-    };
-    settle(all.filter(l =>  l.isRight));
-    settle(all.filter(l => !l.isRight));
-
-    ctx.save();
-    all.forEach(lbl => {
-      const short = lbl.name.length > 9 ? lbl.name.slice(0, 9) + "…" : lbl.name;
-      const text  = `${short} ${lbl.pct.toFixed(1)}%`;
-      ctx.beginPath();
-      ctx.moveTo(lbl.x1, lbl.y1);
-      ctx.lineTo(lbl.x2, lbl.y2);
-      ctx.lineTo(lbl.x3, lbl.y3);
-      ctx.strokeStyle = lbl.color;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle    = "#333";
-      ctx.font         = "10px Inter, sans-serif";
-      ctx.textAlign    = lbl.isRight ? "left" : "right";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, lbl.x3 + (lbl.isRight ? 3 : -3), lbl.y3);
-    });
-    ctx.restore();
-  },
-};
 
 const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmtM   = (n: number) => Math.round(n / 10_000).toLocaleString("ko-KR");
@@ -375,16 +302,6 @@ export default function PLSales() {
   });
 
   // ── 도넛 차트 데이터 ─────────────────────────────────────────
-  const donutChartData = donut ? {
-    labels: donut.items.map(x => x.counterparty),
-    datasets: [{
-      data: donut.items.map(x => Math.round(x.amount / 1_000_000)),
-      backgroundColor: DONUT_COLORS.slice(0, donut.items.length),
-      borderWidth: 1,
-      borderColor: "#fff",
-    }],
-  } : null;
-
   // ── 거래처별 비교 차트 ───────────────────────────────────────
   const cpLabels = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
   const cpChartData = cpTrend ? {
@@ -603,55 +520,66 @@ export default function PLSales() {
               {[5, 10, 15, 20].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
-          {donut && donutChartData && (() => {
-            return (
-              <>
-                <Doughnut
-                  data={{
-                    ...donutChartData,
-                    datasets: [{
-                      ...donutChartData.datasets[0],
-                      borderWidth: donutChartData.datasets[0].data.map((_, i) =>
-                        donut.items[i]?.counterparty === selectedCp ? 3 : 1
-                      ),
-                      borderColor: donutChartData.datasets[0].data.map((_, i) =>
-                        donut.items[i]?.counterparty === selectedCp ? "#2563EB" : "#fff"
-                      ),
-                    }],
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    animation: false,
-                    cutout: "50%",
-                    layout: { padding: 55 },
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${donut.items[ctx.dataIndex]?.pct.toFixed(1) ?? 0}%` } },
+          {donut && (
+            <ReactECharts
+              option={{
+                tooltip: {
+                  trigger: "item",
+                  formatter: (p: { name: string; value: number; percent: number }) =>
+                    `${p.name}<br/>${fmtB(p.value * 1_000_000)}백만 (${p.percent.toFixed(1)}%)`,
+                },
+                legend: {
+                  top: "4%",
+                  left: "center",
+                  textStyle: { fontSize: 10, color: "#888" },
+                  itemWidth: 10, itemHeight: 10,
+                  formatter: (name: string) => name.length > 10 ? name.slice(0, 10) + "…" : name,
+                },
+                series: [{
+                  name: "거래처 비중",
+                  type: "pie",
+                  radius: ["38%", "68%"],
+                  center: ["50%", "55%"],
+                  avoidLabelOverlap: false,
+                  itemStyle: {
+                    borderRadius: 6,
+                    borderColor: "#fff",
+                    borderWidth: 2,
+                  },
+                  label: { show: false, position: "center" },
+                  emphasis: {
+                    label: {
+                      show: true,
+                      fontSize: 14,
+                      fontWeight: "bold",
+                      formatter: (p: { name: string; percent: number }) =>
+                        `${p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name}\n${p.percent.toFixed(1)}%`,
                     },
-                    onClick(_evt, elements) {
-                      if (!elements || elements.length === 0) return;
-                      const cp = donut.items[elements[0].index]?.counterparty;
-                      if (!cp || cp === "기타") return;
-                      setSelectedCp(prev => prev === cp ? null : cp);
+                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.18)" },
+                  },
+                  labelLine: { show: false },
+                  data: donut.items.map((item, i) => ({
+                    value: Math.round(item.amount / 1_000_000),
+                    name: item.counterparty,
+                    itemStyle: {
+                      color: item.counterparty === selectedCp
+                        ? "#2563EB"
+                        : DONUT_COLORS[i % DONUT_COLORS.length],
+                      borderWidth: item.counterparty === selectedCp ? 3 : 2,
                     },
-                  }}
-                  style={{ cursor: "pointer" }}
-                  plugins={[polylineLabelPlugin]}
-                />
-                <div style={{ display: "flex", gap: 16, marginTop: 8, justifyContent: "center" }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 10, color: "#999" }}>매출액</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: ORANGE }}>{fmtB(donut.top_total)}백만</div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 10, color: "#999" }}>비중</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: ORANGE }}>{donut.top_pct.toFixed(2)}%</div>
-                  </div>
-                </div>
-              </>
-            );
-          })()}
+                  })),
+                }],
+              }}
+              style={{ height: 300, cursor: "pointer" }}
+              notMerge={true}
+              onEvents={{
+                click: (p: { name: string }) => {
+                  if (!p.name || p.name === "기타") return;
+                  setSelectedCp(prev => prev === p.name ? null : p.name);
+                },
+              }}
+            />
+          )}
         </div>
 
         {/* [2,2] 거래처 매출 순위 (월 클릭 연동 Bar Race) */}
