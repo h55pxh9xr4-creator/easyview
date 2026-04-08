@@ -106,7 +106,7 @@ const absFmtB = (n: number) => `${sign(n)}${fmtB(Math.abs(n))}백만`;
 const ORANGE = "#E87722";
 const ORANGE_L = "rgba(232,119,34,0.15)";
 const GRAY = "rgba(180,180,180,0.4)";
-const RED = "#c0392b";
+const RED = "#EF4444";
 const RED_L = "rgba(192,57,43,0.15)";
 
 const DONUT_COLORS = [

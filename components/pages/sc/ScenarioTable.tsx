@@ -20,11 +20,11 @@ export default function ScenarioTable({ title, desc, rows, extraCols = [] }: Pro
 
   return (
     <div className="wrap">
-      <div style={{ marginBottom: 12, padding: "10px 14px", background: "#1e1e2e", borderRadius: 6, borderLeft: "3px solid #ffb74d" }}>
-        <div style={{ fontWeight: 700, color: "#ffb74d", marginBottom: 4 }}>{title}</div>
-        <div style={{ fontSize: 13, color: "#aaa" }}>{desc}</div>
-        <div style={{ fontSize: 13, color: "#ccc", marginTop: 6 }}>
-          탐지 건수: <strong style={{ color: "#4fc3f7" }}>{rows.length.toLocaleString()}건</strong>
+      <div className="info-note" style={{ marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, color: "#E87722", marginBottom: 4 }}>{title}</div>
+        <div style={{ fontSize: 13, color: "#666" }}>{desc}</div>
+        <div style={{ fontSize: 13, color: "#555", marginTop: 6 }}>
+          탐지 건수: <strong style={{ color: "#E87722" }}>{rows.length.toLocaleString()}건</strong>
         </div>
       </div>
 
@@ -49,9 +49,9 @@ export default function ScenarioTable({ title, desc, rows, extraCols = [] }: Pro
                     <td>{r.account_name}</td>
                     <td>{r.counterparty}</td>
                     <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</td>
-                    <td style={{ color: r.dr_cr === "차변" ? "#4fc3f7" : "#ef9a9a" }}>{r.dr_cr}</td>
+                    <td style={{ color: r.dr_cr === "차변" ? "#2563EB" : "#EF4444", fontWeight: 600 }}>{r.dr_cr}</td>
                     <td>{fmt(r.amount)}</td>
-                    {extraCols.map((c) => <td key={c.key} style={{ color: "#ffb74d" }}>{String(r[c.key] ?? "")}</td>)}
+                    {extraCols.map((c) => <td key={c.key} style={{ color: "#E87722", fontWeight: 600 }}>{String(r[c.key] ?? "")}</td>)}
                   </tr>
                 ))}
               </tbody>

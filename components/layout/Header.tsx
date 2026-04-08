@@ -35,12 +35,12 @@ const NAV: NavItem[] = [
   {
     tab: "sc", label: "시나리오분석",
     sub: [
-      { id: "sc-dup",  label: "시나리오1" },
-      { id: "sc-cash", label: "시나리오2" },
-      { id: "sc-wknd", label: "시나리오3" },
-      { id: "sc-big",  label: "시나리오4" },
-      { id: "sc-sc5",  label: "시나리오5" },
-      { id: "sc-sc6",  label: "시나리오6" },
+      { id: "sc-dup",  label: "동일금액 중복 전표" },
+      { id: "sc-cash", label: "현금지급 後 부채인식" },
+      { id: "sc-wknd", label: "주말 현금지급" },
+      { id: "sc-big",  label: "고액 현금지급" },
+      { id: "sc-sc5",  label: "현금지급·비용인식 동시 발생" },
+      { id: "sc-sc6",  label: "Seldom Used Customer" },
     ],
   },
 ];
@@ -54,7 +54,10 @@ interface Props {
 export default function Header({ activeTab, activeSub, onNavigate }: Props) {
   return (
     <header className="hdr">
-      <div className="logo"><em>I</em> Easy View</div>
+      <button className="logo" onClick={() => onNavigate("summary", "summary", "Summary")}>
+        <img src="/easyview/logo2.png" alt="PwC" className="logo-img" />
+        <span className="logo-text">Easy<span>View</span></span>
+      </button>
       <nav className="main-tabs">
         <button
           className={`main-tab${activeTab === "summary" ? " active" : ""}`}

@@ -4,25 +4,58 @@ import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import {
   fetchKPI, fetchTop3, fetchIndicators,
-  fetchPLTable, fetchBSTable, fetchScenarioCount,
+  fetchPLTable, fetchBSTable, fetchScenarioCount, fetchPLTrend, fetchBSTrend,
   KPIData, Top3Data, IndicatorData, PLTableRow, BSTableRow, ScenarioCountData,
 } from "@/lib/api";
 
-// ── 숫자 포맷 헬퍼 ──────────────────────────────────────────
-const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
-const fmtB = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR"); // 백만 단위
+const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
+const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
-const arrow = (p: number) => p >= 0 ? "up" : "dn";
-const arrowTxt = (p: number) => p >= 0 ? `▲ ${Math.abs(p * 100).toFixed(1)}%` : `▼ ${Math.abs(p * 100).toFixed(1)}%`;
+const arrow  = (p: number) => p >= 0 ? "up" : "dn";
+const arrowTxt = (p: number) => p >= 0
+  ? `▲ ${Math.abs(p * 100).toFixed(1)}%`
+  : `▼ ${Math.abs(p * 100).toFixed(1)}%`;
+
+// ── SVG Sparkline ─────────────────────────────────────────────
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const W = 200, H = 52;
+  const pts = data.map((v, i) => [
+    (i / (data.length - 1)) * W,
+    H - 6 - ((v - min) / range) * (H - 14),
+  ]);
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const area = `${line} L${W},${H} L0,${H} Z`;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+      style={{ width: "100%", height: 52, display: "block", marginTop: 10 }}>
+      <defs>
+        <linearGradient id={`sg-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#sg-${color.replace("#","")})`} />
+      <path d={line} stroke={color} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export default function Summary() {
   const filter = useFilter();
-  const [kpi, setKpi] = useState<KPIData | null>(null);
-  const [top3, setTop3] = useState<Top3Data | null>(null);
+  const [kpi,        setKpi]        = useState<KPIData | null>(null);
+  const [top3,       setTop3]       = useState<Top3Data | null>(null);
   const [indicators, setIndicators] = useState<IndicatorData | null>(null);
-  const [plTable, setPlTable] = useState<PLTableRow[] | null>(null);
-  const [bsTable, setBsTable] = useState<BSTableRow[] | null>(null);
-  const [scCount, setScCount] = useState<ScenarioCountData | null>(null);
+  const [plTable,    setPlTable]    = useState<PLTableRow[] | null>(null);
+  const [bsTable,    setBsTable]    = useState<BSTableRow[] | null>(null);
+  const [scCount,    setScCount]    = useState<ScenarioCountData | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [plTrend,    setPlTrend]    = useState<any[] | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [bsTrend,    setBsTrend]    = useState<any[] | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -32,6 +65,10 @@ export default function Summary() {
       fetchPLTable(filter).then(setPlTable),
       fetchBSTable(filter).then(setBsTable),
       fetchScenarioCount(filter).then(setScCount),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fetchPLTrend({ ...filter, periodType: "monthly" }).then(d => setPlTrend(d as any[])),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fetchBSTrend(filter).then(d => setBsTrend(d as any[])),
     ]).catch(console.error);
   }, [filter.baseYm, filter.periodType, filter.compareTarget, filter.bsBase]);
 
@@ -39,11 +76,23 @@ export default function Summary() {
     return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
   }
 
+  // Sparkline 데이터 추출 (현재연도만)
+  const year = filter.baseYm.split("-")[0];
+  const curPl = (plTrend ?? []).filter((r: { is_current_year: boolean }) => r.is_current_year);
+  const curBs = (bsTrend ?? []).filter((r: { year_month: string }) => r.year_month.startsWith(year));
+
+  const sparkData: Record<string, number[]> = {
+    revenue:          curPl.map((r: { revenue: number }) => r.revenue),
+    operating_income: curPl.map((r: { operating_income: number }) => r.operating_income),
+    asset:            curBs.map((r: { 자산?: number }) => r.자산 ?? 0),
+    liability:        curBs.map((r: { 부채?: number }) => r.부채 ?? 0),
+  };
+
   const kpiItems = [
-    { key: "revenue",          label: "매출액" },
-    { key: "operating_income", label: "영업이익" },
-    { key: "asset",            label: "자산" },
-    { key: "liability",        label: "부채" },
+    { key: "revenue",          label: "매출액",   color: "#E87722" },
+    { key: "operating_income", label: "영업이익", color: "#D5476E" },
+    { key: "asset",            label: "자산",     color: "#E87722" },
+    { key: "liability",        label: "부채",     color: "#6D4C41" },
   ];
 
   return (
@@ -51,15 +100,19 @@ export default function Summary() {
 
       {/* ── KPI Strip ── */}
       <div className="kpi-strip">
-        {kpiItems.map(({ key, label }) => {
+        {kpiItems.map(({ key, label, color }) => {
           const d = kpi[key];
           return (
-            <div key={key} className="kpi">
+            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0 }}>
               <div className="kpi-lbl">{label}</div>
-              <div className="kpi-val">{fmtB(d.value)}<span className="u">백만</span></div>
-              <div className={`kpi-chg ${arrow(d.change_pct)}`}>
-                {arrowTxt(d.change_pct)} <span style={{ color: "#bbb", fontWeight: 400 }}>{d.vs}</span>
+              <div className="kpi-val" style={{ color }}>
+                {fmtB(d.value)}<span className="u">백만</span>
               </div>
+              <div className={`kpi-chg ${arrow(d.change_pct)}`}>
+                {arrowTxt(d.change_pct)}
+                <span style={{ color: "#bbb", fontWeight: 400, marginLeft: 4 }}>{d.vs}</span>
+              </div>
+              <Sparkline data={sparkData[key] ?? []} color={color} />
             </div>
           );
         })}
@@ -98,16 +151,31 @@ export default function Summary() {
         <div className="card">
           <div className="card-title">손익지표</div>
           <div className="ind-row">
-            <div className="ind-item"><div className="ind-lbl">매출총이익률</div><div className="ind-val c5">{fmtPct(indicators.pl.gross_profit_margin)}</div></div>
-            <div className="ind-item"><div className="ind-lbl">영업이익률</div><div className="ind-val c1">{fmtPct(indicators.pl.operating_margin)}</div></div>
-            <div className="ind-item"><div className="ind-lbl">당기손익률</div><div className="ind-val c2">{fmtPct(indicators.pl.net_margin)}</div></div>
+            <div className="ind-item">
+              <div className="ind-lbl">매출총이익률</div>
+              <div className="ind-val" style={{ color: "#E87722" }}>{fmtPct(indicators.pl.gross_profit_margin)}</div>
+            </div>
+            <div className="ind-item">
+              <div className="ind-lbl">영업이익률</div>
+              <div className="ind-val" style={{ color: "#D5476E" }}>{fmtPct(indicators.pl.operating_margin)}</div>
+            </div>
+            <div className="ind-item">
+              <div className="ind-lbl">당기손익률</div>
+              <div className="ind-val" style={{ color: "#6D4C41" }}>{fmtPct(indicators.pl.net_margin)}</div>
+            </div>
           </div>
         </div>
         <div className="card">
           <div className="card-title">유동성지표</div>
           <div className="ind-row">
-            <div className="ind-item"><div className="ind-lbl">부채비율</div><div className="ind-val c2">{fmtPct(indicators.bs.debt_ratio)}</div></div>
-            <div className="ind-item"><div className="ind-lbl">유동비율</div><div className="ind-val c4">{fmtPct(indicators.bs.current_ratio)}</div></div>
+            <div className="ind-item">
+              <div className="ind-lbl">부채비율</div>
+              <div className="ind-val" style={{ color: "#2563EB" }}>{fmtPct(indicators.bs.debt_ratio)}</div>
+            </div>
+            <div className="ind-item">
+              <div className="ind-lbl">유동비율</div>
+              <div className="ind-val" style={{ color: "#16A34A" }}>{fmtPct(indicators.bs.current_ratio)}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -125,7 +193,7 @@ export default function Summary() {
                     <td className={!row.is_subtotal ? "td-s1" : ""}>{row.account}</td>
                     <td>{fmt(row.current)}</td>
                     <td>{fmt(row.prior)}</td>
-                    <td className={`${row.change_pct >= 0 ? "up-t" : "dn-t"}`}>
+                    <td className={row.change_pct >= 0 ? "up-t" : "dn-t"}>
                       {row.change_pct >= 0 ? "▲" : "▼"}{Math.abs(row.change_pct * 100).toFixed(1)}%
                     </td>
                   </tr>
@@ -134,7 +202,6 @@ export default function Summary() {
             </table>
           </div>
         </div>
-
         <div className="card">
           <div className="card-title">재무항목</div>
           <div className="tbl-wrap">
@@ -146,7 +213,7 @@ export default function Summary() {
                     <td className={row.indent === 1 ? "td-s1" : ""}>{row.account}</td>
                     <td>{fmt(row.current)}</td>
                     <td>{fmt(row.prior)}</td>
-                    <td className={`${row.change_pct >= 0 ? "up-t" : "dn-t"}`}>
+                    <td className={row.change_pct >= 0 ? "up-t" : "dn-t"}>
                       {row.change_pct >= 0 ? "▲" : "▼"}{Math.abs(row.change_pct * 100).toFixed(1)}%
                     </td>
                   </tr>
@@ -159,7 +226,7 @@ export default function Summary() {
 
       {/* ── 시나리오 전표수 ── */}
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>시나리오 전표수</div>
+        <div className="card-title" style={{ marginBottom: 10 }}>시나리오 전표수</div>
         <div className="vc-row">
           {[
             { key: "sc1", label: "동일금액 중복" },

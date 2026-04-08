@@ -28,7 +28,7 @@ const GRAY   = "rgba(150,150,150,0.7)";
 
 const CAT_COLOR: Record<string, string> = {
   자산: "#E87722",
-  부채: "#DC2626",
+  부채: "#EF4444",
   자본: "#16A34A",
 };
 
@@ -83,7 +83,7 @@ function MiniAreaChart({ labels, datasets, height = 110, yFmt }: {
             tooltip: {
               callbacks: {
                 label: ctx => {
-                  const v = ctx.parsed.y;
+                  const v = ctx.parsed.y as number;
                   return ` ${ctx.dataset.label}: ${yFmt ? yFmt(v) : v.toLocaleString("ko-KR")}`;
                 },
               },

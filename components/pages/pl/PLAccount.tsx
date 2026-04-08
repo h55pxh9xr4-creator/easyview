@@ -107,7 +107,7 @@ interface Detail {
 
 const DONUT_COLORS = [
   "#E87722","#F5A623","#D5476E","#2563EB","#16A34A",
-  "#7C3AED","#0891B2","#DC2626","#78716C","#CA8A04",
+  "#7C3AED","#0891B2","#EF4444","#78716C","#CA8A04",
 ];
 
 // ── 상위 거래처 당기 비중 (도넛 + 폴리라인 라벨) ────────────────
@@ -364,7 +364,7 @@ export default function PLAccount() {
                     {[
                       { label: "당기금액", value: selCur, color: "#2C2C2C" },
                       { label: "전기금액", value: selPri, color: "#2C2C2C" },
-                      { label: "증감액",   value: selChg, color: selChg >= 0 ? "#c0392b" : "#2563EB" },
+                      { label: "증감액",   value: selChg, color: selChg >= 0 ? "#EF4444" : "#2563EB" },
                     ].map(({ label, value, color }) => (
                       <div key={label} style={{ background: "#F9F9F9", borderRadius: 6, padding: "10px 14px", textAlign: "center" }}>
                         <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4 }}>{label}</div>
@@ -411,7 +411,7 @@ export default function PLAccount() {
                                 <td>{v.voucher_no}</td>
                                 <td>{v.counterparty ?? "-"}</td>
                                 <td style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
-                                <td style={{ color: v.dr_cr === "차변" ? "#2563EB" : "#DC2626", fontWeight: 600 }}>{v.dr_cr}</td>
+                                <td style={{ color: v.dr_cr === "차변" ? "#2563EB" : "#EF4444", fontWeight: 600 }}>{v.dr_cr}</td>
                                 <td>{fmt(v.amount)}</td>
                               </tr>
                             ))}

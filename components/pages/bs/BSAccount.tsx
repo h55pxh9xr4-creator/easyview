@@ -26,7 +26,7 @@ interface BSAcctRow {
 }
 
 const CATS = ["자산", "부채", "자본"];
-const CAT_COLOR: Record<string, string> = { 자산: "#2563EB", 부채: "#DC2626", 자본: "#16A34A" };
+const CAT_COLOR: Record<string, string> = { 자산: "#2563EB", 부채: "#EF4444", 자본: "#16A34A" };
 
 export default function BSAccount() {
   const filter  = useFilter();
@@ -36,18 +36,7 @@ export default function BSAccount() {
   const [detail,   setDetail]   = useState<BSDisclosureDetail | null>(null);
   const [loadingD, setLoadingD] = useState(false);
   const [detailErr, setDetailErr] = useState(false);
-  const [leftH,    setLeftH]    = useState<number | undefined>(undefined);
-  const leftRef   = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
-
-  // 왼쪽 카드 높이 측정
-  useEffect(() => {
-    const el = leftRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver(e => setLeftH(e[0].contentRect.height));
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [selected]);
 
   useEffect(() => {
     setRows(null); setSelected(null); setDetail(null);
@@ -109,7 +98,7 @@ export default function BSAccount() {
       <div style={{ display: "grid", gridTemplateColumns: selected ? "2fr 3fr" : "1fr", gap: 14, alignItems: "start" }}>
 
         {/* ── 재무항목 표 ─────────────────────────────────────── */}
-        <div ref={leftRef} className="card" style={{ minWidth: 0 }}>
+        <div className="card" style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div className="card-title" style={{ marginBottom: 0 }}>재무항목</div>
             {selected && (
@@ -197,7 +186,7 @@ export default function BSAccount() {
         {/* ── 우측 상세 패널 ───────────────────────────────────── */}
         {selected && (
           <div ref={detailRef}
-            style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0, height: leftH, overflowY: "auto" }}>
+            style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
 
             {loadingD && (
               <div className="card" style={{ padding: 40, color: "#aaa", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -206,7 +195,7 @@ export default function BSAccount() {
               </div>
             )}
             {detailErr && (
-              <div className="card" style={{ padding: 30, color: "#DC2626", fontSize: 13, textAlign: "center" }}>
+              <div className="card" style={{ padding: 30, color: "#EF4444", fontSize: 13, textAlign: "center" }}>
                 ⚠️ 상세 데이터를 불러오지 못했습니다.<br />
                 <span style={{ fontSize: 11, color: "#999", marginTop: 6, display: "block" }}>백엔드 배포 후 이용 가능합니다.</span>
               </div>
@@ -221,7 +210,7 @@ export default function BSAccount() {
                     {[
                       { label: "기말금액",  value: selEnd,  color: "#2C2C2C" },
                       { label: "기초금액",  value: selOpn,  color: "#2C2C2C" },
-                      { label: "증감액",    value: selChg,  color: selChg >= 0 ? "#c0392b" : "#2563EB" },
+                      { label: "증감액",    value: selChg,  color: selChg >= 0 ? "#EF4444" : "#2563EB" },
                     ].map(({ label, value, color }) => (
                       <div key={label} style={{ background: "#FAFAFA", borderRadius: 8, padding: "10px 14px", textAlign: "center" }}>
                         <div style={{ fontSize: 10, color: "#999", marginBottom: 4 }}>{label}</div>
@@ -229,7 +218,7 @@ export default function BSAccount() {
                           {fmtB(value)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span>
                         </div>
                         {label === "기말금액" && (
-                          <div style={{ fontSize: 10, marginTop: 3, color: selChgPct >= 0 ? "#c0392b" : "#2563EB" }}>
+                          <div style={{ fontSize: 10, marginTop: 3, color: selChgPct >= 0 ? "#EF4444" : "#2563EB" }}>
                             {fmtChg(selChgPct)}
                           </div>
                         )}
@@ -241,7 +230,7 @@ export default function BSAccount() {
                 {/* 상세계정 표 */}
                 <div className="card">
                   <div className="card-title">상세계정</div>
-                  <div style={{ overflowY: "auto", maxHeight: 200 }}>
+                  <div>
                     <table>
                       <thead>
                         <tr>

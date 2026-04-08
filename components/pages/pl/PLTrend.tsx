@@ -189,7 +189,7 @@ function AccountCard({
           {fmtM(total)}
         </span>
         <span style={{ fontSize: 10, color: "#bbb" }}>백만</span>
-        <span style={{ fontSize: 10, color: chg >= 0 ? "#c0392b" : BLUE, marginLeft: 2 }}>
+        <span style={{ fontSize: 10, color: chg >= 0 ? "#EF4444" : BLUE, marginLeft: 2 }}>
           {chg >= 0 ? "▲" : "▼"}{fmtM(Math.abs(chg))}
         </span>
       </div>
@@ -450,8 +450,8 @@ export default function PLTrend() {
                 {[
                   { label: "당기금액", value: fmtM(Math.abs(kpiCur)) + "백만", color: ORANGE },
                   { label: "전기금액", value: fmtM(Math.abs(kpiPri)) + "백만", color: "#555" },
-                  { label: "증감액",   value: (kpiChg < 0 ? "-" : "") + fmtM(Math.abs(kpiChg)) + "백만", color: kpiChg >= 0 ? "#c0392b" : BLUE },
-                  { label: "증감률",   value: kpiChgPct !== null ? `${kpiChg >= 0 ? "▲" : "▼"}${Math.abs(kpiChgPct).toFixed(1)}%` : "-", color: kpiChg >= 0 ? "#c0392b" : BLUE },
+                  { label: "증감액",   value: (kpiChg < 0 ? "-" : "") + fmtM(Math.abs(kpiChg)) + "백만", color: kpiChg >= 0 ? "#EF4444" : BLUE },
+                  { label: "증감률",   value: kpiChgPct !== null ? `${kpiChg >= 0 ? "▲" : "▼"}${Math.abs(kpiChgPct).toFixed(1)}%` : "-", color: kpiChg >= 0 ? "#EF4444" : BLUE },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="card" style={{ borderTop: `3px solid ${color}` }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "#999", marginBottom: 6 }}>
@@ -494,7 +494,7 @@ export default function PLTrend() {
                               <td>{v.voucher_no}</td>
                               <td>{v.counterparty ?? "-"}</td>
                               <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
-                              <td style={{ color: v.dr_cr === "차변" ? BLUE : "#DC2626", fontWeight: 600 }}>{v.dr_cr}</td>
+                              <td style={{ color: v.dr_cr === "차변" ? BLUE : "#EF4444", fontWeight: 600 }}>{v.dr_cr}</td>
                               <td>{fmt(v.amount)}</td>
                             </tr>
                           ))}

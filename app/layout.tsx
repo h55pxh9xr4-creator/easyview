@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Easy View | PwC",
   description: "PwC EasyView Financial Analytics",
+  icons: { icon: "/easyview/favicon.png" },
 };
 
 export default function RootLayout({
