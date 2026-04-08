@@ -33,20 +33,28 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
 
   const option = {
     tooltip: { trigger: "item", formatter: (p: { name: string; percent: number }) => `${p.name}<br/>${p.percent.toFixed(1)}%` },
-    legend: { top: "5%", left: "center", textStyle: { fontSize: 10, color: "#666" } },
+    legend: {
+      orient: "vertical",
+      right: "2%",
+      top: "middle",
+      textStyle: { fontSize: 10, color: "#555" },
+      itemWidth: 10,
+      itemHeight: 10,
+      itemGap: 8,
+    },
     color: DONUT_COLORS,
     series: [{
       name: "당기 비중",
       type: "pie",
-      radius: ["40%", "68%"],
-      center: ["50%", "57%"],
+      radius: ["38%", "70%"],
+      center: ["38%", "50%"],
       avoidLabelOverlap: false,
       itemStyle: { borderRadius: 6, borderColor: "#fff", borderWidth: 2 },
       label: { show: false, position: "center" },
       emphasis: {
         label: {
           show: true,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: "bold",
           formatter: (p: { name: string; percent: number }) => `${p.name.length > 6 ? p.name.slice(0,6)+"…" : p.name}\n${p.percent.toFixed(1)}%`,
         },
@@ -61,7 +69,7 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   };
 
   return (
-    <ReactECharts option={option} style={{ width: "100%", height: 260 }} notMerge />
+    <ReactECharts option={option} style={{ width: "100%", height: 300 }} notMerge />
   );
 }
 
