@@ -362,19 +362,23 @@ export default function PLAccount() {
                     {detail.mgmt_acct}
                     <span style={{ fontSize: 11, fontWeight: 400, color: "#aaa", marginLeft: 6 }}>{periodLabel}</span>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                    {[
-                      { label: "당기금액", value: selCur, color: "#2C2C2C" },
-                      { label: "전기금액", value: selPri, color: "#2C2C2C" },
-                      { label: "증감액",   value: selChg, color: selChg >= 0 ? "#EF4444" : "#2563EB" },
-                    ].map(({ label, value, color }) => (
-                      <div key={label} style={{ background: "#F9F9F9", borderRadius: 6, padding: "10px 14px", textAlign: "center" }}>
-                        <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4 }}>{label}</div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color, letterSpacing: "-0.5px" }}>
-                          {value < 0 ? "-" : ""}{Math.abs(Math.round(value)).toLocaleString("ko-KR")}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                    {(() => {
+                      const selChgPct = selPri !== 0 ? selChg / Math.abs(selPri) * 100 : 0;
+                      return [
+                        { label: "당기금액", display: `${Math.abs(Math.round(selCur)).toLocaleString("ko-KR")}`, color: "#2C2C2C" },
+                        { label: "전기금액", display: `${Math.abs(Math.round(selPri)).toLocaleString("ko-KR")}`, color: "#2C2C2C" },
+                        { label: "증감액",   display: `${selChg < 0 ? "-" : ""}${Math.abs(Math.round(selChg)).toLocaleString("ko-KR")}`, color: selChg >= 0 ? "#EF4444" : "#2563EB" },
+                        { label: "증감률",   display: `${selChgPct >= 0 ? "▲" : "▼"}${Math.abs(selChgPct).toFixed(1)}%`, color: selChgPct >= 0 ? "#EF4444" : "#2563EB" },
+                      ].map(({ label, display, color }) => (
+                        <div key={label} style={{ background: "#F9F9F9", borderRadius: 6, padding: "10px 14px", textAlign: "center" }}>
+                          <div style={{ fontSize: 10, color: "#aaa", marginBottom: 4 }}>{label}</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color, letterSpacing: "-0.5px" }}>
+                            {display}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 </div>
 
