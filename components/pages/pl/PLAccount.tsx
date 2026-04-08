@@ -3,90 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, Plugin } from "chart.js";
-import { Doughnut } from "react-chartjs-2";
-
-ChartJS.register(ArcElement, Tooltip, Legend);
-
-// ── 폴리라인 외부 라벨 플러그인 (충돌감지 포함) ────────────────
-const MIN_PCT_LABEL = 2; // 이 % 이상만 라벨 표시
-const LINE_GAP = 14;     // 라벨 최소 간격(px)
-
-const polylineLabelPlugin: Plugin<"doughnut"> = {
-  id: "polylineLabel",
-  afterDraw(chart) {
-    const { ctx } = chart;
-    const ds    = chart.data.datasets[0];
-    const meta  = chart.getDatasetMeta(0);
-    const total = (ds.data as number[]).reduce((s, v) => s + v, 0) || 1;
-    const colors = ds.backgroundColor as string[];
-    const labels = (chart.data.labels ?? []) as string[];
-
-    type Lbl = { i: number; pct: number; color: string; name: string;
-                 isRight: boolean; x1: number; y1: number;
-                 x2: number; y2: number; x3: number; y3: number; };
-
-    // 1. 초기 좌표 계산
-    const all: Lbl[] = [];
-    meta.data.forEach((arc, i) => {
-      const val = (ds.data as number[])[i];
-      const pct = val / total * 100;
-      if (pct < MIN_PCT_LABEL) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const a   = arc as any;
-      const mid = (a.startAngle + a.endAngle) / 2;
-      const r   = a.outerRadius;
-      const cx  = a.x, cy = a.y;
-      const isRight = Math.cos(mid) >= 0;
-      const x1 = cx + Math.cos(mid) * (r + 3);
-      const y1 = cy + Math.sin(mid) * (r + 3);
-      const x2 = cx + Math.cos(mid) * (r + 18);
-      const y2 = cy + Math.sin(mid) * (r + 18);
-      const x3 = x2 + (isRight ? 16 : -16);
-      all.push({ i, pct, color: colors[i], name: labels[i] ?? "",
-                 isRight, x1, y1, x2, y2, x3, y3: y2 });
-    });
-
-    // 2. 충돌 감지 — 좌/우 각각 y 정렬 후 겹치면 밀어냄
-    const settle = (group: Lbl[]) => {
-      group.sort((a, b) => a.y3 - b.y3);
-      // 아래쪽으로 밀기
-      for (let k = 1; k < group.length; k++) {
-        if (group[k].y3 - group[k-1].y3 < LINE_GAP)
-          group[k].y3 = group[k-1].y3 + LINE_GAP;
-      }
-      // 위쪽으로 밀기 (역방향)
-      for (let k = group.length - 2; k >= 0; k--) {
-        if (group[k+1].y3 - group[k].y3 < LINE_GAP)
-          group[k].y3 = group[k+1].y3 - LINE_GAP;
-      }
-    };
-    settle(all.filter(l =>  l.isRight));
-    settle(all.filter(l => !l.isRight));
-
-    // 3. 그리기
-    ctx.save();
-    all.forEach(lbl => {
-      const short = lbl.name.length > 9 ? lbl.name.slice(0, 9) + "…" : lbl.name;
-      const text  = `${short} ${lbl.pct.toFixed(1)}%`;
-
-      ctx.beginPath();
-      ctx.moveTo(lbl.x1, lbl.y1);
-      ctx.lineTo(lbl.x2, lbl.y2);
-      ctx.lineTo(lbl.x3, lbl.y3);
-      ctx.strokeStyle = lbl.color;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      ctx.fillStyle   = "#333";
-      ctx.font        = "10px Inter, sans-serif";
-      ctx.textAlign   = lbl.isRight ? "left" : "right";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, lbl.x3 + (lbl.isRight ? 3 : -3), lbl.y3);
-    });
-    ctx.restore();
-  },
-};
+import ReactECharts from "echarts-for-react";
 
 const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const fmtM   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
@@ -110,44 +27,41 @@ const DONUT_COLORS = [
   "#7C3AED","#0891B2","#EF4444","#78716C","#CA8A04",
 ];
 
-// ── 상위 거래처 당기 비중 (도넛 + 폴리라인 라벨) ────────────────
+// ── 상위 거래처 당기 비중 (ECharts 도넛) ────────────────────────
 function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   const total = data.reduce((s, d) => s + Math.abs(d.cur), 0) || 1;
-  const pcts  = data.map(d => Math.abs(d.cur) / total * 100);
-  const chartData = {
-    labels: data.map(d => d.name),
-    datasets: [{
-      data: data.map(d => Math.abs(d.cur)),
-      backgroundColor: DONUT_COLORS.slice(0, data.length),
-      borderWidth: 2,
-      borderColor: "#fff",
-      hoverOffset: 8,
+
+  const option = {
+    tooltip: { trigger: "item", formatter: (p: { name: string; percent: number }) => `${p.name}<br/>${p.percent.toFixed(1)}%` },
+    legend: { top: "5%", left: "center", textStyle: { fontSize: 10, color: "#666" } },
+    color: DONUT_COLORS,
+    series: [{
+      name: "당기 비중",
+      type: "pie",
+      radius: ["40%", "68%"],
+      center: ["50%", "57%"],
+      avoidLabelOverlap: false,
+      itemStyle: { borderRadius: 6, borderColor: "#fff", borderWidth: 2 },
+      label: { show: false, position: "center" },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 14,
+          fontWeight: "bold",
+          formatter: (p: { name: string; percent: number }) => `${p.name.length > 6 ? p.name.slice(0,6)+"…" : p.name}\n${p.percent.toFixed(1)}%`,
+        },
+      },
+      labelLine: { show: false },
+      data: data.map((d, i) => ({
+        value: Math.abs(d.cur),
+        name: d.name,
+        itemStyle: { color: DONUT_COLORS[i % DONUT_COLORS.length] },
+      })),
     }],
   };
 
-  const opts = {
-    responsive: true,
-    maintainAspectRatio: true,
-    animation: false as const,
-    cutout: "50%",
-    layout: { padding: 55 },   // 외부 라벨 공간
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx: { label: string; raw: unknown }) => {
-            const pct = (Number(ctx.raw) / total * 100).toFixed(1);
-            return ` ${ctx.label}: ${pct}%`;
-          },
-        },
-      },
-    },
-  };
-
   return (
-    <div style={{ maxWidth: 300, margin: "0 auto" }}>
-      <Doughnut data={chartData} options={opts} plugins={[polylineLabelPlugin]} />
-    </div>
+    <ReactECharts option={option} style={{ width: "100%", height: 260 }} notMerge />
   );
 }
 
