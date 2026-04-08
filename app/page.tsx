@@ -60,9 +60,9 @@ export default function Page() {
   return (
     <>
       <Header activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} />
-      <FilterBar />
+      <FilterBar activeSub={activeSub} />
       <div className="ptb">
-        <span className="ptb-title">{pageLabel}</span>
+        <span className="ptb-sub">{pageLabel}</span>
       </div>
       <ActivePage />
     </>
