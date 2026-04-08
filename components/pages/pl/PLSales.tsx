@@ -492,7 +492,7 @@ export default function PLSales() {
                 : trendPri;
 
               const trendOption = {
-                grid: { top: 36, bottom: 24, left: 8, right: 16, containLabel: true },
+                grid: { top: 12, bottom: 40, left: 8, right: 16, containLabel: true },
                 tooltip: {
                   trigger: "axis",
                   formatter: (params: {seriesName: string; value: number}[]) =>
@@ -500,7 +500,7 @@ export default function PLSales() {
                 },
                 legend: {
                   data: ["당기", "전기"],
-                  top: 4,
+                  bottom: 0,
                   left: "center",
                   textStyle: { color: "#888", fontSize: 10 },
                   itemWidth: 10, itemHeight: 10,
