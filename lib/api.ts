@@ -41,8 +41,8 @@ export type ScenarioCountData = Record<string, number>;
 export const fetchKPI = (f: FilterState) =>
   get<KPIData>("/api/summary/kpi", { base_ym: f.baseYm, period_type: f.periodType, compare_target: f.compareTarget, bs_base: f.bsBase });
 
-export const fetchTop3 = (f: FilterState) =>
-  get<Top3Data>("/api/summary/top3", { base_ym: f.baseYm, period_type: f.periodType });
+export const fetchTop3 = (f: FilterState, base_ym_override?: string, period_type_override?: string) =>
+  get<Top3Data>("/api/summary/top3", { base_ym: base_ym_override ?? f.baseYm, period_type: period_type_override ?? f.periodType });
 
 export const fetchIndicators = (f: FilterState) =>
   get<IndicatorData>("/api/summary/indicators", { base_ym: f.baseYm, period_type: f.periodType });

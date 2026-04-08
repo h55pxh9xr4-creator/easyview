@@ -7,6 +7,7 @@ import {
   fetchPLTable, fetchBSTable, fetchScenarioCount, fetchPLTrend, fetchBSTrend,
   KPIData, Top3Data, IndicatorData, PLTableRow, BSTableRow, ScenarioCountData,
 } from "@/lib/api";
+import ReactECharts from "echarts-for-react";
 
 const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
@@ -16,31 +17,75 @@ const arrowTxt = (p: number) => p >= 0
   ? `▲ ${Math.abs(p * 100).toFixed(1)}%`
   : `▼ ${Math.abs(p * 100).toFixed(1)}%`;
 
-// ── SVG Sparkline ─────────────────────────────────────────────
-function Sparkline({ data, color }: { data: number[]; color: string }) {
+// ── ECharts Sparkline ─────────────────────────────────────────
+function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
+  data: number[];
+  months: string[];
+  color: string;
+  selectedIdx: number | null;
+  onMonthClick: (idx: number | null) => void;
+}) {
   if (!data || data.length < 2) return null;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const W = 200, H = 52;
-  const pts = data.map((v, i) => [
-    (i / (data.length - 1)) * W,
-    H - 6 - ((v - min) / range) * (H - 14),
-  ]);
-  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-  const area = `${line} L${W},${H} L0,${H} Z`;
+
+  const option = {
+    animation: false,
+    grid: { top: 4, bottom: 4, left: 4, right: 4 },
+    xAxis: { type: "category" as const, data: months, show: false },
+    yAxis: { type: "value" as const, show: false },
+    tooltip: {
+      trigger: "axis" as const,
+      axisPointer: { type: "line" as const, lineStyle: { color: "#ddd", width: 1 } },
+      formatter: (params: { dataIndex: number; value: number }[]) => {
+        const p = params[0];
+        return `<span style="font-size:10px;color:#999">${months[p.dataIndex]}</span><br/><b>${fmtB(p.value)}백만</b>`;
+      },
+    },
+    series: [{
+      type: "line" as const,
+      data: data.map((v, i) => ({
+        value: v,
+        symbol: "circle",
+        symbolSize: i === selectedIdx ? 7 : 4,
+        itemStyle: {
+          color: i === selectedIdx ? "#2563EB" : color,
+          borderColor: i === selectedIdx ? "#fff" : color,
+          borderWidth: i === selectedIdx ? 1.5 : 0,
+        },
+        emphasis: {
+          itemStyle: {
+            color: i === selectedIdx ? "#2563EB" : color,
+            borderColor: "#fff",
+            borderWidth: 1.5,
+          },
+          symbolSize: 7,
+        },
+      })),
+      smooth: true,
+      lineStyle: { color, width: 1.8 },
+      areaStyle: {
+        color: {
+          type: "linear" as const, x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: color + "40" },
+            { offset: 1, color: color + "05" },
+          ],
+        },
+      },
+    }],
+  };
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-      style={{ width: "100%", height: 52, display: "block", marginTop: 10 }}>
-      <defs>
-        <linearGradient id={`sg-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#sg-${color.replace("#","")})`} />
-      <path d={line} stroke={color} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <ReactECharts
+      option={option}
+      style={{ height: 60, width: "100%", marginTop: 8, cursor: "pointer" }}
+      notMerge={true}
+      onEvents={{
+        click: (p: { dataIndex?: number }) => {
+          if (p.dataIndex === undefined) return;
+          onMonthClick(selectedIdx === p.dataIndex ? null : p.dataIndex);
+        },
+      }}
+    />
   );
 }
 
@@ -56,6 +101,10 @@ export default function Summary() {
   const [plTrend,    setPlTrend]    = useState<any[] | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [bsTrend,    setBsTrend]    = useState<any[] | null>(null);
+  const [selMonth,   setSelMonth]   = useState<Record<string, number | null>>({
+    revenue: null, operating_income: null, asset: null, liability: null,
+  });
+  const [monthTop3,  setMonthTop3]  = useState<Record<string, Top3Data | null>>({});
 
   useEffect(() => {
     Promise.all([
@@ -88,11 +137,39 @@ export default function Summary() {
     liability:        curBs.map((r: { 부채?: number }) => r.부채 ?? 0),
   };
 
+  // 월 라벨
+  const plMonths = curPl.map((r: { year_month: string }) => r.year_month.slice(5) + "월");
+  const bsMonths = curBs.map((r: { year_month: string }) => r.year_month.slice(5) + "월");
+
+  // KPI → Top3 카드 매핑
+  const kpiToTop3: Record<string, string> = {
+    revenue: "revenue_counterparty",
+    operating_income: "cost_account",
+    asset: "asset_account",
+    liability: "liability_account",
+  };
+
+  // 월 선택 핸들러: 해당 카드의 Top3만 월별 재조회
+  const handleMonthClick = (kpiKey: string, idx: number | null) => {
+    setSelMonth(prev => ({ ...prev, [kpiKey]: idx }));
+    if (idx === null) {
+      setMonthTop3(prev => ({ ...prev, [kpiKey]: null }));
+      return;
+    }
+    const isBs = kpiKey === "asset" || kpiKey === "liability";
+    const monthArr = isBs ? curBs : curPl;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ym: string = (monthArr[idx] as any)?.year_month ?? filter.baseYm;
+    fetchTop3(filter, ym, "monthly")
+      .then(d => setMonthTop3(prev => ({ ...prev, [kpiKey]: d })))
+      .catch(console.error);
+  };
+
   const kpiItems = [
-    { key: "revenue",          label: "매출액",   color: "#E87722" },
-    { key: "operating_income", label: "영업이익", color: "#D5476E" },
-    { key: "asset",            label: "자산",     color: "#E87722" },
-    { key: "liability",        label: "부채",     color: "#6D4C41" },
+    { key: "revenue",          label: "매출액",   color: "#E87722", months: plMonths },
+    { key: "operating_income", label: "영업이익", color: "#D5476E", months: plMonths },
+    { key: "asset",            label: "자산",     color: "#E87722", months: bsMonths },
+    { key: "liability",        label: "부채",     color: "#6D4C41", months: bsMonths },
   ];
 
   return (
@@ -100,11 +177,19 @@ export default function Summary() {
 
       {/* ── KPI Strip ── */}
       <div className="kpi-strip">
-        {kpiItems.map(({ key, label, color }) => {
+        {kpiItems.map(({ key, label, color, months }) => {
           const d = kpi[key];
+          const idx = selMonth[key];
           return (
             <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0 }}>
-              <div className="kpi-lbl">{label}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div className="kpi-lbl">{label}</div>
+                {idx !== null && (
+                  <span style={{ fontSize: 9, color: "#2563EB", background: "rgba(37,99,235,0.08)", padding: "1px 5px", borderRadius: 6 }}>
+                    {months[idx]}
+                  </span>
+                )}
+              </div>
               <div className="kpi-val" style={{ color }}>
                 {fmtB(d.value)}<span className="u">백만</span>
               </div>
@@ -112,7 +197,13 @@ export default function Summary() {
                 {arrowTxt(d.change_pct)}
                 <span style={{ color: "#bbb", fontWeight: 400, marginLeft: 4 }}>{d.vs}</span>
               </div>
-              <Sparkline data={sparkData[key] ?? []} color={color} />
+              <Sparkline
+                data={sparkData[key] ?? []}
+                months={months}
+                color={color}
+                selectedIdx={idx}
+                onMonthClick={(i) => handleMonthClick(key, i)}
+              />
             </div>
           );
         })}
@@ -121,14 +212,25 @@ export default function Summary() {
       {/* ── Top3 Rankings ── */}
       <div className="g4">
         {[
-          { key: "revenue_counterparty", title: "매출액 증가 상위 3개 거래처" },
-          { key: "cost_account",         title: "비용 증가 상위 3개 계정" },
-          { key: "asset_account",        title: "자산 증가 상위 3개 계정" },
-          { key: "liability_account",    title: "부채 증가 상위 3개 계정" },
-        ].map(({ key, title }) => (
+          { key: "revenue_counterparty", title: "매출액 증가 상위 3개 거래처", kpiKey: "revenue" },
+          { key: "cost_account",         title: "비용 증가 상위 3개 계정",     kpiKey: "operating_income" },
+          { key: "asset_account",        title: "자산 증가 상위 3개 계정",     kpiKey: "asset" },
+          { key: "liability_account",    title: "부채 증가 상위 3개 계정",     kpiKey: "liability" },
+        ].map(({ key, title, kpiKey }) => {
+          const idx = selMonth[kpiKey];
+          const activeTop3 = (idx !== null && monthTop3[kpiKey]) ? monthTop3[kpiKey] : top3;
+          const monthLabel = idx !== null ? kpiItems.find(k => k.key === kpiKey)?.months[idx] : null;
+          return (
           <div key={key} className="card">
-            <div className="card-title">{title}</div>
-            {(top3[key] ?? []).map((item) => (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <div className="card-title" style={{ margin: 0 }}>{title}</div>
+              {monthLabel && (
+                <span style={{ fontSize: 10, color: "#2563EB", background: "rgba(37,99,235,0.08)", padding: "1px 6px", borderRadius: 8 }}>
+                  {monthLabel}
+                </span>
+              )}
+            </div>
+            {(activeTop3?.[key] ?? []).map((item) => (
               <div key={item.rank} className="t3-item">
                 <div className={`t3-badge${item.rank === 1 ? " r1" : ""}`}>{item.rank}</div>
                 <div className="t3-name">
@@ -143,7 +245,8 @@ export default function Summary() {
               </div>
             ))}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── 지표 ── */}
