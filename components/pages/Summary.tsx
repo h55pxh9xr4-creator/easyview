@@ -345,8 +345,10 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
             >
               <div className="vc-hover-badge">자세히 보기 →</div>
               <div className="vc-lbl">{label}</div>
-              <div className="vc-val">{scCount[key]}</div>
-              <div className="vc-unit">건</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <div className="vc-val">{scCount[key]}</div>
+                <div className="vc-unit">건</div>
+              </div>
             </div>
           ))}
         </div>
