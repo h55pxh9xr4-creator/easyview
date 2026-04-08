@@ -396,12 +396,12 @@ export default function PLSummary() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: idx !== null ? "#2563EB" : card.color, letterSpacing: "-1px", lineHeight: 1 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, letterSpacing: "-1px", lineHeight: 1 }}>
                     {fmtB(cur)}
                     <span style={{ fontSize: 12, fontWeight: 400, color: "#bbb", marginLeft: 3 }}>백만</span>
                   </div>
                   {margin !== null && margin !== undefined && (
-                    <MarginGauge value={margin} label={card.marginLabel} color={idx !== null ? "#2563EB" : card.color} />
+                    <MarginGauge value={margin} label={card.marginLabel} color={card.color} />
                   )}
                   <div style={{ marginTop: margin !== null ? 0 : 12, flex: 1 }}>
                     <StatRow label="전기" value={`${fmtB(pri)}백만`} />
