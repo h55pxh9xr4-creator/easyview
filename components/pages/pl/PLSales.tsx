@@ -492,7 +492,7 @@ export default function PLSales() {
                 : trendPri;
 
               const trendOption = {
-                grid: { top: 12, bottom: 40, left: 8, right: 16, containLabel: true },
+                grid: { top: 56, bottom: 40, left: 8, right: 16, containLabel: true },
                 tooltip: {
                   trigger: "axis",
                   formatter: (params: {seriesName: string; value: number}[]) =>
