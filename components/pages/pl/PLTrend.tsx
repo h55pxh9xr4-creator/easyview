@@ -134,6 +134,10 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
 }
 
 // ── 계정 카드 ─────────────────────────────────────────────────
+function toPriYm(m: string) {
+  return `${parseInt(m.slice(0, 4)) - 1}${m.slice(4)}`;
+}
+
 function AccountCard({
   acct, months, showDisc, isSelected, onClick,
 }: {
@@ -144,7 +148,7 @@ function AccountCard({
   onClick: () => void;
 }) {
   const cur  = months.map(m => acct.cur[m] ?? 0);
-  const pri  = months.map(m => acct.pri[m] ?? 0);
+  const pri  = months.map(m => acct.pri[toPriYm(m)] ?? 0);
   const total = cur.reduce((s, v) => s + v, 0);
   const priTotal = pri.reduce((s, v) => s + v, 0);
   const chg  = total - priTotal;
@@ -199,7 +203,7 @@ function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx }:
   selectedMonthIdx?: number | null;
 }) {
   const cur  = months.map(m => acct.cur[m] ?? 0);
-  const pri  = months.map(m => acct.pri[m] ?? 0);
+  const pri  = months.map(m => acct.pri[toPriYm(m)] ?? 0);
   const monthLabels = months.map(m => m.slice(5) + "월");
 
   // 월 선택 시 해당 월, 없으면 전체 합산
