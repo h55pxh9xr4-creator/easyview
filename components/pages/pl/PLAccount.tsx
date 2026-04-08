@@ -197,7 +197,6 @@ export default function PLAccount() {
   const [detail,   setDetail]   = useState<Detail | null>(null);
   const [loadingD, setLoadingD] = useState(false);
   const [leftH,    setLeftH]    = useState<number | undefined>(undefined);
-  const detailRef = useRef<HTMLDivElement>(null);
   const leftRef   = useRef<HTMLDivElement>(null);
 
   // 왼쪽 카드 높이 실시간 측정
@@ -222,11 +221,6 @@ export default function PLAccount() {
       .catch(() => setLoadingD(false));
   }, [selected, filter.baseYm, filter.periodType]);
 
-  useEffect(() => {
-    if (detail && detailRef.current) {
-      detailRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [detail]);
 
   if (!rows) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
 
@@ -397,7 +391,7 @@ export default function PLAccount() {
                 </div>
 
                 {/* 전표 내역 — 당기/전기 위아래, 남은 공간 반반 */}
-                <div ref={detailRef} style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minHeight: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minHeight: 0 }}>
                   {[
                     { title: "당기 전표 내역", vouchers: detail.cur_vouchers },
                     { title: "전기 전표 내역", vouchers: detail.pri_vouchers },
