@@ -218,16 +218,18 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
   const prefix = cat === "자산" ? "자산" : cat === "부채" ? "부채" : null;
   return (
     <div className="card" style={{ borderTop: `3px solid ${color}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#999" }}>{cat}</div>
-        {selectedLabel && (
-          <span style={{ fontSize: 10, color, background: color + "30", padding: "1px 6px", borderRadius: 6, fontWeight: 600 }}>{selectedLabel}</span>
-        )}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#999" }}>{cat}</div>
+          {selectedLabel && (
+            <span style={{ fontSize: 10, color, background: color + "30", padding: "1px 6px", borderRadius: 6, fontWeight: 600 }}>{selectedLabel}</span>
+          )}
+        </div>
+        <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1, letterSpacing: "-0.5px" }}>
+          {fmtB(data.ending)}<span style={{ fontSize: 14, color, fontWeight: 700, marginLeft: 4 }}>백만</span>
+        </div>
       </div>
-      <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1, letterSpacing: "-0.5px" }}>
-        {fmtB(data.ending)}<span style={{ fontSize: 14, color, fontWeight: 700, marginLeft: 4 }}>백만</span>
-      </div>
-      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: "#999" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: "#999" }}>
         {prefix && current !== undefined && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>유동{prefix}</span>
