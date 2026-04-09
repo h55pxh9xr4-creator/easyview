@@ -119,20 +119,21 @@ export default function PLItems() {
             <table style={{ minWidth: 800, borderCollapse: "collapse", fontSize: 12, width: "100%" }}>
               <thead>
                 {/* 연도 그룹 행 */}
-                <tr style={{ borderBottom: "none" }}>
+                <tr>
                   <th rowSpan={2} style={{
-                    background: ORANGE_BG, color: ORANGE, padding: "8px 14px",
+                    background: "#FAFAFA", color: "#888", padding: "10px 16px",
                     textAlign: "left", position: "sticky", left: 0, zIndex: 2,
-                    minWidth: 180, fontWeight: 700, fontSize: 12,
-                    borderRight: "2px solid #E87722",
+                    minWidth: 200, fontWeight: 600, fontSize: 11,
+                    borderRight: "1px solid #E8E8E8",
                     borderBottom: `2px solid ${ORANGE}`,
-                    verticalAlign: "middle",
-                  }}>기간</th>
+                    verticalAlign: "middle", letterSpacing: "0.03em",
+                  }}>계정</th>
                   {colGroups.map(g => (
                     <th key={g.label} colSpan={g.indices.length} style={{
-                      background: ORANGE_BG, color: ORANGE, padding: "8px 6px",
-                      textAlign: "center", fontWeight: 800, fontSize: 13,
-                      borderRight: "2px solid #E87722", borderBottom: "1px solid #F0E8E0",
+                      background: "#FAFAFA", color: "#555", padding: "8px 6px",
+                      textAlign: "center", fontWeight: 700, fontSize: 12,
+                      borderRight: "1px solid #E8E8E8",
+                      borderBottom: "1px solid #EFEFEF",
                     }}>{g.label}</th>
                   ))}
                 </tr>
@@ -140,9 +141,10 @@ export default function PLItems() {
                 <tr style={{ borderBottom: `2px solid ${ORANGE}` }}>
                   {data.columns.map((col, i) => (
                     <th key={i} style={{
-                      background: ORANGE_BG, color: "#555", padding: "6px 10px",
+                      background: "#FAFAFA", color: "#999", padding: "6px 12px",
                       textAlign: "right", fontWeight: 600, fontSize: 11,
-                      borderRight: isLastInGroup(i) ? "2px solid #E87722" : "1px solid #EEE",
+                      borderRight: isLastInGroup(i) ? "1px solid #E8E8E8" : "1px solid #F3F3F3",
+                      letterSpacing: "0.02em",
                     }}>{col}</th>
                   ))}
                 </tr>
@@ -154,43 +156,48 @@ export default function PLItems() {
                   const isMgmt       = row.type === "mgmt";
 
                   const rowBg = isSubtotal
-                    ? ORANGE
+                    ? ORANGE_L
                     : isDisclosure
-                      ? "#F5F5F5"
+                      ? "#FAFAFA"
                       : "#fff";
-                  const rowColor = isSubtotal ? "#fff" : "#2C2C2C";
-                  const rowFw    = isSubtotal ? 800 : isDisclosure ? 700 : 400;
+                  const labelColor = isSubtotal ? ORANGE : isDisclosure ? "#333" : "#555";
+                  const rowFw = isSubtotal ? 700 : isDisclosure ? 600 : 400;
 
                   return (
-                    <tr key={ri} style={{ borderBottom: "1px solid #F0F0F0", background: rowBg }}>
+                    <tr key={ri} style={{
+                      borderBottom: isSubtotal ? `1px solid rgba(232,119,34,0.2)` : "1px solid #F5F5F5",
+                      background: rowBg,
+                    }}>
                       {/* 계정명 셀 */}
                       <td style={{
-                        padding: isMgmt ? "5px 14px 5px 30px" : "7px 14px",
+                        padding: isMgmt ? "5px 16px 5px 32px" : isSubtotal ? "8px 16px" : "6px 16px",
                         position: "sticky", left: 0, zIndex: 1,
-                        background: rowBg, color: rowColor, fontWeight: rowFw,
-                        borderRight: "2px solid #E8E8E8",
+                        background: rowBg, color: labelColor, fontWeight: rowFw,
+                        borderRight: "1px solid #E8E8E8",
                         fontSize: isMgmt ? 11 : 12,
                         whiteSpace: "nowrap",
+                        borderLeft: isSubtotal ? `3px solid ${ORANGE}` : "3px solid transparent",
                       }}>
-                        {isMgmt && <span style={{ color: "#ccc", marginRight: 5 }}>└</span>}
+                        {isMgmt && <span style={{ color: "#D0D0D0", marginRight: 6, fontSize: 10 }}>└</span>}
                         {row.label}
                       </td>
 
                       {/* 값 셀 */}
                       {row.values.map((v, ci) => {
-                        const neg = v < 0;
-                        const valColor = isSubtotal || isDisclosure
-                          ? rowColor
-                          : neg ? "#2563EB" : v === 0 ? "#bbb" : "#2C2C2C";
+                        const valColor = isSubtotal
+                          ? ORANGE
+                          : isDisclosure
+                            ? "#333"
+                            : v < 0 ? "#2563EB" : v === 0 ? "#CCC" : "#444";
                         return (
                           <td key={ci} style={{
                             textAlign: "right",
                             fontFamily: "monospace",
                             fontSize: 12,
-                            padding: "5px 10px",
+                            padding: "5px 12px",
                             color: valColor,
-                            fontWeight: isSubtotal ? 800 : isDisclosure ? 700 : 400,
-                            borderRight: isLastInGroup(ci) ? "2px solid #E8E8E8" : "1px solid #F0F0F0",
+                            fontWeight: isSubtotal ? 700 : isDisclosure ? 600 : 400,
+                            borderRight: isLastInGroup(ci) ? "1px solid #E8E8E8" : "1px solid #F3F3F3",
                             background: rowBg,
                             whiteSpace: "nowrap",
                           }}>

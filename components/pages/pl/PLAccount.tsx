@@ -29,35 +29,38 @@ const DONUT_COLORS = [
 
 // ── 상위 거래처 당기 비중 (ECharts 도넛) ────────────────────────
 function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
-  const total = data.reduce((s, d) => s + Math.abs(d.cur), 0) || 1;
+  const fmtB = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 
   const option = {
-    tooltip: { trigger: "item", formatter: (p: { name: string; percent: number }) => `${p.name}<br/>${p.percent.toFixed(1)}%` },
-    legend: {
-      orient: "vertical",
-      right: "2%",
-      top: "middle",
-      textStyle: { fontSize: 10, color: "#555" },
-      itemWidth: 10,
-      itemHeight: 10,
-      itemGap: 8,
+    tooltip: {
+      trigger: "item",
+      position: (point: number[], _p: unknown, _d: unknown, _r: unknown, size: { contentSize: number[]; viewSize: number[] }) => {
+        const [x, y] = point;
+        const [w, h] = size.contentSize;
+        const isTop = y < size.viewSize[1] / 2;
+        return [x - w / 2, isTop ? y - h - 16 : y + 16];
+      },
+      formatter: (p: { name: string; value: number; percent: number }) =>
+        `${p.name}<br/>${fmtB(p.value)}백만 (${p.percent.toFixed(1)}%)`,
     },
-    color: DONUT_COLORS,
+    legend: { show: false },
     series: [{
       name: "당기 비중",
       type: "pie",
-      radius: ["38%", "70%"],
-      center: ["38%", "50%"],
+      radius: ["38%", "68%"],
+      center: ["50%", "55%"],
       avoidLabelOverlap: false,
       itemStyle: { borderRadius: 6, borderColor: "#fff", borderWidth: 2 },
       label: { show: false, position: "center" },
       emphasis: {
         label: {
           show: true,
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: "bold",
-          formatter: (p: { name: string; percent: number }) => `${p.name.length > 6 ? p.name.slice(0,6)+"…" : p.name}\n${p.percent.toFixed(1)}%`,
+          formatter: (p: { name: string; percent: number }) =>
+            `${p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name}\n${p.percent.toFixed(1)}%`,
         },
+        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.18)" },
       },
       labelLine: { show: false },
       data: data.map((d, i) => ({
@@ -69,7 +72,7 @@ function TopCounterpartyPie({ data }: { data: Detail["counterparty"] }) {
   };
 
   return (
-    <ReactECharts option={option} style={{ width: "100%", height: 300 }} notMerge />
+    <ReactECharts option={option} style={{ width: "100%", height: 380 }} notMerge />
   );
 }
 
@@ -308,11 +311,15 @@ export default function PLAccount() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                   <div className="card">
                     <div className="card-title">상위 거래처 당기 비중</div>
-                    <TopCounterpartyPie data={detail.counterparty} />
+                    {detail.counterparty.length === 0
+                      ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 120, color: "#bbb", fontSize: 13 }}>거래처 없음</div>
+                      : <TopCounterpartyPie data={detail.counterparty} />}
                   </div>
                   <div className="card">
                     <div className="card-title">거래처별 당기/전기</div>
-                    <CounterpartyChangeBar data={detail.counterparty} />
+                    {detail.counterparty.length === 0
+                      ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 120, color: "#bbb", fontSize: 13 }}>거래처 없음</div>
+                      : <CounterpartyChangeBar data={detail.counterparty} />}
                   </div>
                 </div>
 

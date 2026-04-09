@@ -25,6 +25,8 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
   selectedIdx: number | null;
   onMonthClick: (idx: number | null) => void;
 }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   if (!data || data.length < 2) return null;
 
   const option = {
@@ -45,21 +47,14 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
       data: data.map((v, i) => ({
         value: v,
         symbol: "circle",
-        symbolSize: i === selectedIdx ? 7 : 4,
+        symbolSize: i === hoveredIdx ? 18 : i === selectedIdx ? 10 : 7,
         itemStyle: {
-          color: i === selectedIdx ? "#2563EB" : color,
-          borderColor: i === selectedIdx ? "#fff" : color,
-          borderWidth: i === selectedIdx ? 1.5 : 0,
-        },
-        emphasis: {
-          itemStyle: {
-            color: i === selectedIdx ? "#2563EB" : color,
-            borderColor: "#fff",
-            borderWidth: 1.5,
-          },
-          symbolSize: 7,
+          color: i === hoveredIdx ? "rgba(180,180,180,0.5)" : i === selectedIdx ? "#2563EB" : color,
+          borderColor: i === hoveredIdx ? "rgba(180,180,180,0.3)" : i === selectedIdx ? "#fff" : color,
+          borderWidth: i === hoveredIdx ? 2 : i === selectedIdx ? 1.5 : 0,
         },
       })),
+      emphasis: { scale: false },
       smooth: true,
       lineStyle: { color, width: 1.8 },
       areaStyle: {
@@ -80,6 +75,10 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
       style={{ height: 60, width: "100%", marginTop: 8, cursor: "pointer" }}
       notMerge={true}
       onEvents={{
+        mouseover: (p: { dataIndex?: number }) => {
+          if (p.dataIndex !== undefined) setHoveredIdx(p.dataIndex);
+        },
+        mouseout: () => setHoveredIdx(null),
         click: (p: { dataIndex?: number }) => {
           if (p.dataIndex === undefined) return;
           onMonthClick(selectedIdx === p.dataIndex ? null : p.dataIndex);

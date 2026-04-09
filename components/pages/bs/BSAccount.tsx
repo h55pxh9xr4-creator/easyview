@@ -106,7 +106,12 @@ export default function BSAccount() {
           <div className="tbl-wrap">
             <table>
               <thead>
-                <tr><th>분류</th><th>기말</th><th>기초</th><th>증감</th></tr>
+                <tr>
+                  <th style={{ textAlign: "center" }}>분류</th>
+                  <th style={{ textAlign: "center" }}>기말</th>
+                  <th style={{ textAlign: "center" }}>기초</th>
+                  <th style={{ textAlign: "center" }}>증감</th>
+                </tr>
               </thead>
               <tbody>
                 {CATS.filter(cat => byCategory[cat]).map(cat => {
@@ -202,9 +207,9 @@ export default function BSAccount() {
                   <div className="card-title" style={{ marginBottom: 12 }}>{selected}</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
                     {[
-                      { label: "기말금액", display: <>{fmtB(selEnd)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span></>, color: "#2C2C2C" },
-                      { label: "기초금액", display: <>{fmtB(selOpn)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span></>, color: "#2C2C2C" },
-                      { label: "증감액",   display: <>{fmtB(selChg)}<span style={{ fontSize: 10, color: "#bbb", marginLeft: 2 }}>백만</span></>, color: selChg >= 0 ? "#EF4444" : "#2563EB" },
+                      { label: "기말금액", display: <>{Math.round(selEnd).toLocaleString("ko-KR")}</>, color: "#2C2C2C" },
+                      { label: "기초금액", display: <>{Math.round(selOpn).toLocaleString("ko-KR")}</>, color: "#2C2C2C" },
+                      { label: "증감액",   display: <>{Math.round(selChg).toLocaleString("ko-KR")}</>, color: selChg >= 0 ? "#EF4444" : "#2563EB" },
                       { label: "증감률",   display: <>{fmtChg(selChgPct)}</>, color: selChgPct >= 0 ? "#EF4444" : "#2563EB" },
                     ].map(({ label, display, color }) => (
                       <div key={label} style={{ background: "#FAFAFA", borderRadius: 8, padding: "10px 14px", textAlign: "center" }}>
@@ -222,11 +227,11 @@ export default function BSAccount() {
                     <table>
                       <thead>
                         <tr>
-                          <th style={{ textAlign: "left" }}>관리계정</th>
-                          <th style={{ textAlign: "left" }}>계정과목</th>
-                          <th>기말</th>
-                          <th>기초</th>
-                          <th>증감</th>
+                          <th style={{ textAlign: "center" }}>관리계정</th>
+                          <th style={{ textAlign: "center" }}>계정과목</th>
+                          <th style={{ textAlign: "center" }}>기말</th>
+                          <th style={{ textAlign: "center" }}>기초</th>
+                          <th style={{ textAlign: "center" }}>증감</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -234,8 +239,8 @@ export default function BSAccount() {
                           const chg = r.opening ? (r.ending - r.opening) / Math.abs(r.opening) : 0;
                           return (
                             <tr key={i}>
-                              <td style={{ color: "#888", fontSize: 11 }}>{r.mgmt_acct}</td>
-                              <td>{r.account_name}</td>
+                              <td style={{ textAlign: "left", color: "#888", fontSize: 11 }}>{r.mgmt_acct}</td>
+                              <td style={{ textAlign: "left" }}>{r.account_name}</td>
                               <td style={{ textAlign: "right" }}>{fmtB(r.ending)}</td>
                               <td style={{ textAlign: "right", color: "#888" }}>{fmtB(r.opening)}</td>
                               <td style={{ textAlign: "right" }} className={chg >= 0 ? "up-t" : "dn-t"}>{fmtChg(chg)}</td>
@@ -289,7 +294,7 @@ export default function BSAccount() {
                         const isPos = cp.net >= 0;
                         return (
                           <div key={cp.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ width: 110, fontSize: 11, color: "#555", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cp.name}</div>
+                            <div style={{ width: 170, fontSize: 11, color: "#555", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cp.name}</div>
                             <div style={{ flex: 1, height: 18, background: "#F5F5F5", borderRadius: 3, overflow: "hidden" }}>
                               <div style={{ width: `${pct}%`, height: "100%", background: isPos ? BLUE : RED, borderRadius: 3 }} />
                             </div>
@@ -310,23 +315,23 @@ export default function BSAccount() {
                     <table>
                       <thead>
                         <tr>
-                          <th style={{ textAlign: "left" }}>일자</th>
-                          <th style={{ textAlign: "left" }}>전표번호</th>
-                          <th style={{ textAlign: "left" }}>계정과목</th>
-                          <th style={{ textAlign: "left" }}>거래처</th>
-                          <th style={{ textAlign: "left" }}>적요</th>
-                          <th>차변</th>
-                          <th>대변</th>
+                          <th style={{ textAlign: "center" }}>일자</th>
+                          <th style={{ textAlign: "center" }}>전표번호</th>
+                          <th style={{ textAlign: "center" }}>계정과목</th>
+                          <th style={{ textAlign: "center" }}>거래처</th>
+                          <th style={{ textAlign: "center" }}>적요</th>
+                          <th style={{ textAlign: "center" }}>차변</th>
+                          <th style={{ textAlign: "center" }}>대변</th>
                         </tr>
                       </thead>
                       <tbody>
                         {detail.vouchers.map((v, i) => (
                           <tr key={i}>
-                            <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
-                            <td style={{ color: "#888", fontSize: 11 }}>{v.voucher_no}</td>
-                            <td>{v.account_name}</td>
-                            <td style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.counterparty}</td>
-                            <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#666" }}>{v.description}</td>
+                            <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
+                            <td style={{ textAlign: "center", color: "#888", fontSize: 11 }}>{v.voucher_no}</td>
+                            <td style={{ textAlign: "left" }}>{v.account_name}</td>
+                            <td style={{ textAlign: "left", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.counterparty}</td>
+                            <td style={{ textAlign: "left", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#666" }}>{v.description}</td>
                             <td style={{ textAlign: "right", color: v.dr_cr === "차변" ? BLUE : "#ccc" }}>
                               {v.dr_cr === "차변" ? fmtB(v.amount) : "-"}
                             </td>

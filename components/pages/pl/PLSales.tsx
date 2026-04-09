@@ -92,16 +92,14 @@ function KpiCard({ label, value, unit, prior, change, changePct, vsPrevMonth }: 
 }
 
 // ── 월별 거래처 순위 ECharts 바 (Bar Race) ────────────────────
-function MonthlyRaceBar({ barRace, selectedMonth, topN }: {
+function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
   barRace: BarRaceData | null;
   selectedMonth: number | null;
   topN: number;
+  colorMap: Record<string, string>;
 }) {
   if (!barRace) return <div style={{ color: "#aaa", padding: 20, fontSize: 12 }}>데이터 로딩 중...</div>;
 
-  const allCps = Array.from(new Set(barRace.data.map(d => d.counterparty)));
-  const colorMap: Record<string, string> = {};
-  allCps.forEach((cp, i) => { colorMap[cp] = RACE_COLORS[i % RACE_COLORS.length]; });
 
   // 월 선택 없으면 전체 합산
   let items: { counterparty: string; amount: number }[];
@@ -123,7 +121,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN }: {
   const sorted = [...items].reverse();
 
   const option = {
-    grid: { top: 8, bottom: 28, left: 10, right: 100, containLabel: true },
+    grid: { top: 8, bottom: 28, left: 140, right: 100 },
     xAxis: {
       max: "dataMax",
       axisLabel: {
@@ -139,7 +137,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN }: {
       animationDurationUpdate: 700,
       axisLabel: {
         fontSize: 11, color: "#555",
-        formatter: (v: string) => v.length > 12 ? v.slice(0, 12) + "…" : v,
+        formatter: (v: string) => v.length > 16 ? v.slice(0, 16) + "…" : v,
       },
     },
     series: [{
@@ -336,6 +334,13 @@ export default function PLSales() {
 
   if (!kpi) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
 
+  // 공통 colorMap (파이차트 + 막대차트 색상 통일)
+  const colorMap: Record<string, string> = {};
+  if (barRace) {
+    Array.from(new Set(barRace.data.map(d => d.counterparty)))
+      .forEach((cp, i) => { colorMap[cp] = RACE_COLORS[i % RACE_COLORS.length]; });
+  }
+
   // 월 선택 시 monthlyKpi 사용, 미선택 시 전체 KPI
   const activeKpi = (selectedMonth !== null && monthlyKpi) ? monthlyKpi : kpi;
   const rev = activeKpi.revenue;
@@ -345,25 +350,9 @@ export default function PLSales() {
   return (
     <div className="wrap">
 
-      {/* ── 상단 요약 KPI 행 ─────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
-        {[
-          { label: "당기금액", value: rev.current.toLocaleString("ko-KR"), unit: "원", color: "#222" },
-          { label: "전기금액", value: rev.prior.toLocaleString("ko-KR"), unit: "원", color: "#888" },
-          { label: "증감액",   value: (rev.change >= 0 ? "+" : "") + Math.round(rev.change).toLocaleString("ko-KR"), unit: "원", color: rev.change >= 0 ? "#EF4444" : "#2563EB" },
-          { label: "증감률",   value: (rev.change_pct >= 0 ? "+" : "") + (rev.change_pct * 100).toFixed(1), unit: "%", color: rev.change_pct >= 0 ? "#EF4444" : "#2563EB" },
-        ].map(({ label, value, unit, color }) => (
-          <div key={label} className="card" style={{ flex: 1, padding: "14px 20px" }}>
-            <div style={{ fontSize: 11, color: "#aaa", marginBottom: 6 }}>{label}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color, fontFamily: "monospace", letterSpacing: "-0.5px" }}>
-              {value}<span style={{ fontSize: 12, fontWeight: 400, marginLeft: 3, color }}>{unit}</span>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* ── 전체 레이아웃: 2열 그리드 2행 ───────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gridTemplateRows: "auto auto", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gridTemplateRows: "auto auto", gap: 14 }}>
 
         {/* [1,1] KPI 카드 2개 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, gridColumn: "1", gridRow: "1", alignSelf: "stretch" }}>
@@ -542,16 +531,16 @@ export default function PLSales() {
               option={{
                 tooltip: {
                   trigger: "item",
+                  position: (point: number[], _params: unknown, _dom: unknown, _rect: unknown, size: { contentSize: number[]; viewSize: number[] }) => {
+                    const [x, y] = point;
+                    const [w, h] = size.contentSize;
+                    const isTop = y < size.viewSize[1] / 2;
+                    return [x - w / 2, isTop ? y - h - 16 : y + 16];
+                  },
                   formatter: (p: { name: string; value: number; percent: number }) =>
                     `${p.name}<br/>${fmtB(p.value * 1_000_000)}백만 (${p.percent.toFixed(1)}%)`,
                 },
-                legend: {
-                  top: "4%",
-                  left: "center",
-                  textStyle: { fontSize: 10, color: "#888" },
-                  itemWidth: 10, itemHeight: 10,
-                  formatter: (name: string) => name.length > 10 ? name.slice(0, 10) + "…" : name,
-                },
+                legend: { show: false },
                 series: [{
                   name: "거래처 비중",
                   type: "pie",
@@ -581,13 +570,13 @@ export default function PLSales() {
                     itemStyle: {
                       color: item.counterparty === selectedCp
                         ? "#2563EB"
-                        : DONUT_COLORS[i % DONUT_COLORS.length],
+                        : (colorMap[item.counterparty] ?? RACE_COLORS[i % RACE_COLORS.length]),
                       borderWidth: item.counterparty === selectedCp ? 3 : 2,
                     },
                   })),
                 }],
               }}
-              style={{ height: 300, cursor: "pointer" }}
+              style={{ height: 380, cursor: "pointer" }}
               notMerge={true}
               onEvents={{
                 click: (p: { name: string }) => {
@@ -610,7 +599,7 @@ export default function PLSales() {
               }
             </div>
           </div>
-          <MonthlyRaceBar barRace={barRace} selectedMonth={selectedMonth} topN={topN} />
+          <MonthlyRaceBar barRace={barRace} selectedMonth={selectedMonth} topN={topN} colorMap={colorMap} />
         </div>
       </div>
 
