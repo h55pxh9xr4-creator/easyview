@@ -92,7 +92,8 @@ function MiniAreaChart({ labels, datasets, height = 110, yFmt, selectedIdx, onCl
         }}
         plugins={selectedIdx !== null && selectedIdx !== undefined ? [{
           id: "selectedBg",
-          beforeDraw(chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number }; scales: { x: { getPixelForValue: (i: number) => number; width: number; ticks: unknown[] } } }) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          beforeDraw(chart: any) {
             const { ctx, chartArea, scales } = chart;
             if (selectedIdx === null || selectedIdx === undefined) return;
             const x = scales.x.getPixelForValue(selectedIdx);
