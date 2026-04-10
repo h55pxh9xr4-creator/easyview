@@ -86,6 +86,13 @@ export default function Header({ activeTab, activeSub, onNavigate, user, onLogou
             </div>
           </div>
         ))}
+
+        <button
+          className={`main-tab${activeTab === "inquiry" ? " active" : ""}`}
+          onClick={() => onNavigate("inquiry", "inquiry", "문의게시판")}
+        >
+          Q&A
+        </button>
       </nav>
 
       {/* 프로필 + 로그아웃 */}

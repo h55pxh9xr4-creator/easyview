@@ -309,3 +309,23 @@ export const fetchSC6Exceptions = (dateFrom: string, dateTo: string, threshold: 
 
 export const fetchSC6Extract = (dateFrom: string, dateTo: string, counterparty: string) =>
   get<SC6Extract[]>("/api/scenario/6/extract", { date_from: dateFrom, date_to: dateTo, counterparty });
+
+// ── Inquiry ──────────────────────────────────────────────────
+export const INQUIRY_CATEGORIES = ["조회 오류", "데이터 오류", "기타 문의"] as const;
+export type InquiryCategory = typeof INQUIRY_CATEGORIES[number];
+
+export interface InquiryItem {
+  id: number; category: string; title: string; author: string;
+  is_secret: boolean; status: string; created_at: string;
+}
+export interface InquiryDetail extends InquiryItem {
+  content: string; reply: string | null; reply_at: string | null;
+}
+export const fetchInquiries = () => get<InquiryItem[]>("/api/inquiry");
+export const fetchInquiry   = (id: number) => get<InquiryDetail>(`/api/inquiry/${id}`);
+export const createInquiry  = (body: { category: string; title: string; content: string; author: string; is_secret: boolean }) =>
+  fetch(`${BASE}/api/inquiry`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
+export const replyInquiry   = (id: number, reply: string) =>
+  fetch(`${BASE}/api/inquiry/${id}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply }) }).then(r => r.json());
+export const deleteInquiry  = (id: number) =>
+  fetch(`${BASE}/api/inquiry/${id}`, { method: "DELETE" }).then(r => r.json());

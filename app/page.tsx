@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import FilterBar from "@/components/layout/FilterBar";
 import LoginPage from "@/components/layout/LoginPage";
 import Summary from "@/components/pages/Summary";
+import Inquiry from "@/components/pages/Inquiry";
 
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
 const PLTrend      = dynamic(() => import("@/components/pages/pl/PLTrend"),      { ssr: false });
@@ -27,6 +28,7 @@ const SC6          = dynamic(() => import("@/components/pages/sc/SC6"),         
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PAGE_MAP: Record<string, React.ComponentType<any>> = {
   summary:        Summary,
+  inquiry:        Inquiry,
   "pl-sum":       PLSummary,
   "pl-trend":     PLTrend,
   "pl-acct":      PLAccount,
