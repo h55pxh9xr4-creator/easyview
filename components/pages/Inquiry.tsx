@@ -44,7 +44,7 @@ export default function Inquiry() {
     setSubmitting(true);
     try {
       await createInquiry({ ...form, author: currentUser });
-      setForm({ title: "", content: "", is_secret: false });
+      setForm({ category: "기타 문의", title: "", content: "", is_secret: false });
       loadList();
       setView("list");
       showToast("문의가 등록되었습니다.");
