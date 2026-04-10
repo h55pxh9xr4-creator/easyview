@@ -49,9 +49,11 @@ interface Props {
   activeTab: string;
   activeSub: string;
   onNavigate: (tab: string, sub: string, label: string) => void;
+  user?: string;
+  onLogout?: () => void;
 }
 
-export default function Header({ activeTab, activeSub, onNavigate }: Props) {
+export default function Header({ activeTab, activeSub, onNavigate, user, onLogout }: Props) {
   return (
     <header className="hdr">
       <button className="logo" onClick={() => onNavigate("summary", "summary", "Summary")}>
@@ -85,6 +87,40 @@ export default function Header({ activeTab, activeSub, onNavigate }: Props) {
           </div>
         ))}
       </nav>
+
+      {/* 프로필 + 로그아웃 */}
+      {user && (
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "12px", color: "#444" }}>
+            <span style={{ fontWeight: 700, color: "#E87722" }}>{user}</span>님, 환영합니다.
+          </span>
+          <button
+            onClick={onLogout}
+            style={{
+              padding: "4px 12px",
+              border: "1px solid #E0E0E0",
+              borderRadius: "6px",
+              background: "#fff",
+              color: "#888",
+              fontSize: "11px",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              transition: "all .15s",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = "#E87722";
+              (e.currentTarget as HTMLElement).style.color = "#E87722";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = "#E0E0E0";
+              (e.currentTarget as HTMLElement).style.color = "#888";
+            }}
+          >
+            로그아웃
+          </button>
+        </div>
+      )}
     </header>
   );
 }

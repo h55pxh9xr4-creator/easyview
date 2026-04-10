@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import FilterBar from "@/components/layout/FilterBar";
+import LoginPage from "@/components/layout/LoginPage";
 import Summary from "@/components/pages/Summary";
 
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
@@ -45,9 +46,17 @@ const PAGE_MAP: Record<string, React.ComponentType<any>> = {
 };
 
 export default function Page() {
+  const [authed, setAuthed] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
+
+  const [user, setUser] = useState("");
+
+  useEffect(() => {
+    setAuthed(sessionStorage.getItem("ev_auth") === "1");
+    setUser(sessionStorage.getItem("ev_user") ?? "");
+  }, []);
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
     setActiveTab(tab);
@@ -55,11 +64,28 @@ export default function Page() {
     setPageLabel(label);
   };
 
+  // 초기 hydration 전
+  if (authed === null) return null;
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("ev_auth");
+    sessionStorage.removeItem("ev_user");
+    setAuthed(false);
+    setUser("");
+  };
+
+  if (!authed) {
+    return <LoginPage onLogin={() => {
+      setAuthed(true);
+      setUser(sessionStorage.getItem("ev_user") ?? "");
+    }} />;
+  }
+
   const ActivePage = PAGE_MAP[activeSub] ?? Summary;
 
   return (
     <>
-      <Header activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} />
+      <Header activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} user={user} onLogout={handleLogout} />
       <FilterBar activeSub={activeSub} />
       <div className="ptb">
         <span className="ptb-sub">{pageLabel}</span>
