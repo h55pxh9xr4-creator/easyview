@@ -195,14 +195,28 @@ function RatioChart({ labels, series, height = 160, yFmt, showLegend = true }: {
       symbolSize: 4,
       lineStyle: { color: s.color, width: 1.8 },
       itemStyle: { color: s.color },
+      emphasis: { focus: "none" },
+      blur: {
+        lineStyle: { opacity: 1 },
+        itemStyle: { opacity: 1 },
+      },
       markPoint: {
-        silent: true,
         symbol: "pin",
         symbolSize: (val: number) => {
           const len = String(Math.round(val)).length;
           return len <= 3 ? 46 : len <= 5 ? 58 : 70;
         },
         label: { fontSize: 11, color: "#fff", fontWeight: 700 },
+        emphasis: {
+          symbolSize: (val: number) => {
+            const len = String(Math.round(val)).length;
+            return (len <= 3 ? 46 : len <= 5 ? 58 : 70) * 1.25;
+          },
+        },
+        blur: {
+          itemStyle: { opacity: 1 },
+          label: { opacity: 1 },
+        },
         data: markData,
       },
     }; }),
@@ -218,7 +232,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
   const color = CAT_COLOR[cat] ?? "#E87722";
   const prefix = cat === "자산" ? "자산" : cat === "부채" ? "부채" : null;
   return (
-    <div className="card" style={{ borderTop: `3px solid ${color}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+    <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999" }}>{cat}</div>
@@ -447,7 +461,7 @@ export default function BSSummary() {
           return (
           <div key={item.label} style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, alignItems: "stretch", marginBottom: 14 }}>
             {/* 왼쪽 카드 */}
-            <div className="card" style={{ borderTop: `3px solid ${item.color}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#999" }}>{item.label}</div>
