@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/components/ui/Loading";
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import {
@@ -98,7 +99,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
   topN: number;
   colorMap: Record<string, string>;
 }) {
-  if (!barRace) return <div style={{ color: "#aaa", padding: 20, fontSize: 12 }}>데이터 로딩 중...</div>;
+  if (!barRace) return <Loading />;
 
 
   // 월 선택 없으면 전체 합산
@@ -190,25 +191,28 @@ function VoucherTable({ rows, title }: { rows: VoucherRow[]; title: string }) {
           <table style={{ minWidth: 700 }}>
             <thead style={{ position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
               <tr>
-                <th>일자</th><th>전표번호</th><th>거래처</th>
-                <th>적요</th><th style={{ textAlign: "right" }}>금액</th>
+                <th style={{ textAlign: "center" }}>일자</th>
+                <th style={{ textAlign: "center" }}>전표번호</th>
+                <th style={{ textAlign: "center" }}>거래처</th>
+                <th style={{ textAlign: "center" }}>적요</th>
+                <th style={{ textAlign: "center" }}>금액</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
-                  <td style={{ whiteSpace: "nowrap" }}>{r.date}</td>
-                  <td style={{ fontFamily: "monospace", fontSize: 11 }}>{r.voucher_no}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>{r.counterparty}</td>
-                  <td style={{ maxWidth: 300 }}>{r.description}</td>
-                  <td style={{ textAlign: "right", fontFamily: "monospace", whiteSpace: "nowrap" }}>{r.amount.toLocaleString("ko-KR")}</td>
+                  <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{r.date}</td>
+                  <td style={{ fontSize: 11, textAlign: "center" }}>{r.voucher_no}</td>
+                  <td style={{ whiteSpace: "nowrap", textAlign: "left" }}>{r.counterparty}</td>
+                  <td style={{ maxWidth: 300, textAlign: "left" }}>{r.description}</td>
+                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{r.amount.toLocaleString("ko-KR")}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr style={{ fontWeight: 700, background: "#fafafa", position: "sticky", bottom: 0 }}>
                 <td colSpan={4}>합계</td>
-                <td style={{ textAlign: "right", fontFamily: "monospace" }}>{total.toLocaleString("ko-KR")}</td>
+                <td style={{ textAlign: "right" }}>{total.toLocaleString("ko-KR")}</td>
               </tr>
             </tfoot>
           </table>
@@ -302,37 +306,81 @@ export default function PLSales() {
   // ── 도넛 차트 데이터 ─────────────────────────────────────────
   // ── 거래처별 비교 차트 ───────────────────────────────────────
   const cpLabels = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
-  const cpChartData = cpTrend ? {
-    labels: cpLabels,
-    datasets: [
+  const cpOption = cpTrend ? {
+    grid: { top: 48, bottom: 8, left: 8, right: 16, containLabel: true },
+    tooltip: {
+      trigger: "axis",
+      formatter: (params: { seriesName: string; value: number }[]) =>
+        params.map(p => `${p.seriesName}: ${(p.value ?? 0).toLocaleString("ko-KR")}만`).join("<br/>"),
+    },
+    legend: {
+      data: [cp1 || "거래처1", cp2 || "거래처2"],
+      top: 0,
+      left: "center",
+      textStyle: { color: "#888", fontSize: 11 },
+      itemWidth: 10, itemHeight: 10,
+    },
+    xAxis: {
+      type: "category",
+      data: cpLabels,
+      axisLabel: { color: "#bbb", fontSize: 10 },
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: "#eee" } },
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: { color: "#bbb", fontSize: 10 },
+      splitLine: { lineStyle: { color: "#f0f0f0" } },
+    },
+    series: [
       {
-        label: cp1 || "거래처1",
+        name: cp1 || "거래처1",
+        type: "line",
+        smooth: true,
+        color: ORANGE,
         data: cpLabels.map((_, i) => {
           const row = cpTrend.cp1.find(r => r.month === i + 1);
           return row ? Math.round(row.amount / 10_000) : null;
         }),
-        borderColor: ORANGE,
-        backgroundColor: ORANGE_L,
-        pointBackgroundColor: ORANGE,
-        tension: 0.3,
-        spanGaps: true,
+        connectNulls: true,
+        markPoint: {
+          symbol: "pin",
+          symbolSize: 52,
+          itemStyle: { color: ORANGE },
+          label: {
+            fontSize: 10, color: "#fff", fontWeight: 700,
+            formatter: (p: { value: number }) =>
+              `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+          },
+          data: [{ type: "max", name: "최대" }, { type: "min", name: "최소" }],
+        },
       },
       {
-        label: cp2 || "거래처2",
+        name: cp2 || "거래처2",
+        type: "line",
+        smooth: true,
+        color: RED,
         data: cpLabels.map((_, i) => {
           const row = cpTrend.cp2.find(r => r.month === i + 1);
           return row ? Math.round(row.amount / 10_000) : null;
         }),
-        borderColor: RED,
-        backgroundColor: RED_L,
-        pointBackgroundColor: RED,
-        tension: 0.3,
-        spanGaps: true,
+        connectNulls: true,
+        markPoint: {
+          symbol: "pin",
+          symbolSize: 52,
+          itemStyle: { color: RED },
+          label: {
+            fontSize: 10, color: "#fff", fontWeight: 700,
+            formatter: (p: { value: number }) =>
+              `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+          },
+          data: [{ type: "max", name: "최대" }, { type: "min", name: "최소" }],
+        },
       },
     ],
   } : null;
 
-  if (!kpi) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
+  if (!kpi) return <Loading />;
 
   // 공통 colorMap (파이차트 + 막대차트 색상 통일)
   const colorMap: Record<string, string> = {};
@@ -626,22 +674,9 @@ export default function PLSales() {
             </select>
           </div>
         </div>
-        {cpChartData && (
+        {cpOption && (
           <div style={{ height: 200 }}>
-            <Line
-              data={cpChartData}
-              options={{
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                  legend: { labels: { color: "#888", font: { size: 11 }, boxWidth: 10 } },
-                  tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toLocaleString("ko-KR")}만` } },
-                },
-                scales: {
-                  x: { ticks: { color: "#bbb", font: { size: 10 } }, grid: { display: false } },
-                  y: { ticks: { color: "#bbb", font: { size: 10 } }, grid: { color: "#f0f0f0" } },
-                },
-              }}
-            />
+            <ReactECharts option={cpOption} style={{ height: "100%" }} notMerge />
           </div>
         )}
       </div>

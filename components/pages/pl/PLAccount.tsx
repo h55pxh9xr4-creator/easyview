@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/components/ui/Loading";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
@@ -81,7 +82,7 @@ function CounterpartyChangeBar({ data }: { data: Detail["counterparty"] }) {
   const maxVal = Math.max(...data.flatMap(d => [Math.abs(d.cur), Math.abs(d.pri)]), 1);
   return (
     <div>
-      <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 10, color: "#888" }}>
+      <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 10, color: "#888", justifyContent: "flex-end" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ display: "inline-block", width: 10, height: 10, background: "#E87722", borderRadius: 2 }} />당기금액
         </span>
@@ -94,7 +95,7 @@ function CounterpartyChangeBar({ data }: { data: Detail["counterparty"] }) {
         const priPct = Math.abs(d.pri) / maxVal * 100;
         return (
           <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 100, fontSize: 11, color: "#555", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
+            <div style={{ width: 140, fontSize: 11, color: "#555", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
             <div style={{ flex: 1, position: "relative", height: 28 }}>
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 12, background: "#F0F0F0", borderRadius: 3 }}>
                 <div style={{ width: `${priPct}%`, height: "100%", background: "rgba(160,160,160,0.4)", border: "1px solid #D0D0D0", borderRadius: 3, boxSizing: "border-box" }} />
@@ -147,7 +148,7 @@ export default function PLAccount() {
   }, [selected, filter.baseYm, filter.periodType]);
 
 
-  if (!rows) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
+  if (!rows) return <Loading />;
 
   const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
   const selectMgmt = (mgmt: string) => setSelected(prev => prev === mgmt ? null : mgmt);
@@ -199,7 +200,7 @@ export default function PLAccount() {
           <div className="tbl-wrap">
             <table>
               <thead>
-                <tr><th>계정</th><th>당기</th><th>전기</th><th>증감률</th></tr>
+                <tr><th style={{ textAlign: "center" }}>계정</th><th style={{ textAlign: "center" }}>당기</th><th style={{ textAlign: "center" }}>전기</th><th style={{ textAlign: "center" }}>증감률</th></tr>
               </thead>
               <tbody>
                 {orderedDisc.map(disc => {
@@ -334,7 +335,14 @@ export default function PLAccount() {
                       <div className="tbl-wrap" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
                         <table>
                           <thead>
-                            <tr><th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>차/대</th><th>금액</th></tr>
+                            <tr>
+                              <th style={{ textAlign: "center" }}>일자</th>
+                              <th style={{ textAlign: "center" }}>전표번호</th>
+                              <th style={{ textAlign: "center" }}>거래처</th>
+                              <th style={{ textAlign: "center" }}>적요</th>
+                              <th style={{ textAlign: "center" }}>차/대</th>
+                              <th style={{ textAlign: "center" }}>금액</th>
+                            </tr>
                           </thead>
                           <tbody>
                             {vouchers.length === 0 && (
@@ -342,11 +350,11 @@ export default function PLAccount() {
                             )}
                             {vouchers.map((v, i) => (
                               <tr key={i}>
-                                <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
-                                <td>{v.voucher_no}</td>
-                                <td>{v.counterparty ?? "-"}</td>
-                                <td style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
-                                <td style={{ color: v.dr_cr === "차변" ? "#2563EB" : "#EF4444", fontWeight: 600 }}>{v.dr_cr}</td>
+                                <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
+                                <td style={{ textAlign: "center" }}>{v.voucher_no}</td>
+                                <td style={{ textAlign: "left" }}>{v.counterparty ?? "-"}</td>
+                                <td style={{ textAlign: "left", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
+                                <td style={{ textAlign: "center", color: v.dr_cr === "차변" ? "#2563EB" : "#EF4444", fontWeight: 600 }}>{v.dr_cr}</td>
                                 <td>{fmt(v.amount)}</td>
                               </tr>
                             ))}

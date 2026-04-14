@@ -173,13 +173,12 @@ export default function VCHSearch() {
         </div>
       </div>
 
-      {/* ── 안내 ─────────────────────────────────────────────── */}
-      <div style={{ fontSize: 12, color: ORANGE, fontWeight: 600, marginBottom: 8 }}>
-        💡 (Step1) 좌측 FILTER 기능을 활용하여 분석 대상 전표 필터링
-      </div>
-
       {/* ── 전표검색 표 ──────────────────────────────────────── */}
-      <div className="card" style={{ marginBottom: 14 }}>
+      <div>
+        <div style={{ fontSize: 12, color: ORANGE, fontWeight: 600, marginBottom: 6 }}>
+          💡 (Step1) 위쪽 FILTER 기능을 활용하여 분석 대상 전표 필터링
+        </div>
+        <div className="card" style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
           <div className="card-title" style={{ margin: 0 }}>전표검색</div>
           {searchResult && <span style={{ fontSize: 12, color: "#aaa" }}>총 {fmtN(searchResult.total)}건</span>}
@@ -264,6 +263,7 @@ export default function VCHSearch() {
             <button className="ftbtn" disabled={searchPage >= Math.ceil(searchResult.total / SEARCH_PAGE)} onClick={() => doPageSearch(searchPage + 1)}>다음 ▶</button>
           </div>
         )}
+        </div>
       </div>
 
       {/* ── 전표 상세 (클릭 시 표시) ─────────────────────────── */}
@@ -383,8 +383,8 @@ const inputStyle: React.CSSProperties = {
 function Spinner() {
   return (
     <>
-      <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
+      
     </>
   );
 }

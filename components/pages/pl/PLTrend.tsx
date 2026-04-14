@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/components/ui/Loading";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
@@ -334,7 +335,7 @@ export default function PLTrend() {
     }
   }, [selected]);
 
-  if (!accounts) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
+  if (!accounts) return <Loading />;
 
   const year = filter.baseYm.split("-")[0];
   const allMonths = Array.from(new Set(accounts.flatMap(a => Object.keys(a.cur)))).filter(m => m.startsWith(year)).sort();

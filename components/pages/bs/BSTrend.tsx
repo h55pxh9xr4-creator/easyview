@@ -79,6 +79,7 @@ const polylineLabelPlugin: Plugin<"doughnut"> = {
     ctx.save();
     all.forEach(lbl => {
       const short = lbl.name.length > 9 ? lbl.name.slice(0, 9) + "…" : lbl.name;
+      const xText = lbl.x3 + (lbl.isRight ? 3 : -3);
       ctx.beginPath();
       ctx.moveTo(lbl.x1, lbl.y1);
       ctx.lineTo(lbl.x2, lbl.y2);
@@ -86,11 +87,14 @@ const polylineLabelPlugin: Plugin<"doughnut"> = {
       ctx.strokeStyle = lbl.color;
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = "#333";
-      ctx.font = "10px Inter, sans-serif";
       ctx.textAlign = lbl.isRight ? "left" : "right";
       ctx.textBaseline = "middle";
-      ctx.fillText(`${short} ${lbl.pct.toFixed(1)}%`, lbl.x3 + (lbl.isRight ? 3 : -3), lbl.y3);
+      ctx.fillStyle = "#333";
+      ctx.font = "10px Inter, sans-serif";
+      ctx.fillText(short, xText, lbl.y3 - 6);
+      ctx.fillStyle = "#888";
+      ctx.font = "9px Inter, sans-serif";
+      ctx.fillText(`${lbl.pct.toFixed(1)}%`, xText, lbl.y3 + 6);
     });
     ctx.restore();
   },
@@ -100,7 +104,7 @@ function Spinner() {
   return (
     <>
       <span style={{ display:"inline-block", width:14, height:14, border:"2px solid #E87722", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      
     </>
   );
 }
@@ -110,7 +114,7 @@ function CpPie({ items, colors }: {
   items: { name: string; amount: number }[];
   colors: string[];
 }) {
-  if (items.length === 0) return <div style={{ color:"#bbb", fontSize:12 }}>해당 없음</div>;
+  if (items.length === 0) return <div style={{ color:"#bbb", fontSize:12 }}>거래처 없음</div>;
   const top   = [...items].sort((a, b) => b.amount - a.amount).slice(0, 10);
   const total = top.reduce((s, i) => s + i.amount, 0);
   return (
@@ -229,9 +233,14 @@ export default function BSTrend() {
     if (!elements.length) return;
     const date = balanceRows[elements[0].index]?.date;
     if (!date) return;
-    setSelectedDate(date);
-    loadDetail(date);
-  }, [balanceRows, loadDetail]);
+    if (date === selectedDate) {
+      setSelectedDate(null);
+      loadDetail();
+    } else {
+      setSelectedDate(date);
+      loadDetail(date);
+    }
+  }, [balanceRows, loadDetail, selectedDate]);
 
   // ── 차트 데이터 ──────────────────────────────────────────────
   const displayLabels = balanceRows.map((r, i) => {
@@ -243,6 +252,12 @@ export default function BSTrend() {
     ? Math.round(balanceRows.reduce((s, r) => s + r.balance, 0) / balanceRows.length)
     : 0;
 
+  const selIdx = selectedDate ? balanceRows.findIndex(r => r.date === selectedDate) : -1;
+
+  const pointRadii = balanceRows.map((_, i) => i === selIdx ? 6 : 0);
+  const pointBgColors = balanceRows.map((_, i) => i === selIdx ? ORANGE : "transparent");
+  const pointBorderColors = balanceRows.map((_, i) => i === selIdx ? "#fff" : "transparent");
+
   const chartData = {
     labels: displayLabels,
     datasets: [
@@ -250,7 +265,14 @@ export default function BSTrend() {
         label: selAcctName || selDisclosure || "잔액",
         data: balanceRows.map(r => Math.round(r.balance / 10000)),
         borderColor: ORANGE, backgroundColor: ORANGE_FILL,
-        fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 5, borderWidth: 1.5,
+        fill: true, tension: 0.2,
+        pointRadius: pointRadii, pointHoverRadius: 6, borderWidth: 1.5,
+        pointBackgroundColor: pointBgColors,
+        pointBorderColor: pointBorderColors,
+        pointBorderWidth: 2,
+        pointHoverBackgroundColor: "rgba(232,119,34,0.35)",
+        pointHoverBorderColor: "rgba(232,119,34,0.5)",
+        pointHoverBorderWidth: 2,
       },
       {
         label: "평균",
@@ -259,6 +281,22 @@ export default function BSTrend() {
         fill: false, borderDash: [4, 3], pointRadius: 0, borderWidth: 1, tension: 0,
       },
     ],
+  };
+
+  const selectedBgPlugin = {
+    id: "selectedBg",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    beforeDraw(chart: any) {
+      if (selIdx < 0) return;
+      const { ctx, chartArea, scales } = chart;
+      const x = scales.x.getPixelForValue(selIdx);
+      const tickCount = scales.x.ticks.length;
+      const halfBand = tickCount > 1 ? scales.x.width / (tickCount - 1) / 2 : 20;
+      ctx.save();
+      ctx.fillStyle = "rgba(232,119,34,0.08)";
+      ctx.fillRect(x - halfBand, chartArea.top, halfBand * 2, chartArea.bottom - chartArea.top);
+      ctx.restore();
+    },
   };
 
   const chartOptions: ChartOptions<"line"> = {
@@ -337,7 +375,7 @@ export default function BSTrend() {
         </div>
         {balanceLoading ? (
           <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", gap:8, color:"#bbb", fontSize:12 }}>
-            <Spinner /> 데이터 로딩 중...
+            <Spinner /> 로딩 중...
           </div>
         ) : balanceRows.length === 0 ? (
           <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", color:"#bbb", fontSize:12 }}>
@@ -346,7 +384,7 @@ export default function BSTrend() {
         ) : (
           <>
             <div style={{ height:200 }}>
-              <Line ref={chartRef} data={chartData} options={chartOptions} />
+              <Line ref={chartRef} data={chartData} options={chartOptions} plugins={[selectedBgPlugin]} />
             </div>
             <div style={{ marginTop:6, fontSize:10, color:"#bbb", textAlign:"center" }}>
               차트를 클릭하면 해당 일자의 상세 내역을 확인할 수 있습니다
@@ -371,24 +409,28 @@ export default function BSTrend() {
 
           {detailLoading ? (
             <div className="card" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, color:"#bbb", fontSize:12, padding:40 }}>
-              <Spinner /> 데이터 로딩 중...
+              <Spinner /> 로딩 중...
             </div>
           ) : detail && (
             <>
               {/* ── 거래처 구성(차변) + 거래처 구성(대변) + 상대계정 — 3열 ── */}
               <div style={{ display:"grid", gridTemplateColumns:"320px 320px 1fr", gap:14 }}>
-                <div className="card" style={{ height:340, display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                <div className="card" style={{ height:340, display:"flex", flexDirection:"column" }}>
                   <div className="card-title">거래처 구성 (차변)</div>
-                  <CpPie items={detail.counterparty_dr} colors={DONUT_COLORS_DR} />
+                  <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <CpPie items={detail.counterparty_dr} colors={DONUT_COLORS_DR} />
+                  </div>
                 </div>
-                <div className="card" style={{ height:340, display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                <div className="card" style={{ height:340, display:"flex", flexDirection:"column" }}>
                   <div className="card-title">거래처 구성 (대변)</div>
-                  <CpPie items={detail.counterparty_cr} colors={DONUT_COLORS_CR} />
+                  <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <CpPie items={detail.counterparty_cr} colors={DONUT_COLORS_CR} />
+                  </div>
                 </div>
                 <div className="card" style={{ height:340, display:"flex", flexDirection:"column" }}>
                   <div className="card-title">상대계정</div>
                   {detail.counter_accounts.length === 0 ? (
-                    <div style={{ fontSize:12, color:"#bbb" }}>해당 없음</div>
+                    <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#bbb" }}>해당 없음</div>
                   ) : (
                     <div style={{ flex:1, overflowY:"auto", overflowX:"auto" }}>
                       <table>

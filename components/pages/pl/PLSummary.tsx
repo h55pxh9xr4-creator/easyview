@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/components/ui/Loading";
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchPLSummary, fetchPLTrend, fetchPLWaterfall } from "@/lib/api";
@@ -170,7 +171,7 @@ export default function PLSummary() {
   }, [filter.baseYm, filter.periodType, filter.compareTarget]);
 
   if (!data || !trend || !waterfall) {
-    return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
+    return <Loading />;
   }
 
   const curTrend = trend.filter(r => r.is_current_year);

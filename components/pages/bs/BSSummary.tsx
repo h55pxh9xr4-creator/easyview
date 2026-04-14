@@ -44,9 +44,8 @@ interface ActivityData { current: ActivityCurrent; trend: ActivityCurrent[] }
 function ChartLoading({ height = 110 }: { height?: number }) {
   return (
     <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: "#bbb" }}>
-      <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <span style={{ fontSize: 11 }}>데이터 로딩 중...</span>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="spinner" />
+      <span style={{ fontSize: 11 }}>로딩 중...</span>
     </div>
   );
 }
@@ -319,9 +318,8 @@ export default function BSSummary() {
   // KPI 카드용 스켈레톤
   const KpiSkeleton = () => (
     <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 130, color: "#bbb" }}>
-      <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <span style={{ fontSize: 11 }}>데이터 로딩 중...</span>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="spinner" />
+      <span style={{ fontSize: 11 }}>로딩 중...</span>
     </div>
   );
 
@@ -431,7 +429,7 @@ export default function BSSummary() {
           <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, marginBottom: 14 }}>
             <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 130, color: "#bbb" }}>
               <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              <span style={{ fontSize: 11 }}>데이터 로딩 중...</span>
+              <span style={{ fontSize: 11 }}>로딩 중...</span>
             </div>
             <div className="card"><div className="card-title">매출채권 회전일수 추이</div><ChartLoading height={130} /></div>
           </div>

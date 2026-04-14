@@ -107,8 +107,8 @@ export default function SC4() {
     labels: summary?.map(r => r.date) ?? [],
     datasets: [{
       data: summary?.map(r => r.total_amount / 10_000) ?? [],
-      borderColor: ORANGE,
-      backgroundColor: summary?.map(r => r.date === selDate ? ORANGE : "rgba(232,119,34,0.35)") ?? [],
+      borderColor: RED,
+      backgroundColor: summary?.map(r => r.date === selDate ? RED : "rgba(220,38,38,0.35)") ?? [],
       pointRadius: summary?.map(r => r.date === selDate ? 8 : 5) ?? [],
       pointHoverRadius: 9,
       borderWidth: 1.5,
@@ -413,8 +413,8 @@ function DualSlider({ minVal, maxVal, min, max, step, minPct, maxPct, onMinChang
 function Spinner() {
   return (
     <>
-      <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
+      
     </>
   );
 }

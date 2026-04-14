@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/components/ui/Loading";
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import {
@@ -121,7 +122,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
   }, [filter.baseYm, filter.periodType, filter.compareTarget, filter.bsBase]);
 
   if (!kpi || !top3 || !indicators || !plTable || !bsTable || !scCount) {
-    return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
+    return <Loading />;
   }
 
   // Sparkline 데이터 추출 (현재연도만)

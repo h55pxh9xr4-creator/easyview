@@ -53,9 +53,9 @@ export default function BSAccount() {
 
   if (!rows) return (
     <div className="wrap" style={{ padding: 40, color: "#aaa", display: "flex", gap: 8, alignItems: "center" }}>
-      <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      데이터 로딩 중...
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
+      로딩 중...
+      
     </div>
   );
 
@@ -103,6 +103,16 @@ export default function BSAccount() {
               >선택 해제</button>
             )}
           </div>
+          {!selected && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "rgba(232,119,34,0.07)", borderRadius: 6,
+              padding: "7px 12px", marginBottom: 10, fontSize: 11, color: "#E87722",
+            }}>
+              <span style={{ fontSize: 14 }}>👆</span>
+              행을 클릭하면 거래처별 증감 및 전표 내역을 확인할 수 있습니다.
+            </div>
+          )}
           <div className="tbl-wrap">
             <table>
               <thead>
@@ -189,7 +199,7 @@ export default function BSAccount() {
 
             {loadingD && (
               <div className="card" style={{ padding: 40, color: "#aaa", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
                 로딩 중...
               </div>
             )}

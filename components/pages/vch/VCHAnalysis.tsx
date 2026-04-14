@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/components/ui/Loading";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import {
@@ -10,92 +11,25 @@ import {
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarController, BarElement,
-  DoughnutController, ArcElement,
-  Tooltip, Legend, Plugin,
+  Tooltip, Legend,
 } from "chart.js";
-import { Bar, Doughnut } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
+import ReactECharts from "echarts-for-react";
 
-ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, DoughnutController, ArcElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip, Legend);
 
 const ORANGE     = "#E87722";
 const ORANGE_DIM = "rgba(232,119,34,0.25)";
 const BLUE       = "rgba(37,99,235,1)";
 const RED        = "rgba(220,38,38,1)";
 
-const DONUT_COLORS = [
+const TREEMAP_COLORS = [
   "#E87722","#2563EB","#16A34A","#9333EA","#EF4444",
   "#0891B2","#D97706","#059669","#7C3AED","#DB2777","#94a3b8",
 ];
 
 const fmtN = (n: number) => n.toLocaleString("ko-KR");
 const fmtB = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
-
-// ── 폴리라인 외부 라벨 플러그인 (BSTrend 동일) ─────────────────
-const MIN_PCT_LABEL = 2;
-const LINE_GAP = 14;
-
-const polylineLabelPlugin: Plugin<"doughnut"> = {
-  id: "polylineLabel",
-  afterDraw(chart) {
-    const { ctx } = chart;
-    const ds    = chart.data.datasets[0];
-    const meta  = chart.getDatasetMeta(0);
-    const total = (ds.data as number[]).reduce((s, v) => s + v, 0) || 1;
-    const colors = ds.backgroundColor as string[];
-    const labels = (chart.data.labels ?? []) as string[];
-
-    type Lbl = {
-      pct: number; color: string; name: string; isRight: boolean;
-      x1: number; y1: number; x2: number; y2: number; x3: number; y3: number;
-    };
-    const all: Lbl[] = [];
-    meta.data.forEach((arc, i) => {
-      const val = (ds.data as number[])[i];
-      const pct = val / total * 100;
-      if (pct < MIN_PCT_LABEL) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const a   = arc as any;
-      const mid = (a.startAngle + a.endAngle) / 2;
-      const r   = a.outerRadius;
-      const cx  = a.x, cy = a.y;
-      const isRight = Math.cos(mid) >= 0;
-      const x1 = cx + Math.cos(mid) * (r + 3);
-      const y1 = cy + Math.sin(mid) * (r + 3);
-      const x2 = cx + Math.cos(mid) * (r + 18);
-      const y2 = cy + Math.sin(mid) * (r + 18);
-      const x3 = x2 + (isRight ? 16 : -16);
-      all.push({ pct, color: colors[i], name: labels[i] ?? "", isRight, x1, y1, x2, y2, x3, y3: y2 });
-    });
-
-    const settle = (group: Lbl[]) => {
-      group.sort((a, b) => a.y3 - b.y3);
-      for (let k = 1; k < group.length; k++)
-        if (group[k].y3 - group[k - 1].y3 < LINE_GAP) group[k].y3 = group[k - 1].y3 + LINE_GAP;
-      for (let k = group.length - 2; k >= 0; k--)
-        if (group[k + 1].y3 - group[k].y3 < LINE_GAP) group[k].y3 = group[k + 1].y3 - LINE_GAP;
-    };
-    settle(all.filter(l =>  l.isRight));
-    settle(all.filter(l => !l.isRight));
-
-    ctx.save();
-    all.forEach(lbl => {
-      const short = lbl.name.length > 10 ? lbl.name.slice(0, 10) + "…" : lbl.name;
-      ctx.beginPath();
-      ctx.moveTo(lbl.x1, lbl.y1);
-      ctx.lineTo(lbl.x2, lbl.y2);
-      ctx.lineTo(lbl.x3, lbl.y3);
-      ctx.strokeStyle = lbl.color;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = "#333";
-      ctx.font = "10px Inter, sans-serif";
-      ctx.textAlign = lbl.isRight ? "left" : "right";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`${short} ${lbl.pct.toFixed(1)}%`, lbl.x3 + (lbl.isRight ? 3 : -3), lbl.y3);
-    });
-    ctx.restore();
-  },
-};
 
 interface Kpi     { total_cnt: number; dr_sum: number; cr_sum: number }
 interface Daily   { date: string; cnt: number }
@@ -109,11 +43,23 @@ export default function VCHAnalysis() {
   const [acctList,   setAcctList]   = useState<string[]>([]);
   const [selected,   setSelected]   = useState<Set<string>>(new Set());
   const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const filterRef   = useRef<HTMLDivElement>(null);
+  const vchTableRef = useRef<HTMLDivElement>(null);
 
   // ── 선택 상태 (cross-filter) ──────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedAcct, setSelectedAcct] = useState<string | null>(null);
+  const [selectedCp,   setSelectedCp]   = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedCp || !vchTableRef.current) return;
+    const row = vchTableRef.current.querySelector(`tr[data-cp="${CSS.escape(selectedCp)}"]`);
+    if (row) row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedCp]);
+
+  // ── 슬라이더 범위 ────────────────────────────────────────────
+  const [rangeStart, setRangeStart] = useState(0);
+  const [rangeEnd,   setRangeEnd]   = useState(0);
 
   // ── 데이터 상태 ────────────────────────────────────────────────
   const [kpi,     setKpi]     = useState<Kpi | null>(null);
@@ -122,8 +68,6 @@ export default function VCHAnalysis() {
   const [topCp,   setTopCp]   = useState<Cp[] | null>(null);
   const [topN,    setTopN]    = useState(10);
   const [vouchers, setVouchers] = useState<{ total: number; items: VCHVoucherItem[] } | null>(null);
-  const [vchPage,  setVchPage]  = useState(1);
-  const VCH_PAGE_SIZE = 100;
 
   // ── 필터 패널 외부 클릭 닫기 ──────────────────────────────────
   useEffect(() => {
@@ -157,16 +101,19 @@ export default function VCHAnalysis() {
   // ── 인터랙티브 데이터 로드 ────────────────────────────────────
   useEffect(() => {
     if (acctList.length === 0) return;
-    setKpi(null); setDaily(null); setAcctBar(null); setTopCp(null); setVouchers(null); setVchPage(1);
+    setKpi(null); setDaily(null); setAcctBar(null); setTopCp(null); setVouchers(null);
     Promise.all([
       fetchVCHKpi(filter, effectiveDisc, effectiveDate),
       fetchVCHDaily(filter, effectiveDisc),
       fetchVCHAccountBar(filter, discParam, effectiveDate),
       fetchVCHTopCounterparty(filter, effectiveDisc, topN, effectiveDate),
-      fetchVCHVouchers(filter, effectiveDisc, 1, VCH_PAGE_SIZE, effectiveDate),
+      fetchVCHVouchers(filter, effectiveDisc, 1, 9999, effectiveDate),
     ]).then(([k, d, a, c, v]) => {
       setKpi(k as Kpi);
-      setDaily(d as Daily[]);
+      const rows = d as Daily[];
+      setDaily(rows);
+      setRangeStart(0);
+      setRangeEnd(rows.length > 0 ? rows.length - 1 : 0);
       setAcctBar(a as AcctBar[]);
       setTopCp(c as Cp[]);
       setVouchers(v as { total: number; items: VCHVoucherItem[] });
@@ -174,12 +121,6 @@ export default function VCHAnalysis() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter.baseYm, filter.periodType, discParam, topN, selectedDate, selectedAcct, acctList.length]);
 
-  // ── 기표내역 페이지 이동 ──────────────────────────────────────
-  const loadVchPage = (p: number) => {
-    fetchVCHVouchers(filter, effectiveDisc, p, VCH_PAGE_SIZE, effectiveDate)
-      .then(v => { setVouchers(v as { total: number; items: VCHVoucherItem[] }); setVchPage(p); })
-      .catch(console.error);
-  };
 
   // ── 계정 체크박스 ─────────────────────────────────────────────
   const toggleAcct = (acct: string) => {
@@ -194,21 +135,23 @@ export default function VCHAnalysis() {
   // ── 차트 클릭 핸들러 ──────────────────────────────────────────
   const handleDailyClick = (_evt: unknown, elements: { index: number }[]) => {
     if (!elements.length || !daily) { setSelectedDate(null); return; }
-    const date = daily[elements[0].index]?.date;
+    const date = daily[rangeStart + elements[0].index]?.date;
     if (!date) return;
     setSelectedDate(prev => prev === date ? null : date);
-    setSelectedAcct(null);
   };
   const handleAcctClick = (_evt: unknown, elements: { index: number }[]) => {
     if (!elements.length || !acctBar) { setSelectedAcct(null); return; }
     const acct = acctBar[elements[0].index]?.disclosure_acct;
     if (!acct) return;
     setSelectedAcct(prev => prev === acct ? null : acct);
-    setSelectedDate(null);
   };
 
+  // ── 슬라이스된 daily ──────────────────────────────────────────
+  const visibleDaily = (daily ?? []).slice(rangeStart, rangeEnd + 1);
+  const totalDailyLen = (daily ?? []).length;
+
   // ── 차트 색상 (선택 하이라이트) ───────────────────────────────
-  const dailyColors = (daily ?? []).map(d =>
+  const dailyColors = visibleDaily.map(d =>
     selectedDate && d.date !== selectedDate ? ORANGE_DIM : ORANGE
   );
   const acctColors = (acctBar ?? []).map(a =>
@@ -216,119 +159,20 @@ export default function VCHAnalysis() {
   );
 
   // ── 도넛 데이터 ───────────────────────────────────────────────
-  const donutTop = (topCp ?? []).filter(c => c.name !== "기타");
-  const donutOther = (topCp ?? []).find(c => c.name === "기타");
-  const donutItems = donutOther ? [...donutTop, donutOther] : donutTop;
+  const treemapData = (topCp ?? [])
+    .filter(c => c.name !== "기타")
+    .map((c, i) => ({
+      name: c.name,
+      value: c.cnt,
+      pct: c.pct,
+      itemStyle: { color: TREEMAP_COLORS[i % TREEMAP_COLORS.length] },
+    }));
 
   return (
     <div className="wrap">
 
-      {/* ── 헤더 + 선택 뱃지 + 계정 필터 버튼 ─── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-        <div className="sec-hd" style={{ margin: 0, flex: 1 }}>전표분석내역</div>
-
-        {/* 선택 상태 뱃지 */}
-        {(selectedDate || selectedAcct) && (
-          <div style={{ display: "flex", gap: 6 }}>
-            {selectedDate && (
-              <span style={{ fontSize: 11, background: "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "3px 10px", fontWeight: 600 }}>
-                📅 {selectedDate}
-                <button onClick={() => setSelectedDate(null)} style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", color: ORANGE, fontWeight: 700, fontSize: 11 }}>✕</button>
-              </span>
-            )}
-            {selectedAcct && (
-              <span style={{ fontSize: 11, background: "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "3px 10px", fontWeight: 600 }}>
-                📊 {selectedAcct}
-                <button onClick={() => setSelectedAcct(null)} style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", color: ORANGE, fontWeight: 700, fontSize: 11 }}>✕</button>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* 계정 필터 버튼 */}
-        <div ref={filterRef} style={{ position: "relative" }}>
-          <button
-            onClick={() => setFilterOpen(p => !p)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "6px 14px", fontSize: 12, fontWeight: 600,
-              background: filterOpen ? ORANGE : "#FFF",
-              color: filterOpen ? "#FFF" : ORANGE,
-              border: `1.5px solid ${ORANGE}`, borderRadius: 6, cursor: "pointer",
-            }}
-          >
-            ☰ 계정 필터
-            {selected.size < acctList.length && (
-              <span style={{ background: filterOpen ? "rgba(255,255,255,0.3)" : "#FFF4EC", color: ORANGE, borderRadius: 10, padding: "1px 7px", fontSize: 11 }}>
-                {selected.size}/{acctList.length}
-              </span>
-            )}
-          </button>
-
-          {filterOpen && (
-            <div style={{
-              position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100,
-              background: "#FFF", border: "1px solid #E0E0E0", borderRadius: 8,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-              minWidth: 220, maxHeight: 360, display: "flex", flexDirection: "column",
-            }}>
-              <div onClick={toggleAll} style={{ padding: "9px 14px", borderBottom: "1px solid #F0F0F0", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: "#FAFAFA", borderRadius: "8px 8px 0 0" }}>
-                <Checkbox checked={selected.size === acctList.length} />
-                모두 선택
-              </div>
-              <div style={{ overflowY: "auto", flex: 1 }}>
-                {acctList.map(acct => (
-                  <div key={acct} onClick={() => toggleAcct(acct)} style={{ padding: "8px 14px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: selected.has(acct) ? "#FFF8F3" : "#FFF", borderBottom: "1px solid #F8F8F8" }}>
-                    <Checkbox checked={selected.has(acct)} />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#333" }}>{acct}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── 상단: 일자별 전표수 + KPI ─── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14, marginBottom: 14 }}>
-        <div className="card">
-          <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 6 }}>
-            <div className="card-title" style={{ margin: 0 }}>일자별 전표수</div>
-            {selectedAcct && <span style={{ fontSize: 10, color: "#999" }}>— {selectedAcct}</span>}
-            {selectedDate && <span style={{ fontSize: 10, color: ORANGE, marginLeft: "auto" }}>클릭하여 날짜 변경</span>}
-            {!selectedDate && <span style={{ fontSize: 10, color: "#bbb", marginLeft: "auto" }}>막대 클릭 → 날짜 필터</span>}
-          </div>
-          <div style={{ height: 160 }}>
-            {daily === null ? <ChartLoading /> : (
-              <Bar
-                data={{
-                  labels: daily.map(d => {
-                    const [, m, day] = d.date.split("-");
-                    return `${parseInt(m)}/${parseInt(day)}`;
-                  }),
-                  datasets: [{
-                    label: "전표수", data: daily.map(d => d.cnt),
-                    backgroundColor: dailyColors, borderRadius: 2, barPercentage: 0.8,
-                  }],
-                }}
-                options={{
-                  responsive: true, maintainAspectRatio: false,
-                  plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { title: ctx => daily[ctx[0].dataIndex]?.date ?? "", label: ctx => ` ${fmtN(ctx.parsed.y as number)}건` } },
-                  },
-                  scales: {
-                    x: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 20 }, grid: { display: false } },
-                    y: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: "#f5f5f5" } },
-                  },
-                  onClick: (_evt, elements) => handleDailyClick(_evt, elements as { index: number }[]),
-                  cursor: "pointer",
-                } as Parameters<typeof Bar>[0]["options"]}
-              />
-            )}
-          </div>
-        </div>
-
+      {/* ── 상단: KPI + 일자별 전표수 ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, marginBottom: 14 }}>
         <div className="card">
           <div className="card-title">전표내역 요약</div>
           {kpi === null ? <KpiLoading /> : (
@@ -341,10 +185,145 @@ export default function VCHAnalysis() {
                 <div key={label} style={{ background: "#FAFAFA", borderRadius: 8, padding: "10px 16px", textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: "#999", marginBottom: 4 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 800, color }}>
-                    {value}<span style={{ fontSize: 11, color: "#bbb", marginLeft: 3 }}>{unit}</span>
+                    {value}<span style={{ fontSize: 11, color, marginLeft: 3 }}>{unit}</span>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 6 }}>
+            <div className="card-title" style={{ margin: 0 }}>일자별 전표수</div>
+            {selectedAcct && <span style={{ fontSize: 10, color: "#999" }}>— {selectedAcct}</span>}
+            {/* 선택 배지 */}
+            {selectedDate && (
+              <span style={{ fontSize: 11, background: "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "2px 8px", fontWeight: 600 }}>
+                {selectedDate}
+                <button onClick={() => setSelectedDate(null)} style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", color: ORANGE, fontWeight: 700, fontSize: 11 }}>✕</button>
+              </span>
+            )}
+            {selectedAcct && (
+              <span style={{ fontSize: 11, background: "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "2px 8px", fontWeight: 600 }}>
+                {selectedAcct}
+                <button onClick={() => setSelectedAcct(null)} style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", color: ORANGE, fontWeight: 700, fontSize: 11 }}>✕</button>
+              </span>
+            )}
+            <div style={{ flex: 1 }} />
+            {!selectedDate && <span style={{ fontSize: 10, color: "#bbb" }}>막대 클릭 → 날짜 필터</span>}
+            {/* 계정 필터 버튼 */}
+            <div ref={filterRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setFilterOpen(p => !p)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "4px 10px", fontSize: 11, fontWeight: 600,
+                  background: filterOpen ? ORANGE : "#FFF",
+                  color: filterOpen ? "#FFF" : ORANGE,
+                  border: `1.5px solid ${ORANGE}`, borderRadius: 6, cursor: "pointer",
+                }}
+              >
+                ☰ 계정 필터
+                {selected.size < acctList.length && (
+                  <span style={{ background: filterOpen ? "rgba(255,255,255,0.3)" : "#FFF4EC", color: ORANGE, borderRadius: 10, padding: "1px 6px", fontSize: 10 }}>
+                    {selected.size}/{acctList.length}
+                  </span>
+                )}
+              </button>
+              {filterOpen && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100,
+                  background: "#FFF", border: "1px solid #E0E0E0", borderRadius: 8,
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                  minWidth: 220, maxHeight: 360, display: "flex", flexDirection: "column",
+                }}>
+                  <div onClick={toggleAll} style={{ padding: "9px 14px", borderBottom: "1px solid #F0F0F0", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: "#FAFAFA", borderRadius: "8px 8px 0 0" }}>
+                    <Checkbox checked={selected.size === acctList.length} />
+                    모두 선택
+                  </div>
+                  <div style={{ overflowY: "auto", flex: 1 }}>
+                    {acctList.map(acct => (
+                      <div key={acct} onClick={() => toggleAcct(acct)} style={{ padding: "8px 14px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: selected.has(acct) ? "#FFF8F3" : "#FFF", borderBottom: "1px solid #F8F8F8" }}>
+                        <Checkbox checked={selected.has(acct)} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#333" }}>{acct}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div style={{ height: 160 }}>
+            {daily === null ? <ChartLoading /> : (
+              <Bar
+                data={{
+                  labels: visibleDaily.map(d => {
+                    const [, m, day] = d.date.split("-");
+                    return `${parseInt(m)}/${parseInt(day)}`;
+                  }),
+                  datasets: [{
+                    label: "전표수", data: visibleDaily.map(d => d.cnt),
+                    backgroundColor: dailyColors, borderRadius: 2, barPercentage: 0.8,
+                  }],
+                }}
+                options={{
+                  responsive: true, maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { title: ctx => visibleDaily[ctx[0].dataIndex]?.date ?? "", label: ctx => ` ${fmtN(ctx.parsed.y as number)}건` } },
+                  },
+                  scales: {
+                    x: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 20 }, grid: { display: false } },
+                    y: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: "#f5f5f5" } },
+                  },
+                  onClick: (_evt, elements) => handleDailyClick(_evt, elements as { index: number }[]),
+                  cursor: "pointer",
+                } as Parameters<typeof Bar>[0]["options"]}
+              />
+            )}
+          </div>
+          {/* ── X축 슬라이더 ── */}
+          {daily !== null && totalDailyLen > 1 && (
+            <div style={{ marginTop: 10, paddingBottom: 2 }}>
+              <div style={{ position: "relative", height: 20 }}>
+                {/* 선택 범위 트랙 */}
+                <div style={{
+                  position: "absolute", top: "50%", transform: "translateY(-50%)",
+                  left: 0, right: 0, height: 4, background: "#EEE", borderRadius: 2,
+                }} />
+                <div style={{
+                  position: "absolute", top: "50%", transform: "translateY(-50%)",
+                  left: `${rangeStart / (totalDailyLen - 1) * 100}%`,
+                  right: `${(1 - rangeEnd / (totalDailyLen - 1)) * 100}%`,
+                  height: 4, background: ORANGE, borderRadius: 2, opacity: 0.6,
+                }} />
+                <input type="range" min={0} max={totalDailyLen - 1} value={rangeStart}
+                  onChange={e => { const v = +e.target.value; if (v < rangeEnd) setRangeStart(v); }}
+                  style={{ position: "absolute", width: "100%", height: "100%", margin: 0, opacity: 0, cursor: "pointer", zIndex: rangeStart > totalDailyLen - 10 ? 5 : 3 }}
+                />
+                <input type="range" min={0} max={totalDailyLen - 1} value={rangeEnd}
+                  onChange={e => { const v = +e.target.value; if (v > rangeStart) setRangeEnd(v); }}
+                  style={{ position: "absolute", width: "100%", height: "100%", margin: 0, opacity: 0, cursor: "pointer", zIndex: 4 }}
+                />
+                {/* 핸들 표시 */}
+                <div style={{
+                  position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
+                  left: `${rangeStart / (totalDailyLen - 1) * 100}%`,
+                  width: 12, height: 12, borderRadius: "50%",
+                  background: "#fff", border: `2px solid ${ORANGE}`, pointerEvents: "none",
+                }} />
+                <div style={{
+                  position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
+                  left: `${rangeEnd / (totalDailyLen - 1) * 100}%`,
+                  width: 12, height: 12, borderRadius: "50%",
+                  background: "#fff", border: `2px solid ${ORANGE}`, pointerEvents: "none",
+                }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb", marginTop: 4 }}>
+                <span>{daily[rangeStart]?.date}</span>
+                <span>{daily[rangeEnd]?.date}</span>
+              </div>
             </div>
           )}
         </div>
@@ -378,7 +357,7 @@ export default function VCHAnalysis() {
                   },
                   scales: {
                     x: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: "#f5f5f5" } },
-                    y: { ticks: { color: "#444", font: { size: 10 } }, grid: { display: false } },
+                    y: { ticks: { color: "#444", font: { size: 10 } }, grid: { display: false }, afterFit: (axis: { width: number }) => { axis.width = 130; } },
                   },
                   onClick: (_evt, elements) => handleAcctClick(_evt, elements as { index: number }[]),
                 } as Parameters<typeof Bar>[0]["options"]}
@@ -404,35 +383,49 @@ export default function VCHAnalysis() {
               </select>
             </div>
           </div>
-          <div style={{ height: 220 }}>
+          <div style={{ height: 260 }}>
             {topCp === null ? <ChartLoading /> : (
-              <Doughnut
-                data={{
-                  labels: donutItems.map(c => c.name),
-                  datasets: [{
-                    data: donutItems.map(c => c.cnt),
-                    backgroundColor: DONUT_COLORS.slice(0, donutItems.length),
-                    borderWidth: 2, borderColor: "#fff", hoverOffset: 6,
-                  }],
-                }}
-                options={{
-                  responsive: true, maintainAspectRatio: false,
-                  animation: false,
-                  cutout: "50%",
-                  layout: { padding: 55 },
-                  plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                      callbacks: {
-                        label: ctx => {
-                          const item = donutItems[ctx.dataIndex];
-                          return item ? ` ${fmtN(item.cnt)}건 (${item.pct.toFixed(1)}%)` : "";
-                        },
-                      },
-                    },
+              <ReactECharts
+                style={{ height: "100%", width: "100%" }}
+                onEvents={{
+                  click: (p: { name: string }) => {
+                    if (p.name === "root") return;
+                    setSelectedCp(prev => prev === p.name ? null : p.name);
                   },
                 }}
-                plugins={[polylineLabelPlugin]}
+                option={{
+                  animation: false,
+                  tooltip: {
+                    formatter: (p: { name: string; value: number; data?: { pct?: number } }) => {
+                      if (!p.data?.pct) return "";
+                      return `${p.name}<br/>${fmtN(p.value)}건 (${p.data.pct.toFixed(1)}%)`;
+                    },
+                  },
+                  series: [{
+                    type: "treemap",
+                    roam: false,
+                    nodeClick: false,
+                    breadcrumb: { show: false },
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    width: "100%",
+                    height: "100%",
+                    label: {
+                      show: true,
+                      formatter: (p: { name: string; data?: { pct?: number } }) =>
+                        p.data?.pct ? `${p.name}\n${p.data.pct.toFixed(1)}%` : p.name,
+                      fontSize: 11,
+                      color: "#fff",
+                      fontWeight: 600,
+                    },
+                    upperLabel: { show: false },
+                    visibleMin: 300,
+                    itemStyle: { borderWidth: 2, borderColor: "#fff", gapWidth: 2 },
+                    data: [{
+                      name: "root",
+                      children: treemapData,
+                    }],
+                  }],
+                }}
               />
             )}
           </div>
@@ -456,9 +449,9 @@ export default function VCHAnalysis() {
           )}
         </div>
 
-        <div style={{ height: 380, overflowY: "auto", overflowX: "auto" }}>
+        <div ref={vchTableRef} style={{ height: 380, overflowY: "auto", overflowX: "auto" }}>
           {vouchers === null ? (
-            <div style={{ padding: 40, color: "#aaa", textAlign: "center" }}>데이터 로딩 중...</div>
+            <Loading />
           ) : (
             <table>
               <thead style={{ position: "sticky", top: 0, background: "#FFF", zIndex: 1 }}>
@@ -473,8 +466,17 @@ export default function VCHAnalysis() {
                 </tr>
               </thead>
               <tbody>
-                {vouchers.items.map((v, i) => (
-                  <tr key={i}>
+                {(() => {
+                  const seenCp = new Set<string>();
+                  return vouchers.items.map((v, i) => {
+                  const cpIdx = treemapData.findIndex(d => d.name === v.counterparty);
+                  const cpColor = cpIdx >= 0 ? TREEMAP_COLORS[cpIdx % TREEMAP_COLORS.length] : null;
+                  const isHighlighted = selectedCp !== null && v.counterparty === selectedCp;
+                  const isFirstOfCp = !seenCp.has(v.counterparty) && (() => { seenCp.add(v.counterparty); return true; })();
+                  return (
+                  <tr key={i}
+                    data-cp={isFirstOfCp ? v.counterparty : undefined}
+                    style={isHighlighted && cpColor ? { background: cpColor + "22" } : undefined}>
                     <td style={{ whiteSpace: "nowrap", color: "#888", fontSize: 11 }}>{v.date}</td>
                     <td style={{ color: "#888", fontSize: 11, whiteSpace: "nowrap" }}>{v.voucher_no}</td>
                     <td style={{ whiteSpace: "nowrap" }}>{v.account_name}</td>
@@ -487,7 +489,9 @@ export default function VCHAnalysis() {
                       {v.dr_cr === "대변" ? fmtN(v.amount) : "-"}
                     </td>
                   </tr>
-                ))}
+                  );
+                  });
+                })()}
               </tbody>
               <tfoot>
                 <tr style={{ fontWeight: 700, background: "#FFF7F0" }}>
@@ -504,13 +508,6 @@ export default function VCHAnalysis() {
           )}
         </div>
 
-        {vouchers && Math.ceil(vouchers.total / VCH_PAGE_SIZE) > 1 && (
-          <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", justifyContent: "center" }}>
-            <button className="ftbtn" disabled={vchPage <= 1} onClick={() => loadVchPage(vchPage - 1)}>◀ 이전</button>
-            <span style={{ color: "#aaa", fontSize: 13 }}>{vchPage} / {Math.ceil(vouchers.total / VCH_PAGE_SIZE)}</span>
-            <button className="ftbtn" disabled={vchPage >= Math.ceil(vouchers.total / VCH_PAGE_SIZE)} onClick={() => loadVchPage(vchPage + 1)}>다음 ▶</button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -532,9 +529,9 @@ function Checkbox({ checked }: { checked: boolean }) {
 function ChartLoading() {
   return (
     <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 12 }}>
-      <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginRight: 8 }} />
+      <span style={{ className="spinner" style={{ width:14, height:14 }}, marginRight: 8 }} />
       로딩 중...
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      
     </div>
   );
 }

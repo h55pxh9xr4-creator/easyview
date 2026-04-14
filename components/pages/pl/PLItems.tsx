@@ -142,7 +142,7 @@ export default function PLItems() {
                   {data.columns.map((col, i) => (
                     <th key={i} style={{
                       background: "#FAFAFA", color: "#999", padding: "6px 12px",
-                      textAlign: "right", fontWeight: 600, fontSize: 11,
+                      textAlign: "center", fontWeight: 600, fontSize: 11,
                       borderRight: isLastInGroup(i) ? "1px solid #E8E8E8" : "1px solid #F3F3F3",
                       letterSpacing: "0.02em",
                     }}>{col}</th>
@@ -192,7 +192,6 @@ export default function PLItems() {
                         return (
                           <td key={ci} style={{
                             textAlign: "right",
-                            fontFamily: "monospace",
                             fontSize: 12,
                             padding: "5px 12px",
                             color: valColor,

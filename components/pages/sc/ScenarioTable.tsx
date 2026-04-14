@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function ScenarioTable({ title, desc, rows, extraCols = [] }: Props) {
-  if (!rows) return <div className="wrap" style={{ padding: 40, color: "#aaa" }}>데이터 로딩 중...</div>;
+  if (!rows) return <Loading />;
 
   return (
     <div className="wrap">
