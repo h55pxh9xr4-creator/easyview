@@ -59,35 +59,35 @@ export default function Page() {
 
   useEffect(() => {
     // 자동 로그인: localStorage에 저장된 경우 sessionStorage로 복원
-    const isAutoLogin = localStorage.getItem("ev_auto_auth") === "1";
-    if (isAutoLogin) {
-      const autoUser = localStorage.getItem("ev_auto_user") ?? "";
+    if (localStorage.getItem("ev_auto_auth") === "1") {
       sessionStorage.setItem("ev_auth", "1");
-      sessionStorage.setItem("ev_user", autoUser);
+      sessionStorage.setItem("ev_user", localStorage.getItem("ev_auto_user") ?? "");
     }
 
-    const ok = sessionStorage.getItem("ev_auth") === "1";
-    setUser(sessionStorage.getItem("ev_user") ?? "");
-
-    // 책장에서 넘어온 경우 해당 페이지로 이동
+    const ok  = sessionStorage.getItem("ev_auth") === "1";
     const tab   = sessionStorage.getItem("ev_goto_tab");
     const sub   = sessionStorage.getItem("ev_goto_sub");
     const label = sessionStorage.getItem("ev_goto_label");
-    if (tab && sub && label) {
-      setActiveTab(tab);
-      setActiveSub(sub);
-      setPageLabel(label);
+
+    setUser(sessionStorage.getItem("ev_user") ?? "");
+
+    if (ok && tab && sub && label) {
+      // 홈에서 집 클릭하여 넘어온 경우
       sessionStorage.removeItem("ev_goto_tab");
       sessionStorage.removeItem("ev_goto_sub");
       sessionStorage.removeItem("ev_goto_label");
-      setAuthed(ok);
+      setActiveTab(tab);
+      setActiveSub(sub);
+      setPageLabel(label);
+      setAuthed(true);
     } else if (ok) {
-      // 로그인 상태지만 홈에서 넘어온 게 아니면 → 홈화면으로
+      // 로그인 상태 + 직접 접근 → 홈화면으로
       router.replace("/home");
     } else {
       setAuthed(false);
     }
-  }, [router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
     setActiveTab(tab);
