@@ -59,14 +59,14 @@ export default function Page() {
 
   useEffect(() => {
     // 자동 로그인: localStorage에 저장된 경우 sessionStorage로 복원
-    if (localStorage.getItem("ev_auto_auth") === "1") {
+    const isAutoLogin = localStorage.getItem("ev_auto_auth") === "1";
+    if (isAutoLogin) {
       const autoUser = localStorage.getItem("ev_auto_user") ?? "";
       sessionStorage.setItem("ev_auth", "1");
       sessionStorage.setItem("ev_user", autoUser);
     }
 
     const ok = sessionStorage.getItem("ev_auth") === "1";
-    setAuthed(ok);
     setUser(sessionStorage.getItem("ev_user") ?? "");
 
     // 책장에서 넘어온 경우 해당 페이지로 이동
@@ -80,8 +80,14 @@ export default function Page() {
       sessionStorage.removeItem("ev_goto_tab");
       sessionStorage.removeItem("ev_goto_sub");
       sessionStorage.removeItem("ev_goto_label");
+      setAuthed(ok);
+    } else if (ok) {
+      // 로그인 상태지만 홈에서 넘어온 게 아니면 → 홈화면으로
+      router.replace("/home");
+    } else {
+      setAuthed(false);
     }
-  }, []);
+  }, [router]);
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
     setActiveTab(tab);
