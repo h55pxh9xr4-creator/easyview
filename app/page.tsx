@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
@@ -57,6 +57,13 @@ function PageInner() {
   const [pageLabel, setPageLabel] = useState("Summary");
   const [user, setUser] = useState("");
 
+  // mount 시점의 params를 ref에 고정 — effect 재실행으로 인한 루프 방지
+  const initParams = useRef({
+    tab:   searchParams.get("tab"),
+    sub:   searchParams.get("sub"),
+    label: searchParams.get("label"),
+  });
+
   useEffect(() => {
     // 자동 로그인
     if (localStorage.getItem("ev_auto_auth") === "1") {
@@ -64,28 +71,24 @@ function PageInner() {
       sessionStorage.setItem("ev_user", localStorage.getItem("ev_auto_user") ?? "");
     }
 
-    const ok = sessionStorage.getItem("ev_auth") === "1";
+    const ok  = sessionStorage.getItem("ev_auth") === "1";
+    const { tab, sub, label } = initParams.current;
     setUser(sessionStorage.getItem("ev_user") ?? "");
 
-    const tab   = searchParams.get("tab");
-    const sub   = searchParams.get("sub");
-    const label = searchParams.get("label");
-
     if (ok && tab && sub && label) {
-      // 홈에서 집 클릭하여 넘어온 경우 — URL params로 전달됨
       setActiveTab(tab);
       setActiveSub(sub);
       setPageLabel(decodeURIComponent(label));
       setAuthed(true);
-      router.replace("/");   // URL에서 params 제거
+      // router 건드리지 않고 URL만 조용히 정리 (effect 재실행 없음)
+      window.history.replaceState(null, "", window.location.pathname);
     } else if (ok) {
-      // 로그인 상태 + 직접 접근 → 홈화면으로
       router.replace("/home");
     } else {
       setAuthed(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, []);
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
     setActiveTab(tab);
