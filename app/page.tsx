@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import FilterBar from "@/components/layout/FilterBar";
@@ -48,38 +48,36 @@ const PAGE_MAP: Record<string, React.ComponentType<any>> = {
   "sc-sc6":       SC6,
 };
 
-export default function Page() {
+function PageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
-
   const [user, setUser] = useState("");
 
   useEffect(() => {
-    // 자동 로그인: localStorage에 저장된 경우 sessionStorage로 복원
+    // 자동 로그인
     if (localStorage.getItem("ev_auto_auth") === "1") {
       sessionStorage.setItem("ev_auth", "1");
       sessionStorage.setItem("ev_user", localStorage.getItem("ev_auto_user") ?? "");
     }
 
-    const ok  = sessionStorage.getItem("ev_auth") === "1";
-    const tab   = sessionStorage.getItem("ev_goto_tab");
-    const sub   = sessionStorage.getItem("ev_goto_sub");
-    const label = sessionStorage.getItem("ev_goto_label");
-
+    const ok = sessionStorage.getItem("ev_auth") === "1";
     setUser(sessionStorage.getItem("ev_user") ?? "");
 
+    const tab   = searchParams.get("tab");
+    const sub   = searchParams.get("sub");
+    const label = searchParams.get("label");
+
     if (ok && tab && sub && label) {
-      // 홈에서 집 클릭하여 넘어온 경우
-      sessionStorage.removeItem("ev_goto_tab");
-      sessionStorage.removeItem("ev_goto_sub");
-      sessionStorage.removeItem("ev_goto_label");
+      // 홈에서 집 클릭하여 넘어온 경우 — URL params로 전달됨
       setActiveTab(tab);
       setActiveSub(sub);
-      setPageLabel(label);
+      setPageLabel(decodeURIComponent(label));
       setAuthed(true);
+      router.replace("/");   // URL에서 params 제거
     } else if (ok) {
       // 로그인 상태 + 직접 접근 → 홈화면으로
       router.replace("/home");
@@ -87,7 +85,7 @@ export default function Page() {
       setAuthed(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
     setActiveTab(tab);
@@ -95,7 +93,6 @@ export default function Page() {
     setPageLabel(label);
   };
 
-  // 초기 hydration 전
   if (authed === null) return null;
 
   const handleLogout = () => {
@@ -125,5 +122,13 @@ export default function Page() {
       </div>
       <ActivePage onNavigate={handleNavigate} />
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <PageInner />
+    </Suspense>
   );
 }

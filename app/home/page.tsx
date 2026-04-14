@@ -17,12 +17,7 @@ export default function HomePage() {
   if (!authed) return null;
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
-    // 선택한 페이지 정보를 sessionStorage에 저장하고 메인으로 이동
-    // router.push 대신 window.location으로 강제 full reload — useEffect 재실행 보장
-    sessionStorage.setItem("ev_goto_tab", tab);
-    sessionStorage.setItem("ev_goto_sub", sub);
-    sessionStorage.setItem("ev_goto_label", label);
-    window.location.href = "/";
+    router.push(`/?tab=${tab}&sub=${sub}&label=${encodeURIComponent(label)}`);
   };
 
   return <BookShelf onNavigate={handleNavigate} />;
