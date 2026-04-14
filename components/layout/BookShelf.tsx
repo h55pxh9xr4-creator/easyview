@@ -253,16 +253,27 @@ function FloatingPanels() {
   const progRef = useRef(0);
 
   useEffect(() => {
-    const el = heroRef.current;
-    if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const next = Math.max(0, Math.min(1, progRef.current + e.deltaY / 500));
-      progRef.current = next;
-      setProgress(next);
+      const down = e.deltaY > 0;
+      const up   = e.deltaY < 0;
+      // 스크롤 다운 + 아직 합체 안됨 → 합체 진행 (페이지 스크롤 막기)
+      if (down && progRef.current < 1) {
+        e.preventDefault();
+        const next = Math.min(1, progRef.current + e.deltaY / 500);
+        progRef.current = next;
+        setProgress(next);
+      }
+      // 스크롤 업 + 페이지 최상단 + 이미 일부 합체됨 → 흩어지기 (페이지 스크롤 막기)
+      else if (up && window.scrollY === 0 && progRef.current > 0) {
+        e.preventDefault();
+        const next = Math.max(0, progRef.current + e.deltaY / 500);
+        progRef.current = next;
+        setProgress(next);
+      }
+      // 완전히 합체됐고 스크롤 다운 → 자연스럽게 아래로 스크롤
     };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
   }, []);
 
   const assembled = progress > 0.85;
@@ -281,7 +292,7 @@ function FloatingPanels() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        cursor: "ns-resize",
+        cursor: "default",
       }}
     >
       {/* ambient glows */}
