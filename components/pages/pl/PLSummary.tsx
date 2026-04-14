@@ -388,7 +388,6 @@ export default function PLSummary() {
 
           return (
             <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{ height: 3, background: card.color }} />
               <div style={{ display: "grid", gridTemplateColumns: "190px 1fr" }}>
 
                 {/* 왼쪽: 통계 */}
