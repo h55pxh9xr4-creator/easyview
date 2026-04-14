@@ -17,6 +17,7 @@ export default function LoginPage({ onLogin }: Props) {
   const [pw, setPw] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [autoLogin, setAutoLogin] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +28,13 @@ export default function LoginPage({ onLogin }: Props) {
       if (CREDENTIALS[id] && CREDENTIALS[id] === pw) {
         sessionStorage.setItem("ev_auth", "1");
         sessionStorage.setItem("ev_user", id);
+        if (autoLogin) {
+          localStorage.setItem("ev_auto_auth", "1");
+          localStorage.setItem("ev_auto_user", id);
+        } else {
+          localStorage.removeItem("ev_auto_auth");
+          localStorage.removeItem("ev_auto_user");
+        }
         onLogin();
       } else {
         setError("아이디 또는 비밀번호가 올바르지 않습니다.");
@@ -135,6 +143,20 @@ export default function LoginPage({ onLogin }: Props) {
               onFocus={e => e.target.style.borderColor = "#E87722"}
               onBlur={e => e.target.style.borderColor = "#E0E0E0"}
             />
+          </div>
+
+          {/* 자동 로그인 */}
+          <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              id="auto-login"
+              type="checkbox"
+              checked={autoLogin}
+              onChange={e => setAutoLogin(e.target.checked)}
+              style={{ width: 15, height: 15, accentColor: "#E87722", cursor: "pointer" }}
+            />
+            <label htmlFor="auto-login" style={{ fontSize: "12px", color: "#666", cursor: "pointer", userSelect: "none" }}>
+              자동 로그인
+            </label>
           </div>
 
           {/* 에러 메시지 */}

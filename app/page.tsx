@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import FilterBar from "@/components/layout/FilterBar";
@@ -48,6 +49,7 @@ const PAGE_MAP: Record<string, React.ComponentType<any>> = {
 };
 
 export default function Page() {
+  const router = useRouter();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
@@ -56,8 +58,29 @@ export default function Page() {
   const [user, setUser] = useState("");
 
   useEffect(() => {
-    setAuthed(sessionStorage.getItem("ev_auth") === "1");
+    // 자동 로그인: localStorage에 저장된 경우 sessionStorage로 복원
+    if (localStorage.getItem("ev_auto_auth") === "1") {
+      const autoUser = localStorage.getItem("ev_auto_user") ?? "";
+      sessionStorage.setItem("ev_auth", "1");
+      sessionStorage.setItem("ev_user", autoUser);
+    }
+
+    const ok = sessionStorage.getItem("ev_auth") === "1";
+    setAuthed(ok);
     setUser(sessionStorage.getItem("ev_user") ?? "");
+
+    // 책장에서 넘어온 경우 해당 페이지로 이동
+    const tab   = sessionStorage.getItem("ev_goto_tab");
+    const sub   = sessionStorage.getItem("ev_goto_sub");
+    const label = sessionStorage.getItem("ev_goto_label");
+    if (tab && sub && label) {
+      setActiveTab(tab);
+      setActiveSub(sub);
+      setPageLabel(label);
+      sessionStorage.removeItem("ev_goto_tab");
+      sessionStorage.removeItem("ev_goto_sub");
+      sessionStorage.removeItem("ev_goto_label");
+    }
   }, []);
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
@@ -72,14 +95,16 @@ export default function Page() {
   const handleLogout = () => {
     sessionStorage.removeItem("ev_auth");
     sessionStorage.removeItem("ev_user");
+    localStorage.removeItem("ev_auto_auth");
+    localStorage.removeItem("ev_auto_user");
     setAuthed(false);
     setUser("");
   };
 
   if (!authed) {
     return <LoginPage onLogin={() => {
-      setAuthed(true);
       setUser(sessionStorage.getItem("ev_user") ?? "");
+      router.push("/home");
     }} />;
   }
 
