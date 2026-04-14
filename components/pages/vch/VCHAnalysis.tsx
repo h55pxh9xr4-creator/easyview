@@ -529,7 +529,7 @@ function Checkbox({ checked }: { checked: boolean }) {
 function ChartLoading() {
   return (
     <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 12 }}>
-      <span style={{ className="spinner" style={{ width:14, height:14 }}, marginRight: 8 }} />
+      <div className="spinner" style={{ width:14, height:14, marginRight: 8 }} />
       로딩 중...
       
     </div>

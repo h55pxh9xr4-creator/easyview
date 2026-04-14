@@ -413,7 +413,7 @@ function DualSlider({ minVal, maxVal, min, max, step, minPct, maxPct, onMinChang
 function Spinner() {
   return (
     <>
-      <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
+      <div className="spinner" style={{ width:14, height:14 }} />
       
     </>
   );

@@ -53,7 +53,7 @@ export default function BSAccount() {
 
   if (!rows) return (
     <div className="wrap" style={{ padding: 40, color: "#aaa", display: "flex", gap: 8, alignItems: "center" }}>
-      <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
+      <div className="spinner" style={{ width:14, height:14 }} />
       로딩 중...
       
     </div>
@@ -199,7 +199,7 @@ export default function BSAccount() {
 
             {loadingD && (
               <div className="card" style={{ padding: 40, color: "#aaa", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
+                <div className="spinner" style={{ width:14, height:14 }} />
                 로딩 중...
               </div>
             )}

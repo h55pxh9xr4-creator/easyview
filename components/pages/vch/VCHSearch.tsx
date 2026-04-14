@@ -383,7 +383,7 @@ const inputStyle: React.CSSProperties = {
 function Spinner() {
   return (
     <>
-      <span style={{ className="spinner" style={{ width:14, height:14 }} }} />
+      <div className="spinner" style={{ width:14, height:14 }} />
       
     </>
   );
