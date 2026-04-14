@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter','Malgun Gothic','맑은 고딕',sans-serif;background:#F5F5F5;color:#2C2C2C;font-size:13px}
+body{font-family:'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif;background:#F5F5F5;color:#2C2C2C;font-size:13px;font-variant-numeric:tabular-nums}
 
 /* ── Header ── */
 .hdr{background:#fff;border-bottom:1px solid #EDEDED;height:52px;display:flex;align-items:center;padding:0 24px;position:sticky;top:0;z-index:200;gap:0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -52,7 +52,7 @@ body{font-family:'Inter','Malgun Gothic','맑은 고딕',sans-serif;background:#
 
 /* ── Cards ── */
 .card{background:#fff;border-radius:10px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)}
-.card-title{font-size:13px;font-weight:700;color:#2C2C2C;margin-bottom:14px;padding-left:10px;border-left:3px solid #E87722}
+.card-title{font-size:13px;font-weight:700;color:#2C2C2C;margin-bottom:14px;}
 
 /* ── KPI strip ── */
 .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
@@ -99,7 +99,7 @@ thead th:first-child{text-align:left;border-radius:4px 0 0 0}
 thead th:last-child{border-radius:0 4px 0 0}
 tbody tr{border-bottom:1px solid #F5F5F5}
 tbody tr:hover{background:#FFF8F3}
-tbody td{padding:7px 10px;text-align:right;color:#555;white-space:nowrap}
+tbody td{padding:7px 10px;text-align:right;color:#555;white-space:nowrap;font-variant-numeric:tabular-nums}
 tbody td:first-child{text-align:left;font-weight:600;color:#2C2C2C}
 .td-s1{padding-left:18px!important;color:#888!important;font-weight:500!important}
 .td-s2{padding-left:30px!important;color:#aaa!important;font-weight:400!important}
