@@ -407,6 +407,9 @@ export default function BookShelf({ onNavigate }: { onNavigate: (tab: string, su
         @keyframes dogEnter {0%{transform:scale(1);opacity:1}100%{transform:scale(0.05);opacity:0}}
       `}</style>
 
+      {/* HERO */}
+      <FloatingPanels />
+
       {/* VILLAGE */}
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, padding:"48px 0 36px" }}>
         <div style={{ textAlign:"center", marginBottom:20 }}>
