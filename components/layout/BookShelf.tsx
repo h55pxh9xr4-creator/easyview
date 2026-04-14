@@ -23,15 +23,16 @@ const PANEL_DEFS = [
   { id: "task",   top: 52,  left: 556, w: 304, h: 164, z: 2, scatter: { tx:  280, ty: -130, tz: -190, rx: 12, ry:  30, sc: 0.74 } },
   { id: "margin", top: 224, left: 556, w: 304, h: 92,  z: 2, scatter: { tx:  320, ty:   60, tz: -140, rx:  6, ry:  26, sc: 0.78 } },
   { id: "house",  top: 324, left: 556, w: 304, h: 134, z: 2, scatter: { tx:  300, ty:  200, tz: -120, rx:  4, ry:  22, sc: 0.80 } },
-] as const;
+];
 
-type PanelId = typeof PANEL_DEFS[number]["id"];
+type PanelId = "hdr" | "eq" | "pl" | "task" | "margin" | "house";
 
 /* ── helpers ── */
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 function ease(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
-function getTransform(scatter: typeof PANEL_DEFS[0]["scatter"], progress: number) {
+type Scatter = { tx: number; ty: number; tz: number; rx: number; ry: number; sc: number };
+function getTransform(scatter: Scatter, progress: number) {
   const t = 1 - ease(progress);
   return [
     `translateX(${scatter.tx * t}px)`,
