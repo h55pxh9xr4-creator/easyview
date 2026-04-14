@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import CursorTrail from "@/components/layout/CursorTrail";
 
 export const metadata: Metadata = {
   title: "Easy View | PwC",
@@ -14,7 +15,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body>
+        <CursorTrail />
+        {children}
+      </body>
     </html>
   );
 }
