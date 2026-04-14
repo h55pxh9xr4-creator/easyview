@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, Float, String, Date, Boolean, Index
+from sqlalchemy import Column, Integer, Float, String, Date, Boolean, Index, DateTime, Text
+from datetime import datetime
 from database import Base
 
 
@@ -41,6 +42,21 @@ class JE(Base):
     section = Column(String)             # 구분 (BS/PL/IT)
     is_weekend = Column(Boolean)         # 주말 여부
     is_cash = Column(Boolean)            # 현금계정 여부 (공시용계정 LIKE '%현금%')
+
+
+class Inquiry(Base):
+    __tablename__ = "inquiry"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    category   = Column(String,  nullable=False, default="기타 문의")  # 조회 오류 | 데이터 오류 | 기타 문의
+    title      = Column(String,  nullable=False)
+    content    = Column(Text,    nullable=False)
+    author     = Column(String,  nullable=False)
+    is_secret  = Column(Boolean, default=False)     # 비밀글 여부
+    status     = Column(String,  default="답변대기") # 답변대기 | 답변완료
+    reply      = Column(Text,    nullable=True)     # 관리자 답변
+    reply_at   = Column(DateTime, nullable=True)    # 답변 일시
+    created_at = Column(DateTime, default=datetime.now)
 
 
 # 인덱스 정의

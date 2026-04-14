@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import filters, summary, pl, bs, vch, scenario
+from routers import filters, summary, pl, bs, vch, scenario, inquiry
 
 Base.metadata.create_all(bind=engine)
 
@@ -21,6 +21,7 @@ app.include_router(pl.router,       prefix="/api/pl",        tags=["pl"])
 app.include_router(bs.router,       prefix="/api/bs",        tags=["bs"])
 app.include_router(vch.router,      prefix="/api/vch",       tags=["vch"])
 app.include_router(scenario.router, prefix="/api/scenario",  tags=["scenario"])
+app.include_router(inquiry.router,  prefix="/api/inquiry",   tags=["inquiry"])
 
 
 @app.get("/")

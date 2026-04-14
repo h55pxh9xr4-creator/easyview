@@ -413,6 +413,41 @@ def get_pl_sales_top_donut(
             "top_pct": round(top_total / total * 100, 2) if total else 0}
 
 
+@router.get("/sales/bar_race")
+def get_pl_sales_bar_race(
+    base_ym: str = Query(...),
+    top_n: int = Query(15),
+    db: Session = Depends(get_db),
+):
+    """월별 거래처 매출 순위 경쟁용 데이터 (Bar Race 차트)"""
+    year = base_ym.split("-")[0]
+    # 해당 연도 전체 거래처 월별 매출 집계
+    rows = db.execute(text("""
+        SELECT substr(year_month,6,2) AS mo,
+               counterparty,
+               -ROUND(SUM(signed_amount),0) AS amount
+        FROM je
+        WHERE disclosure_acct='매출액'
+          AND counterparty IS NOT NULL
+          AND substr(year_month,1,4)=:yr
+        GROUP BY mo, counterparty
+        ORDER BY mo, amount DESC
+    """), {"yr": year}).fetchall()
+
+    # 전체 등장 거래처 중 연간 합산 기준 top_n만 추출
+    totals: dict = {}
+    for r in rows:
+        totals[r[1]] = totals.get(r[1], 0) + float(r[2] or 0)
+    top_cps = set(sorted(totals, key=lambda x: -totals[x])[:top_n])
+
+    months = sorted(set(r[0] for r in rows))
+    data = [
+        {"month": int(r[0]), "counterparty": r[1], "amount": float(r[2] or 0)}
+        for r in rows if r[1] in top_cps
+    ]
+    return {"year": year, "months": [int(m) for m in months], "data": data}
+
+
 @router.get("/sales/top_change")
 def get_pl_sales_top_change(
     base_ym: str = Query(...),
