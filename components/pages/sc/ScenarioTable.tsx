@@ -1,5 +1,7 @@
 "use client";
 
+import Loading from "@/components/ui/Loading";
+
 const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
 export interface ScRow {
