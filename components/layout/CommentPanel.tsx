@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { createInquiry, replyInquiry, INQUIRY_CATEGORIES } from "@/lib/api";
@@ -28,6 +28,9 @@ export default function CommentPanel() {
   });
   const [replyText, setReplyText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // 마운트 시 항상 빈 상태로 강제 초기화 (이전 상태 잔존 방지)
+  useEffect(() => { setReplyText(""); }, []);
   const [done, setDone] = useState(false);
   const [replyDone, setReplyDone] = useState(false);
 
