@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import {
-  fetchInquiries, fetchInquiry, createInquiry, replyInquiry, deleteInquiry,
+  fetchInquiries, fetchInquiry, createInquiry, updateInquiry, replyInquiry, deleteInquiry,
   InquiryItem, InquiryDetail, INQUIRY_CATEGORIES,
 } from "@/lib/api";
 
-type View = "list" | "detail" | "write";
+type View = "list" | "detail" | "write" | "edit";
 const ADMIN_ID = "admin";
 const PAGE_SIZE = 10;
 
@@ -64,6 +64,18 @@ export default function Inquiry() {
       openDetail(detail.id);
       showToast("답변이 등록되었습니다.");
     } catch { showToast("답변 등록 중 오류가 발생했습니다.", "err"); }
+    finally { setSubmitting(false); }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail || !form.title.trim() || !form.content.trim()) return;
+    setSubmitting(true);
+    try {
+      await updateInquiry(detail.id, { category: form.category, title: form.title, content: form.content, is_secret: form.is_secret });
+      openDetail(detail.id);
+      showToast("수정되었습니다.");
+    } catch { showToast("수정 중 오류가 발생했습니다.", "err"); }
     finally { setSubmitting(false); }
   };
 
@@ -269,9 +281,42 @@ export default function Inquiry() {
     </div>
   );
 
+  // ── 수정 ──────────────────────────────────────────────────
+  if (view === "edit" && detail) {
+    return (
+      <div className="wrap">
+        <Toast />
+        <div className="card">
+          <div style={{ borderBottom: "1px solid #EBEBEB", paddingBottom: 14, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#2C2C2C" }}>문의 수정</span>
+            <button onClick={() => setView("detail")} style={backBtn}>← 취소</button>
+          </div>
+          <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              <select className="fsel" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={{ fontSize: 13, padding: "6px 28px 6px 10px" }}>
+                {INQUIRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#666", cursor: "pointer" }}>
+                <input type="checkbox" checked={form.is_secret} onChange={e => setForm(p => ({ ...p, is_secret: e.target.checked }))} />
+                비밀글
+              </label>
+            </div>
+            <input style={inp} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="제목" required />
+            <textarea style={{ ...inp, resize: "vertical", minHeight: 160 }} value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} placeholder="내용" required />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button type="button" onClick={() => setView("detail")} style={cancelBtn}>취소</button>
+              <button type="submit" disabled={submitting} style={{ ...submitBtn, opacity: submitting ? 0.7 : 1 }}>{submitting ? "저장 중..." : "저장"}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // ── 상세 ──────────────────────────────────────────────────
   if (view === "detail" && detail) {
     const canView = isAdmin || detail.author === currentUser || !detail.is_secret;
+    const canEdit = isAdmin || detail.author === currentUser;
     return (
       <div className="wrap">
         <Toast />
@@ -284,6 +329,9 @@ export default function Inquiry() {
               </span>
               <span style={{ ...badge, ...catColor(detail.category), flexShrink: 0 }}>{detail.category}</span>
               <span style={{ ...badge, flexShrink: 0, background: detail.status === "답변완료" ? "#EBF0FD" : "#FFF5EE", color: detail.status === "답변완료" ? "#2563EB" : "#E87722" }}>{detail.status}</span>
+              <button onClick={() => setView("list")} style={backBtn}>목록으로</button>
+              {canEdit && <button onClick={() => { setForm({ category: detail.category, title: detail.title, content: detail.content, is_secret: detail.is_secret }); setView("edit"); }} style={cancelBtn}>수정</button>}
+              {canEdit && <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: "#FCCAC7" }}>삭제</button>}
             </div>
             <div style={{ fontSize: 12, color: "#aaa", display: "flex", gap: 20 }}>
               <span>작성자: <strong style={{ color: "#666" }}>{detail.author}</strong></span>
@@ -294,12 +342,6 @@ export default function Inquiry() {
             ? <p style={{ color: "#ccc", textAlign: "center", padding: "40px 0" }}>비밀글입니다.</p>
             : <p style={{ fontSize: 13, color: "#333", lineHeight: 1.9, whiteSpace: "pre-wrap", minHeight: 120 }}>{detail.content}</p>
           }
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24, paddingTop: 14, borderTop: "1px solid #F0F0F0" }}>
-            <button onClick={() => setView("list")} style={backBtn}>← 목록으로</button>
-            {(isAdmin || detail.author === currentUser) && (
-              <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: "#FCCAC7" }}>삭제</button>
-            )}
-          </div>
         </div>
         {canView && (
           <div style={{ ...cardS, marginTop: 12 }}>

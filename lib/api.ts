@@ -327,5 +327,7 @@ export const createInquiry  = (body: { category: string; title: string; content:
   fetch(`${BASE}/api/inquiry`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
 export const replyInquiry   = (id: number, reply: string) =>
   fetch(`${BASE}/api/inquiry/${id}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply }) }).then(r => r.json());
+export const updateInquiry  = (id: number, body: { category?: string; title?: string; content?: string; is_secret?: boolean }) =>
+  fetch(`${BASE}/api/inquiry/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
 export const deleteInquiry  = (id: number) =>
   fetch(`${BASE}/api/inquiry/${id}`, { method: "DELETE" }).then(r => r.json());
