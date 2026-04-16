@@ -183,7 +183,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           const d = kpi[key];
           const idx = selMonth[key];
           return (
-            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: `${fmtB(d.value)}백만` }, { top: r.top, right: r.right }); }}>
+            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); const selVal = idx !== null ? fmtB(sparkData[key][idx]) : fmtB(d.value); const selLabel = idx !== null ? months[idx] : undefined; triggerComment({ page: "Summary", label, value: `${selVal}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div className="kpi-lbl">{label}</div>
                 {idx !== null && (
