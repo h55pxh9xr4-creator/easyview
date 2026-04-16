@@ -170,7 +170,7 @@ export default function PLItems() {
                       borderBottom: isSubtotal ? `1px solid rgba(232,119,34,0.2)` : "1px solid #F5F5F5",
                       background: rowBg,
                       cursor: "pointer",
-                    }} onClick={() => triggerComment({ page: "손익항목", label: row.label, value: fmt(row.values[row.values.length - 1]) })}>
+                    }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "손익항목", label: row.label, value: fmt(row.values[row.values.length - 1]) }, { top: r.top, right: r.right }); }}>
                       {/* 계정명 셀 */}
                       <td style={{
                         padding: isMgmt ? "5px 16px 5px 32px" : isSubtotal ? "8px 16px" : "6px 16px",

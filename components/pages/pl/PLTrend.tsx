@@ -410,10 +410,11 @@ export default function PLTrend() {
             months={allMonths}
             showDisc={discFilter === "전체"}
             isSelected={selected === a.mgmt_acct}
-            onClick={() => {
+            onClick={(e) => {
               setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct);
               const cur = allMonths.map(m => a.cur[m] ?? 0).reduce((s, v) => s + v, 0);
-              triggerComment({ page: "PL 추이분석", label: a.mgmt_acct, value: `${fmtM(cur)}백만` });
+              const r = e.currentTarget.getBoundingClientRect();
+              triggerComment({ page: "PL 추이분석", label: a.mgmt_acct, value: `${fmtM(cur)}백만` }, { top: r.top, right: r.right });
             }}
           />
         ))}
@@ -496,7 +497,7 @@ export default function PLTrend() {
                             <tr><td colSpan={6} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
                           )}
                           {vouchers.map((v, i) => (
-                            <tr key={i} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "PL 추이분석", label: v.counterparty ?? v.description ?? "-", value: fmt(v.amount), sub: detail.mgmt_acct })}>
+                            <tr key={i} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 추이분석", label: v.counterparty ?? v.description ?? "-", value: fmt(v.amount), sub: detail.mgmt_acct }, { top: r.top, right: r.right }); }}>
                               <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
                               <td>{v.voucher_no}</td>
                               <td>{v.counterparty ?? "-"}</td>

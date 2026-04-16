@@ -173,7 +173,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
 }
 
 // ── 전표 테이블 ────────────────────────────────────────────────
-function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: string; onRowClick?: (r: VoucherRow) => void }) {
+function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: string; onRowClick?: (r: VoucherRow, rect: { top: number; right: number }) => void }) {
   const [open, setOpen] = useState(true);
   const total = rows.reduce((s, r) => s + r.amount, 0);
   return (
@@ -201,7 +201,7 @@ function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: 
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i} style={{ cursor: onRowClick ? "pointer" : undefined }} onClick={() => onRowClick?.(r)}>
+                <tr key={i} style={{ cursor: onRowClick ? "pointer" : undefined }} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); onRowClick?.(r, { top: rect.top, right: rect.right }); }}>
                   <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{r.date}</td>
                   <td style={{ fontSize: 11, textAlign: "center" }}>{r.voucher_no}</td>
                   <td style={{ whiteSpace: "nowrap", textAlign: "left" }}>{r.counterparty}</td>
@@ -406,7 +406,7 @@ export default function PLSales() {
 
         {/* [1,1] KPI 카드 2개 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, gridColumn: "1", gridRow: "1", alignSelf: "stretch" }}>
-          <div style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` })}>
+          <div style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` }, { top: r.top, right: r.right }); }}>
             <KpiCard
               label={kpiLabel} unit="백만"
               value={fmtB(rev.current)} prior={fmtB(rev.prior)}
@@ -415,7 +415,7 @@ export default function PLSales() {
               vsPrevMonth={Math.round(rev.vs_prev_month / 1_000_000)}
             />
           </div>
-          <div style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) })}>
+          <div style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) }, { top: r.top, right: r.right }); }}>
             <KpiCard
               label="거래처수" unit="개"
               value={cnt.current} prior={cnt.prior}
@@ -690,8 +690,8 @@ export default function PLSales() {
       {/* ── 전표 내역 ─────────────────────────────────────────── */}
       {vouchers && (
         <>
-          <VoucherTable rows={vouchers.current} title="당기 전표 내역" onRowClick={(r) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") })} />
-          <VoucherTable rows={vouchers.prior}   title="전기 전표 내역" onRowClick={(r) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") })} />
+          <VoucherTable rows={vouchers.current} title="당기 전표 내역" onRowClick={(r, rect) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") }, rect)} />
+          <VoucherTable rows={vouchers.prior}   title="전기 전표 내역" onRowClick={(r, rect) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") }, rect)} />
         </>
       )}
 

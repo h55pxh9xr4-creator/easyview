@@ -183,7 +183,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           const d = kpi[key];
           const idx = selMonth[key];
           return (
-            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer" }} onClick={() => triggerComment({ page: "Summary", label, value: `${fmtB(d.value)}백만` })}>
+            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: `${fmtB(d.value)}백만` }, { top: r.top, right: r.right }); }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div className="kpi-lbl">{label}</div>
                 {idx !== null && (
@@ -294,7 +294,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <thead><tr><th>공시용계정</th><th>당기</th><th>전기</th><th>증감률</th></tr></thead>
               <tbody>
                 {plTable.map((row) => (
-                  <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) })}>
+                  <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) }, { top: r.top, right: r.right }); }}>
                     <td className={!row.is_subtotal ? "td-s1" : ""}>{row.account}</td>
                     <td>{fmt(row.current)}</td>
                     <td>{fmt(row.prior)}</td>
@@ -314,7 +314,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <thead><tr><th>재무항목</th><th>기말</th><th>기초</th><th>증감률</th></tr></thead>
               <tbody>
                 {bsTable.map((row) => (
-                  <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) })}>
+                  <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) }, { top: r.top, right: r.right }); }}>
                     <td className={row.indent === 1 ? "td-s1" : ""}>{row.account}</td>
                     <td>{fmt(row.current)}</td>
                     <td>{fmt(row.prior)}</td>
