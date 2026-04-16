@@ -72,21 +72,23 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
   };
 
   return (
-    <ReactECharts
-      option={option}
-      style={{ height: 60, width: "100%", marginTop: 8, cursor: "pointer" }}
-      notMerge={true}
-      onEvents={{
-        mouseover: (p: { dataIndex?: number }) => {
-          if (p.dataIndex !== undefined) setHoveredIdx(p.dataIndex);
-        },
-        mouseout: () => setHoveredIdx(null),
-        click: (p: { dataIndex?: number }) => {
-          if (p.dataIndex === undefined) return;
-          onMonthClick(selectedIdx === p.dataIndex ? null : p.dataIndex);
-        },
-      }}
-    />
+    <div onClick={e => e.stopPropagation()}>
+      <ReactECharts
+        option={option}
+        style={{ height: 60, width: "100%", marginTop: 8, cursor: "pointer" }}
+        notMerge={true}
+        onEvents={{
+          mouseover: (p: { dataIndex?: number }) => {
+            if (p.dataIndex !== undefined) setHoveredIdx(p.dataIndex);
+          },
+          mouseout: () => setHoveredIdx(null),
+          click: (p: { dataIndex?: number }) => {
+            if (p.dataIndex === undefined) return;
+            onMonthClick(selectedIdx === p.dataIndex ? null : p.dataIndex);
+          },
+        }}
+      />
+    </div>
   );
 }
 
@@ -256,31 +258,30 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
         <div className="card">
           <div className="card-title">손익지표</div>
           <div className="ind-row">
-            <div className="ind-item">
-              <div className="ind-lbl">매출총이익률</div>
-              <div className="ind-val" style={{ color: "#E87722" }}>{fmtPct(indicators.pl.gross_profit_margin)}</div>
-            </div>
-            <div className="ind-item">
-              <div className="ind-lbl">영업이익률</div>
-              <div className="ind-val" style={{ color: "#D5476E" }}>{fmtPct(indicators.pl.operating_margin)}</div>
-            </div>
-            <div className="ind-item">
-              <div className="ind-lbl">당기손익률</div>
-              <div className="ind-val" style={{ color: "#6D4C41" }}>{fmtPct(indicators.pl.net_margin)}</div>
-            </div>
+            {[
+              { label: "매출총이익률", value: indicators.pl.gross_profit_margin, color: "#E87722" },
+              { label: "영업이익률",   value: indicators.pl.operating_margin,    color: "#D5476E" },
+              { label: "당기손익률",   value: indicators.pl.net_margin,          color: "#6D4C41" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="ind-item" style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+                <div className="ind-lbl">{label}</div>
+                <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
+              </div>
+            ))}
           </div>
         </div>
         <div className="card">
           <div className="card-title">유동성지표</div>
           <div className="ind-row">
-            <div className="ind-item">
-              <div className="ind-lbl">부채비율</div>
-              <div className="ind-val" style={{ color: "#2563EB" }}>{fmtPct(indicators.bs.debt_ratio)}</div>
-            </div>
-            <div className="ind-item">
-              <div className="ind-lbl">유동비율</div>
-              <div className="ind-val" style={{ color: "#16A34A" }}>{fmtPct(indicators.bs.current_ratio)}</div>
-            </div>
+            {[
+              { label: "부채비율", value: indicators.bs.debt_ratio,    color: "#2563EB" },
+              { label: "유동비율", value: indicators.bs.current_ratio,  color: "#16A34A" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="ind-item" style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+                <div className="ind-lbl">{label}</div>
+                <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
