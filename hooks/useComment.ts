@@ -5,6 +5,10 @@ export interface CommentTarget {
   label: string;
   value?: string;
   sub?: string;
+  // 원문 보기 시 기존 작성 내용을 그대로 표시하기 위한 필드
+  existingTitle?: string;
+  existingContent?: string;
+  existingCategory?: string;
 }
 
 export interface CommentRect {

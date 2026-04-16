@@ -9,15 +9,13 @@ export default function CommentPanel() {
 
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
 
-  const defaultTitle = target
-    ? `[${target.page}] ${target.label}${target.value ? ` (${target.value})` : ""} 관련 문의`
-    : "";
-  const defaultContent = target
-    ? `페이지: ${target.page}\n항목: ${target.label}${target.sub ? `\n${target.sub}` : ""}${target.value ? `\n값: ${target.value}` : ""}\n\n문의 내용:\n`
-    : "";
+  const defaultTitle = target?.existingTitle
+    ?? (target ? `[${target.page}] ${target.label}${target.value ? ` (${target.value})` : ""} 관련 문의` : "");
+  const defaultContent = target?.existingContent
+    ?? (target ? `페이지: ${target.page}\n항목: ${target.label}${target.sub ? `\n${target.sub}` : ""}${target.value ? `\n값: ${target.value}` : ""}\n\n문의 내용:\n` : "");
 
   const [form, setForm] = useState({
-    category: "Comment",
+    category: target?.existingCategory ?? "Comment",
     title: defaultTitle,
     content: defaultContent,
     is_secret: false,

@@ -363,7 +363,10 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                     <button
                       style={{ ...cancelBtn, background: "#FFF8F3", color: "#E87722", borderColor: "#F5C8A0" }}
                       onClick={() => {
-                        triggerComment({ page: parsed.page!, label: parsed.label ?? "", value: parsed.value, sub: parsed.sub });
+                        triggerComment({
+                          page: parsed.page!, label: parsed.label ?? "", value: parsed.value, sub: parsed.sub,
+                          existingTitle: detail.title, existingContent: detail.content, existingCategory: detail.category,
+                        });
                         openPanel();
                         onNavigate(nav.tab, nav.sub, nav.label, true);
                       }}
