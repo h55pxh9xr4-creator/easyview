@@ -175,8 +175,8 @@ function PageInner() {
           </button>
         )}
 
-        {/* Comment 패널 */}
-        {panelOpen && <CommentPanel />}
+        {/* Comment 패널 — target이 바뀔 때마다 재마운트해서 상태 초기화 */}
+        {panelOpen && <CommentPanel key={`${commentTarget?.page ?? ""}-${commentTarget?.label ?? ""}-${commentTarget?.inquiryId ?? ""}`} />}
       </div>
     </>
   );
