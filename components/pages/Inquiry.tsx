@@ -255,10 +255,8 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                 </td>
                 <td style={{ ...td, textAlign: "center", color: "#666" }} onClick={() => openDetail(item.id)}>{item.author}</td>
                 <td style={{ ...td, textAlign: "center", color: "#999", fontSize: 12 }} onClick={() => openDetail(item.id)}>{item.created_at}</td>
-                <td style={{ ...td, textAlign: "center" }} onClick={() => openDetail(item.id)}>
-                  <span style={{ ...badge, background: item.status === "답변완료" ? "#EBF0FD" : "#FFF5EE", color: item.status === "답변완료" ? "#2563EB" : "#E87722" }}>
-                    {item.status}
-                  </span>
+                <td style={{ ...td, textAlign: "center", color: item.status === "답변완료" ? "#888" : "#BBB", fontSize: 12 }} onClick={() => openDetail(item.id)}>
+                  {item.status}
                 </td>
               </tr>
             ))}
@@ -433,8 +431,9 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
 // ── 스타일 상수 ───────────────────────────────────────────────
 const badge: React.CSSProperties = { display: "inline-block", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" };
 const catColor = (cat: string): React.CSSProperties => {
+  if (cat === "Comment")    return { background: "rgba(232,119,34,0.12)", color: "#E87722" };
   if (cat === "조회 오류")  return { background: "#FDECEA", color: "#EF4444" };
-  if (cat === "데이터 오류") return { background: "#EBF0FD", color: "#2563EB" };
+  if (cat === "데이터 오류") return { background: "#F3EEFF", color: "#8B5CF6" };
   return { background: "#F5F5F5", color: "#888" };
 };
 const th: React.CSSProperties = { padding: "10px 12px", fontWeight: 600, fontSize: 12, color: "#555", textAlign: "center" as const, whiteSpace: "nowrap", background: "#FAFAFA" };
