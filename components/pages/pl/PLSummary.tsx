@@ -132,9 +132,9 @@ function MarginLineChart({ curMargins, priMargins, labels, color, title }: {
     },
   };
   return (
-    <div className="card">
+    <div className="card" style={{ minWidth: 0 }}>
       <div className="card-title">{title}</div>
-      <div style={{ height: 160 }}><Chart type="line" data={data} options={opts} /></div>
+      <div style={{ height: 160, position: "relative" }}><Chart type="line" data={data} options={opts} /></div>
     </div>
   );
 }

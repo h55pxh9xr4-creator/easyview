@@ -129,7 +129,7 @@ body{font-family:'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif;backg
 
 /* ── 2/3/4 col grid ── */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 
 /* ── Top3 ── */
