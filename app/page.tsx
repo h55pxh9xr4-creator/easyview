@@ -4,10 +4,13 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
+import Sidebar from "@/components/layout/Sidebar";
 import FilterBar from "@/components/layout/FilterBar";
+import CommentPanel from "@/components/layout/CommentPanel";
 import LoginPage from "@/components/layout/LoginPage";
 import Summary from "@/components/pages/Summary";
 import Inquiry from "@/components/pages/Inquiry";
+import { useComment } from "@/hooks/useComment";
 
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
 const PLTrend      = dynamic(() => import("@/components/pages/pl/PLTrend"),      { ssr: false });
@@ -56,6 +59,8 @@ function PageInner() {
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
   const [user, setUser] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
 
   // mount 시점의 params를 ref에 고정 — effect 재실행으로 인한 루프 방지
   const initParams = useRef({
@@ -91,6 +96,7 @@ function PageInner() {
   }, []);
 
   const handleNavigate = (tab: string, sub: string, label: string) => {
+    closeAll();
     setActiveTab(tab);
     setActiveSub(sub);
     setPageLabel(label);
@@ -118,12 +124,45 @@ function PageInner() {
 
   return (
     <>
-      <Header activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} user={user} onLogout={handleLogout} />
-      <FilterBar activeSub={activeSub} />
-      <div className="ptb">
-        <span className="ptb-sub">{pageLabel}</span>
+      <Header user={user} onLogout={handleLogout} />
+      <div className="app-body">
+        <Sidebar
+          activeTab={activeTab}
+          activeSub={activeSub}
+          onNavigate={handleNavigate}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(p => !p)}
+        />
+        <div className={`main-content${panelOpen ? " panel-open" : ""}`}>
+          <div className="ptb">
+            <span className="ptb-sub">{pageLabel}</span>
+            <FilterBar activeSub={activeSub} inline />
+          </div>
+          <ActivePage onNavigate={handleNavigate} />
+        </div>
+
+        {/* Comment 배지 — 클릭된 요소 오른쪽 상단 */}
+        {commentTarget && !panelOpen && (
+          <button
+            className="comment-badge"
+            onClick={openPanel}
+            style={commentRect ? {
+              position: "fixed",
+              top: commentRect.top - 14,
+              left: commentRect.right - 10,
+              transform: "translateX(-100%)",
+            } : undefined}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+            Comment
+          </button>
+        )}
+
+        {/* Comment 패널 */}
+        {panelOpen && <CommentPanel />}
       </div>
-      <ActivePage onNavigate={handleNavigate} />
     </>
   );
 }

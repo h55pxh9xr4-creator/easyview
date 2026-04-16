@@ -1,36 +1,98 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
 
+:root{--sb-w:220px}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif;background:#F5F5F5;color:#2C2C2C;font-size:13px;font-variant-numeric:tabular-nums}
 
-/* ── Header ── */
-.hdr{background:#fff;border-bottom:1px solid #EDEDED;height:52px;display:flex;align-items:center;padding:0 24px;position:sticky;top:0;z-index:200;gap:0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.logo{display:flex;align-items:center;gap:10px;padding-right:28px;border-right:1px solid #E8E8E8;margin-right:4px;white-space:nowrap;text-decoration:none;border:none;background:none;cursor:pointer}
-.logo-img{height:28px;width:auto;display:block}
-.logo-text{font-size:18px;font-weight:800;color:#2C2C2C;letter-spacing:-0.5px}
-.logo-text span{color:#E87722}
-.main-tabs{display:flex;height:52px}
-.main-tab{display:flex;align-items:center;padding:0 18px;font-size:13px;font-weight:500;color:#888;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;height:52px}
-.main-tab:hover{color:#E87722}
-.main-tab.active{color:#E87722;font-weight:700;border-bottom-color:#E87722}
+/* ── Header (PwC portal style) ── */
+.hdr{background:#fff;border-bottom:1px solid #EDEDED;height:52px;display:flex;align-items:center;padding:0 24px;position:sticky;top:0;z-index:200;gap:0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.hdr-brand{display:flex;align-items:center;gap:10px;padding-right:24px;border-right:1px solid #E8E8E8;flex-shrink:0;width:calc(var(--sb-w) - 24px)}
+.logo-img{height:22px;width:auto;display:block}
+.hdr-portal-name{font-size:13px;font-weight:600;color:#2C2C2C;white-space:nowrap;letter-spacing:-.2px}
+.hdr-tabs{display:flex;height:52px;padding:0 8px;flex:1}
+.hdr-tab{display:flex;align-items:center;padding:0 16px;font-size:13px;font-weight:400;color:#888;cursor:default;border-bottom:2px solid transparent;white-space:nowrap;height:52px;user-select:none;letter-spacing:-.1px}
+.hdr-tab.active{color:#E87722;font-weight:700;border-bottom-color:#E87722}
+.hdr-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
+.hdr-username{font-size:12px;color:#444}
+.hdr-username b{color:#E87722;font-weight:700}
+.hdr-logout{padding:4px 12px;border:1px solid #E0E0E0;border-radius:6px;background:#fff;color:#888;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.hdr-logout:hover{border-color:#E87722;color:#E87722}
+.hdr-user-icon{width:32px;height:32px;border-radius:50%;border:1px solid #E0E0E0;display:flex;align-items:center;justify-content:center;color:#666;flex-shrink:0}
 
-/* ── Dropdown nav ── */
-.main-tab-wrap{position:relative;height:52px;display:flex;align-items:center}
-.nav-dropdown{display:none;position:absolute;top:52px;left:0;background:#fff;border:1px solid #EDEDED;border-top:2px solid #E87722;min-width:160px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.1);border-radius:0 0 8px 8px}
-.main-tab-wrap:hover .nav-dropdown{display:block}
-.main-tab-wrap:hover>.main-tab{color:#E87722}
-.nav-dd-item{display:block;padding:9px 18px;font-size:13px;color:#444;cursor:pointer;white-space:nowrap;border:none;background:none;font-family:inherit;width:100%;text-align:left;border-bottom:1px solid #F5F5F5;transition:all .1s}
-.nav-dd-item:last-child{border-bottom:none}
-.nav-dd-item:hover{background:#FFF5EE;color:#E87722;font-weight:600}
+/* ── App body layout ── */
+.app-body{display:flex;height:calc(100vh - 52px);overflow:hidden;align-items:stretch}
 
-/* ── Page title bar ── */
-.ptb{background:#fff;border-bottom:2px solid #E87722;padding:9px 24px;display:flex;align-items:baseline;gap:6px;position:sticky;top:52px;z-index:190}
+/* ── Sidebar ── */
+.sidebar{width:var(--sb-w);flex-shrink:0;background:#fff;border-right:1px solid #EDEDED;display:flex;flex-direction:column;overflow:hidden;transition:width .2s ease;position:sticky;top:52px;height:calc(100vh - 52px);align-self:flex-start}
+.sidebar.collapsed{width:56px}
+.sb-list{flex:1;overflow-y:auto;padding:4px 0 0;display:flex;flex-direction:column}
+.sb-item{display:flex;align-items:center;gap:12px;padding:10px 20px;width:100%;border:none;border-radius:0;background:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:400;color:#444;text-align:left;transition:background .12s,color .12s;white-space:nowrap;overflow:hidden}
+.sidebar.collapsed .sb-item{padding:12px;justify-content:center;gap:0}
+.sb-item:hover{background:#F7F7F7;color:#333}
+.sb-item.active{color:#E87722;background:#FFF5EE;font-weight:600}
+.sb-item.active .sb-icon{color:#E87722}
+.sb-icon{flex-shrink:0;display:flex;align-items:center;color:#888;transition:color .12s}
+.sb-item:hover .sb-icon{color:#555}
+.sb-label{flex:1;overflow:hidden;text-overflow:ellipsis}
+.sb-arrow{flex-shrink:0;display:flex;align-items:center;color:#bbb}
+.sb-subs{display:flex;flex-direction:column;padding:2px 0 4px 0}
+.sb-sub-item{display:block;width:100%;padding:8px 20px 8px 50px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:400;color:#666;text-align:left;transition:background .1s,color .1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-sub-item:hover{background:#F7F7F7;color:#333}
+.sb-sub-item.active{color:#E87722;font-weight:600;background:#FFF5EE}
+.sb-divider{height:1px;background:#EBEBEB;margin:6px 16px}
+.sb-collapse-btn{display:flex;align-items:center;justify-content:center;padding:11px 20px;border:none;border-top:1px solid #EDEDED;background:#fff;cursor:pointer;font-family:inherit;color:#aaa;transition:all .15s;flex-shrink:0}
+.sb-collapse-btn:hover{color:#E87722;background:#FFF5EE}
+
+/* ── Main content (scrollable) ── */
+.main-content{flex:1;overflow-y:auto;background:#F5F5F5;transition:flex .25s ease;min-width:0}
+.main-content.panel-open{flex:1}
+
+/* ── Comment 배지 ── */
+.comment-badge{position:fixed;top:110px;right:20px;display:flex;align-items:center;gap:6px;padding:7px 14px;background:#E87722;color:#fff;border:none;border-radius:20px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;z-index:500;box-shadow:0 4px 16px rgba(232,119,34,.35);animation:badge-pop .2s ease;transition:background .15s,right .25s ease;width:fit-content;white-space:nowrap}
+.comment-badge:hover{background:#D06010}
+@keyframes badge-pop{from{opacity:0;transform:scale(.8) translateY(-4px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+/* ── Comment 패널 ── */
+.comment-panel{width:400px;flex-shrink:0;background:#fff;border-left:1px solid #EDEDED;display:flex;flex-direction:column;animation:panel-in .25s ease;overflow:hidden}
+@keyframes panel-in{from{width:0;opacity:0}to{width:400px;opacity:1}}
+.cp-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #EDEDED;flex-shrink:0}
+.cp-title{font-size:14px;font-weight:700;color:#2C2C2C}
+.cp-close{display:flex;align-items:center;padding:4px;border:none;background:none;cursor:pointer;color:#aaa;border-radius:4px;transition:all .15s}
+.cp-close:hover{background:#F5F5F5;color:#555}
+.cp-context{display:flex;align-items:center;gap:6px;padding:10px 20px;background:#FFF8F3;border-bottom:1px solid #FFE8D0;font-size:12px;flex-shrink:0;flex-wrap:wrap}
+.cp-context-label{font-size:10px;font-weight:700;color:#E87722;text-transform:uppercase;letter-spacing:.4px}
+.cp-context-page{color:#888;font-weight:500}
+.cp-context-sep{color:#ddd}
+.cp-context-item{color:#2C2C2C;font-weight:700}
+.cp-context-val{background:#E87722;color:#fff;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px;margin-left:4px}
+.cp-form{display:flex;flex-direction:column;gap:14px;padding:18px 20px;flex:1;overflow-y:auto}
+.cp-field{display:flex;flex-direction:column;gap:5px}
+.cp-label{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.4px}
+.cp-input{border:1px solid #E0E0E0;border-radius:6px;padding:8px 12px;font-size:13px;font-family:inherit;color:#2C2C2C;outline:none;transition:border-color .15s}
+.cp-input:focus{border-color:#E87722}
+.cp-textarea{resize:none;flex:1;min-height:180px;line-height:1.7}
+.cp-secret{display:flex;align-items:center;gap:8px;font-size:12px;color:#666;cursor:pointer}
+.cp-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:1px solid #F0F0F0;flex-shrink:0}
+.cp-btn-cancel{padding:7px 16px;border:1px solid #E0E0E0;border-radius:6px;background:#fff;color:#888;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.cp-btn-submit{padding:7px 20px;border:none;border-radius:6px;background:#E87722;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
+.cp-btn-submit:hover{background:#D06010}
+.cp-btn-submit:disabled{opacity:.6;cursor:default}
+.cp-done{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;flex:1;padding:40px 20px}
+.cp-done p{font-size:14px;font-weight:600;color:#2C2C2C}
+.cp-done-btn{padding:8px 24px;border:none;border-radius:6px;background:#E87722;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* ── Page title bar (제목 + 필터 한 줄) ── */
+.ptb{background:#fff;border-bottom:1px solid #EDEDED;padding:0 24px;height:48px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:100}
 .ptb-main{font-size:11px;color:#bbb;font-weight:600;letter-spacing:.3px}
 .ptb-sep{font-size:12px;color:#ddd;margin:0 2px}
-.ptb-sub{font-size:17px;font-weight:700;color:#2C2C2C;letter-spacing:-.5px}
+.ptb-sub{font-size:16px;font-weight:700;color:#2C2C2C;letter-spacing:-.5px;white-space:nowrap}
 
-/* ── Filter bar ── */
-.fbar{background:#fff;border-bottom:1px solid #EDEDED;padding:0 24px;height:44px;display:flex;align-items:center;gap:24px}
+/* ── Filter bar (standalone, 하위호환) ── */
+.fbar{background:#fff;border-bottom:1px solid #EDEDED;padding:0 24px;height:44px;display:flex;align-items:center;gap:24px;position:sticky;top:0;z-index:100}
+
+/* ── Filter controls (inline in ptb) ── */
+.fbar-controls{display:flex;align-items:center;gap:16px;flex-shrink:0}
 .flabel{font-size:11px;color:#aaa;font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
 .ftoggle{display:flex;border:1px solid #E0E0E0;border-radius:6px;overflow:hidden}
 .ftbtn{padding:4px 14px;border:none;background:#fff;color:#888;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}

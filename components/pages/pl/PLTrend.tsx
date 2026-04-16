@@ -153,7 +153,7 @@ function AccountCard({
   months: string[];
   showDisc: boolean;
   isSelected: boolean;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
   const cur  = months.map(m => acct.cur[m] ?? 0);
   const pri  = months.map(m => acct.pri[toPriYm(m)] ?? 0);
