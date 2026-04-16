@@ -2,12 +2,10 @@ import { create } from "zustand";
 import { fetchInquiries } from "@/lib/api";
 
 // Title format: [PAGE] LABEL (VALUE) 관련 문의
-// Parse page and label from the title
 function parseTitleKey(title: string): string | null {
   const m = title.match(/^\[(.+?)\] (.+) 관련 문의$/);
   if (!m) return null;
   const page = m[1];
-  // Strip trailing (VALUE) — last parenthesized group is the value
   const label = m[2].replace(/\s+\([^)]*\)$/, "");
   return `${page}::${label}`;
 }
@@ -15,14 +13,15 @@ function parseTitleKey(title: string): string | null {
 export const commentKey = (page: string, label: string) => `${page}::${label}`;
 
 interface CommentedItemsStore {
-  keys: Set<string>;
+  // key → most recent inquiry ID
+  ck: Map<string, number>;
   loaded: boolean;
   load: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
 export const useCommentedItems = create<CommentedItemsStore>((set, get) => ({
-  keys: new Set(),
+  ck: new Map(),
   loaded: false,
   load: async () => {
     if (get().loaded) return;
@@ -31,14 +30,15 @@ export const useCommentedItems = create<CommentedItemsStore>((set, get) => ({
   refresh: async () => {
     try {
       const list = await fetchInquiries();
-      const keys = new Set<string>();
+      const ck = new Map<string, number>();
+      // iterate in order — later entries overwrite, giving us the most recent ID
       for (const item of list) {
         if (item.category === "Comment") {
           const key = parseTitleKey(item.title);
-          if (key) keys.add(key);
+          if (key) ck.set(key, item.id);
         }
       }
-      set({ keys, loaded: true });
+      set({ ck, loaded: true });
     } catch {
       // silent fail — indicators are non-critical
     }

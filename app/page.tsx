@@ -12,6 +12,7 @@ import Summary from "@/components/pages/Summary";
 import Inquiry from "@/components/pages/Inquiry";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
+import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
 const PLTrend      = dynamic(() => import("@/components/pages/pl/PLTrend"),      { ssr: false });
@@ -63,6 +64,8 @@ function PageInner() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
   const loadCommentedItems = useCommentedItems(state => state.load);
+  const pendingInquiryId = usePendingInquiry(state => state.pendingId);
+  const clearPendingId   = usePendingInquiry(state => state.setPendingId);
 
   // mount 시점의 params를 ref에 고정 — effect 재실행으로 인한 루프 방지
   const initParams = useRef({
@@ -105,6 +108,14 @@ function PageInner() {
     setActiveSub(sub);
     setPageLabel(label);
   };
+
+  // CommentDot 클릭 시 → Inquiry 페이지로 이동
+  useEffect(() => {
+    if (pendingInquiryId !== null && authed) {
+      handleNavigate("inquiry", "inquiry", "문의");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingInquiryId]);
 
   if (authed === null) return null;
 

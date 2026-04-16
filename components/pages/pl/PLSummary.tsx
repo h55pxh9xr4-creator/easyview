@@ -154,7 +154,7 @@ function StatRow({ label, value, cls }: { label: string; value: string; cls?: st
 export default function PLSummary() {
   const filter = useFilter();
   const { triggerComment } = useComment();
-  const ck = useCommentedItems(state => state.keys);
+  const ck = useCommentedItems(state => state.ck);
   const [data,        setData]        = useState<PLData | null>(null);
   const [trend,       setTrend]       = useState<TrendRow[] | null>(null);
   const [waterfall,   setWaterfall]   = useState<WaterfallRow[] | null>(null);
@@ -394,7 +394,7 @@ export default function PLSummary() {
 
           return (
             <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: `${card.title} 추이`, value: `${fmtB(cur)}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
-              {ck.has(commentKey("PL 요약", `${card.title} 추이`)) && <CommentDot />}
+              {ck.has(commentKey("PL 요약", `${card.title} 추이`)) && <CommentDot inquiryId={ck.get(commentKey("PL 요약", `${card.title} 추이`))!} />}
               <div style={{ display: "grid", gridTemplateColumns: "190px minmax(0, 1fr)" }}>
 
                 {/* 왼쪽: 통계 */}

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
+import { CommentDot } from "@/components/ui/CommentDot";
 import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 
@@ -302,7 +303,7 @@ function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
 export default function PLTrend() {
   const filter = useFilter();
   const { triggerComment } = useComment();
-  const ck = useCommentedItems(state => state.keys);
+  const ck = useCommentedItems(state => state.ck);
   const [accounts,      setAccounts]      = useState<AccountTrend[] | null>(null);
   const [selected,      setSelected]      = useState<string | null>(null);
   const [detail,        setDetail]        = useState<Detail | null>(null);
@@ -408,7 +409,7 @@ export default function PLTrend() {
         {filtered.map(a => (
           <div key={a.mgmt_acct} style={{ position: "relative" }}>
             {ck.has(commentKey("PL 추이분석", a.mgmt_acct)) && (
-              <span style={{ position: "absolute", top: 7, right: 7, width: 8, height: 8, borderRadius: "50%", background: "#E87722", boxShadow: "0 0 0 2.5px #fff, 0 0 0 4px rgba(232,119,34,0.3)", zIndex: 5, pointerEvents: "none" }} />
+              <CommentDot inquiryId={ck.get(commentKey("PL 추이분석", a.mgmt_acct))!} />
             )}
             <AccountCard
               acct={a}

@@ -9,6 +9,8 @@ export interface CommentTarget {
   existingTitle?: string;
   existingContent?: string;
   existingCategory?: string;
+  inquiryId?: number;
+  existingReply?: string | null;
 }
 
 export interface CommentRect {

@@ -29,7 +29,7 @@ const ORANGE_L   = "rgba(232,119,34,0.12)";
 export default function PLItems() {
   const filter = useFilter();
   const { triggerComment } = useComment();
-  const ck = useCommentedItems(state => state.keys);
+  const ck = useCommentedItems(state => state.ck);
   const [viewType,  setViewType]  = useState<ViewType>("quarter");
   const [levelType, setLevelType] = useState<LevelType>("all");
   const [data,    setData]    = useState<TableData | null>(null);
@@ -187,7 +187,7 @@ export default function PLItems() {
                         {isMgmt && <span style={{ color: "#D0D0D0", marginRight: 6, fontSize: 10 }}>└</span>}
                         {row.label}
                         {ck.has(commentKey("손익항목", row.label)) && (
-                          <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#E87722", boxShadow: "0 0 0 1.5px #fff", marginLeft: 5, verticalAlign: "middle", flexShrink: 0 }} />
+                          <CommentDot inquiryId={ck.get(commentKey("손익항목", row.label))!} inline />
                         )}
                       </td>
 

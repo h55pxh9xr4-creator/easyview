@@ -120,7 +120,7 @@ function CounterpartyChangeBar({ data }: { data: Detail["counterparty"] }) {
 export default function PLAccount() {
   const filter  = useFilter();
   const { triggerComment } = useComment();
-  const ck = useCommentedItems(state => state.keys);
+  const ck = useCommentedItems(state => state.ck);
   const [rows,     setRows]     = useState<AcctRow[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);   // mgmt_acct

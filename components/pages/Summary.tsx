@@ -97,7 +97,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
 export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
   const filter = useFilter();
   const { triggerComment } = useComment();
-  const ck = useCommentedItems(state => state.keys);
+  const ck = useCommentedItems(state => state.ck);
   const [kpi,        setKpi]        = useState<KPIData | null>(null);
   const [top3,       setTop3]       = useState<Top3Data | null>(null);
   const [indicators, setIndicators] = useState<IndicatorData | null>(null);
@@ -189,7 +189,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           const idx = selMonth[key];
           return (
             <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); const selVal = idx !== null ? fmtB(sparkData[key][idx]) : fmtB(d.value); const selLabel = idx !== null ? months[idx] : undefined; triggerComment({ page: "Summary", label, value: `${selVal}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
-              {ck.has(commentKey("Summary", label)) && <CommentDot />}
+              {ck.has(commentKey("Summary", label)) && <CommentDot inquiryId={ck.get(commentKey("Summary", label))!} />}
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div className="kpi-lbl">{label}</div>
                 {idx !== null && (
@@ -240,7 +240,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
             </div>
             {(activeTop3?.[key] ?? []).map((item) => (
               <div key={item.rank} className="t3-item" style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtB(item.value)}백만`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }); }}>
-                {ck.has(commentKey("Summary", item.name)) && <CommentDot />}
+                {ck.has(commentKey("Summary", item.name)) && <CommentDot inquiryId={ck.get(commentKey("Summary", item.name))!} />}
                 <div className={`t3-badge${item.rank === 1 ? " r1" : ""}`}>{item.rank}</div>
                 <div className="t3-name">
                   {item.name}
@@ -269,7 +269,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               { label: "당기손익률",   value: indicators.pl.net_margin,          color: "#6D4C41" },
             ].map(({ label, value, color }) => (
               <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
-                {ck.has(commentKey("Summary", label)) && <CommentDot />}
+                {ck.has(commentKey("Summary", label)) && <CommentDot inquiryId={ck.get(commentKey("Summary", label))!} />}
                 <div className="ind-lbl">{label}</div>
                 <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
               </div>
@@ -284,7 +284,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               { label: "유동비율", value: indicators.bs.current_ratio,  color: "#16A34A" },
             ].map(({ label, value, color }) => (
               <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
-                {ck.has(commentKey("Summary", label)) && <CommentDot />}
+                {ck.has(commentKey("Summary", label)) && <CommentDot inquiryId={ck.get(commentKey("Summary", label))!} />}
                 <div className="ind-lbl">{label}</div>
                 <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
               </div>

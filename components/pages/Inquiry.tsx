@@ -6,6 +6,7 @@ import {
   InquiryItem, InquiryDetail, INQUIRY_CATEGORIES,
 } from "@/lib/api";
 import { useComment } from "@/hooks/useComment";
+import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 
 type View = "list" | "detail" | "write" | "edit";
 const ADMIN_ID = "admin";
@@ -49,6 +50,8 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
   const isAdmin = currentUser === ADMIN_ID;
   const { triggerComment, openPanel } = useComment();
+  const pendingId    = usePendingInquiry(state => state.pendingId);
+  const clearPending = usePendingInquiry(state => state.setPendingId);
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -61,6 +64,15 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
   };
 
   useEffect(() => { loadList(); }, []);
+
+  // CommentDot 클릭으로 넘어왔을 때 해당 글 바로 열기
+  useEffect(() => {
+    if (pendingId !== null) {
+      openDetail(pendingId);
+      clearPending(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingId]);
 
   const openDetail = (id: number) => {
     fetchInquiry(id).then(d => { setDetail(d); setReplyText(d.reply ?? ""); setView("detail"); });

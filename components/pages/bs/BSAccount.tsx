@@ -33,7 +33,7 @@ const CAT_COLOR: Record<string, string> = { 자산: "#2563EB", 부채: "#EF4444"
 export default function BSAccount() {
   const filter  = useFilter();
   const { triggerComment } = useComment();
-  const ck = useCommentedItems(state => state.keys);
+  const ck = useCommentedItems(state => state.ck);
   const [rows,     setRows]     = useState<BSAcctRow[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);   // disclosure_acct
