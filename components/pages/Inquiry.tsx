@@ -302,7 +302,7 @@ export default function Inquiry() {
           </div>
         </div>
         {canView && (
-          <div style={{ ...cardS, marginTop: 12, borderLeft: "3px solid #E87722" }}>
+          <div style={{ ...cardS, marginTop: 12 }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: "#E87722", marginBottom: 14 }}>관리자 답변</p>
             {detail.reply
               ? <>
