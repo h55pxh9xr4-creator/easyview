@@ -2,28 +2,17 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
-from typing import Optional
 
 router = APIRouter()
 
 
-def _period_filter(base_ym: str, period_type: str) -> tuple[str, str]:
-    """기준연월과 기간타입으로 year, month 반환"""
+def _je_sum_ym(db, base_ym: str, period_type: str, disclosure_acct: str, section: str = "PL") -> float:
+    """base_ym을 직접 받아 금액 합계 반환"""
     year, month = base_ym.split("-")
-    return year, month
-
-
-def _je_sum(db, base_ym: str, period_type: str, disclosure_acct: str,
-            section: str = "PL", year_offset: int = 0) -> float:
-    """특정 공시용계정의 금액합계(반) = -SUM(signed_amount) 계산"""
-    year, month = base_ym.split("-")
-    y = int(year) + year_offset
-
     if period_type == "monthly":
-        where = f"substr(year_month,1,4)='{y}' AND substr(year_month,6,2)='{month}'"
-    else:  # cumulative
-        where = f"substr(year_month,1,4)='{y}' AND substr(year_month,6,2)<='{month}'"
-
+        where = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)='{month}'"
+    else:
+        where = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'"
     row = db.execute(text(f"""
         SELECT -ROUND(SUM(signed_amount), 0)
         FROM je
@@ -31,6 +20,57 @@ def _je_sum(db, base_ym: str, period_type: str, disclosure_acct: str,
         AND {where}
     """)).fetchone()
     return float(row[0] or 0)
+
+
+def _je_sum(db, base_ym: str, period_type: str, disclosure_acct: str,
+            section: str = "PL", year_offset: int = 0) -> float:
+    year, month = base_ym.split("-")
+    y = int(year) + year_offset
+    if period_type == "monthly":
+        where = f"substr(year_month,1,4)='{y}' AND substr(year_month,6,2)='{month}'"
+    else:
+        where = f"substr(year_month,1,4)='{y}' AND substr(year_month,6,2)<='{month}'"
+    row = db.execute(text(f"""
+        SELECT -ROUND(SUM(signed_amount), 0)
+        FROM je
+        WHERE section='{section}' AND disclosure_acct='{disclosure_acct}'
+        AND {where}
+    """)).fetchone()
+    return float(row[0] or 0)
+
+
+def _prior_ym_pt(base_ym: str, period_type: str, compare_target: str) -> tuple[str, str]:
+    """compare_target에 따른 비교기준 연월·기간타입 반환"""
+    year, month = int(base_ym.split("-")[0]), int(base_ym.split("-")[1])
+    if compare_target == "prev_year_cum":
+        return f"{year - 1}-{month:02d}", period_type
+    elif compare_target == "prev_year_month":
+        return f"{year - 1}-{month:02d}", "monthly"
+    elif compare_target == "prev_month":
+        pm, py = month - 1, year
+        if pm == 0:
+            pm, py = 12, year - 1
+        return f"{py}-{pm:02d}", "monthly"
+    return f"{year - 1}-{month:02d}", period_type
+
+
+def _vs_label(compare_target: str) -> str:
+    return {"prev_year_cum": "vs 전기", "prev_year_month": "vs 전년동월", "prev_month": "vs 전월"}.get(compare_target, "vs 전기")
+
+
+def _bs_vs_label(bs_base: str) -> str:
+    return "vs 기초" if bs_base == "year_start" else "vs 월초"
+
+
+def _bs_prior_ym(base_ym: str, bs_base: str) -> str | None:
+    """bs_base == month_start 일 때 전월 연월 반환, year_start 이면 None(opening_balance 사용)"""
+    if bs_base == "year_start":
+        return None
+    year, month = int(base_ym.split("-")[0]), int(base_ym.split("-")[1])
+    pm, py = month - 1, year
+    if pm == 0:
+        pm, py = 12, year - 1
+    return f"{py}-{pm:02d}"
 
 
 @router.get("/kpi")
@@ -41,68 +81,79 @@ def get_kpi(
     bs_base: str = Query("year_start"),
     db: Session = Depends(get_db),
 ):
-    # PL KPI
-    rev_cur = _je_sum(db, base_ym, period_type, "매출액")
-    rev_pri = _je_sum(db, base_ym, period_type, "매출액", year_offset=-1)
-    cogs_cur = -_je_sum(db, base_ym, period_type, "매출원가")      # 비용: 부호 반전
-    판관비_cur = -_je_sum(db, base_ym, period_type, "판매비와관리비")
-    기타수익_cur = _je_sum(db, base_ym, period_type, "기타수익")
-    기타비용_cur = -_je_sum(db, base_ym, period_type, "기타비용")
-    금융수익_cur = _je_sum(db, base_ym, period_type, "금융수익")
-    금융비용_cur = -_je_sum(db, base_ym, period_type, "금융비용")
-    법인세_cur = -_je_sum(db, base_ym, period_type, "법인세비용")
+    prior_ym, prior_pt = _prior_ym_pt(base_ym, period_type, compare_target)
+    vs = _vs_label(compare_target)
 
-    op_inc_cur = rev_cur - cogs_cur - 판관비_cur + 기타수익_cur - 기타비용_cur
-    net_inc_cur = op_inc_cur + 금융수익_cur - 금융비용_cur + 법인세_cur
+    def cur(acct): return _je_sum_ym(db, base_ym, period_type, acct)
+    def pri(acct): return _je_sum_ym(db, prior_ym, prior_pt, acct)
 
-    cogs_pri = -_je_sum(db, base_ym, period_type, "매출원가", year_offset=-1)
-    판관비_pri = -_je_sum(db, base_ym, period_type, "판매비와관리비", year_offset=-1)
-    기타수익_pri = _je_sum(db, base_ym, period_type, "기타수익", year_offset=-1)
-    기타비용_pri = -_je_sum(db, base_ym, period_type, "기타비용", year_offset=-1)
-    금융수익_pri = _je_sum(db, base_ym, period_type, "금융수익", year_offset=-1)
-    금융비용_pri = -_je_sum(db, base_ym, period_type, "금융비용", year_offset=-1)
-    법인세_pri = -_je_sum(db, base_ym, period_type, "법인세비용", year_offset=-1)
+    rev_c  = cur("매출액");   rev_p  = pri("매출액")
+    cogs_c = -cur("매출원가"); cogs_p = -pri("매출원가")
+    sga_c  = -cur("판매비와관리비"); sga_p = -pri("판매비와관리비")
+    oth_r_c = cur("기타수익"); oth_r_p = pri("기타수익")
+    oth_e_c = -cur("기타비용"); oth_e_p = -pri("기타비용")
+    fin_r_c = cur("금융수익"); fin_r_p = pri("금융수익")
+    fin_e_c = -cur("금융비용"); fin_e_p = -pri("금융비용")
+    tax_c  = -cur("법인세비용"); tax_p = -pri("법인세비용")
 
-    op_inc_pri = rev_pri - cogs_pri - 판관비_pri + 기타수익_pri - 기타비용_pri
-    net_inc_pri = op_inc_pri + 금융수익_pri - 금융비용_pri + 법인세_pri
+    op_c = rev_c + cogs_c + sga_c + oth_r_c + oth_e_c
+    op_p = rev_p + cogs_p + sga_p + oth_r_p + oth_e_p
+    net_c = op_c + fin_r_c + fin_e_c + tax_c
+    net_p = op_p + fin_r_p + fin_e_p + tax_p
 
-    # BS KPI (자산/부채 기말잔액)
-    year = base_ym.split("-")[0]
-    month = base_ym.split("-")[1]
-    bs_row = db.execute(text(f"""
+    def pct(c, p): return round((c - p) / abs(p), 4) if p else 0.0
+
+    # BS KPI
+    year, month = base_ym.split("-")
+    prior_bs_ym = _bs_prior_ym(base_ym, bs_base)
+    bs_vs = _bs_vs_label(bs_base)
+
+    # 기말잔액
+    bs_end = db.execute(text(f"""
         SELECT
-            SUM(CASE WHEN t.category='자산' THEN (t.opening_signed + COALESCE(je_cum.net,0))
-                     ELSE 0 END) AS 자산기말,
-            SUM(CASE WHEN t.category='부채' THEN -(t.opening_signed + COALESCE(je_cum.net,0))
-                     ELSE 0 END) AS 부채기말,
-            SUM(CASE WHEN t.category='자산' THEN t.opening_balance ELSE 0 END) AS 자산기초,
-            SUM(CASE WHEN t.category='부채' THEN t.opening_balance ELSE 0 END) AS 부채기초
+            SUM(CASE WHEN t.category='자산' THEN  (t.opening_signed + COALESCE(je.net,0)) ELSE 0 END),
+            SUM(CASE WHEN t.category='부채' THEN -(t.opening_signed + COALESCE(je.net,0)) ELSE 0 END)
         FROM tb_account t
         LEFT JOIN (
-            SELECT account_code, SUM(signed_amount) AS net
-            FROM je
-            WHERE section='BS'
-            AND substr(year_month,1,4)='{year}'
-            AND substr(year_month,6,2)<='{month}'
+            SELECT account_code, SUM(signed_amount) AS net FROM je
+            WHERE section='BS' AND substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'
             GROUP BY account_code
-        ) je_cum ON t.account_code = je_cum.account_code
+        ) je ON t.account_code=je.account_code
     """)).fetchone()
+    asset_end = float(bs_end[0] or 0)
+    liab_end  = float(bs_end[1] or 0)
 
-    asset_end = float(bs_row[0] or 0)
-    liab_end = float(bs_row[1] or 0)
-    asset_open = float(bs_row[2] or 0)
-    liab_open = float(bs_row[3] or 0)
-
-    def pct(cur, pri):
-        if pri == 0:
-            return 0.0
-        return round((cur - pri) / abs(pri), 4)
+    if prior_bs_ym is None:
+        # year_start: opening_balance
+        bs_open = db.execute(text("""
+            SELECT
+                SUM(CASE WHEN category='자산' THEN opening_balance ELSE 0 END),
+                SUM(CASE WHEN category='부채' THEN opening_balance ELSE 0 END)
+            FROM tb_account
+        """)).fetchone()
+        asset_open = float(bs_open[0] or 0)
+        liab_open  = float(bs_open[1] or 0)
+    else:
+        py, pm = prior_bs_ym.split("-")
+        bs_prior = db.execute(text(f"""
+            SELECT
+                SUM(CASE WHEN t.category='자산' THEN  (t.opening_signed + COALESCE(je.net,0)) ELSE 0 END),
+                SUM(CASE WHEN t.category='부채' THEN -(t.opening_signed + COALESCE(je.net,0)) ELSE 0 END)
+            FROM tb_account t
+            LEFT JOIN (
+                SELECT account_code, SUM(signed_amount) AS net FROM je
+                WHERE section='BS' AND substr(year_month,1,4)='{py}' AND substr(year_month,6,2)<='{pm}'
+                GROUP BY account_code
+            ) je ON t.account_code=je.account_code
+        """)).fetchone()
+        asset_open = float(bs_prior[0] or 0)
+        liab_open  = float(bs_prior[1] or 0)
 
     return {
-        "revenue":          {"value": rev_cur,    "prior": rev_pri,    "change_pct": pct(rev_cur, rev_pri),    "vs": "vs 전기"},
-        "operating_income": {"value": op_inc_cur, "prior": op_inc_pri, "change_pct": pct(op_inc_cur, op_inc_pri), "vs": "vs 전기"},
-        "asset":            {"value": asset_end,  "prior": asset_open, "change_pct": pct(asset_end, asset_open),  "vs": "vs 기초"},
-        "liability":        {"value": liab_end,   "prior": liab_open,  "change_pct": pct(liab_end, liab_open),   "vs": "vs 기초"},
+        "revenue":          {"value": rev_c,  "prior": rev_p,  "change_pct": pct(rev_c, rev_p),   "vs": vs},
+        "operating_income": {"value": op_c,   "prior": op_p,   "change_pct": pct(op_c, op_p),     "vs": vs},
+        "asset":            {"value": asset_end, "prior": asset_open, "change_pct": pct(asset_end, asset_open), "vs": bs_vs},
+        "liability":        {"value": liab_end,  "prior": liab_open,  "change_pct": pct(liab_end, liab_open),  "vs": bs_vs},
     }
 
 
@@ -110,8 +161,11 @@ def get_kpi(
 def get_pl_table(
     base_ym: str = Query(...),
     period_type: str = Query("cumulative"),
+    compare_target: str = Query("prev_year_cum"),
     db: Session = Depends(get_db),
 ):
+    prior_ym, prior_pt = _prior_ym_pt(base_ym, period_type, compare_target)
+
     accounts = [
         ("매출액",         "수익"), ("매출원가",       "비용"),
         ("판매비와관리비",  "비용"), ("기타수익",       "수익"),
@@ -121,17 +175,15 @@ def get_pl_table(
     rows = []
     for acct, cls in accounts:
         sign = 1 if cls == "수익" else -1
-        cur = _je_sum(db, base_ym, period_type, acct) * sign
-        pri = _je_sum(db, base_ym, period_type, acct, year_offset=-1) * sign
+        cur = _je_sum_ym(db, base_ym, period_type, acct) * sign
+        pri = _je_sum_ym(db, prior_ym, prior_pt, acct) * sign
         chg = round((cur - pri) / abs(pri), 4) if pri != 0 else 0.0
         rows.append({"account": acct, "current": cur, "prior": pri, "change_pct": chg, "is_subtotal": False})
 
-    # 당기손익 합산
-    net_cur = sum(r["current"] * (1 if r["account"] in {"매출액","기타수익","금융수익"} else -1)
-                  if False else r["current"] for r in rows)
+    net_cur = sum(r["current"] for r in rows)
     net_pri = sum(r["prior"] for r in rows)
     rows.append({"account": "당기손익", "current": net_cur, "prior": net_pri,
-                 "change_pct": round((net_cur-net_pri)/abs(net_pri),4) if net_pri else 0,
+                 "change_pct": round((net_cur - net_pri) / abs(net_pri), 4) if net_pri else 0,
                  "is_subtotal": True})
     return rows
 
@@ -143,48 +195,70 @@ def get_bs_table(
     db: Session = Depends(get_db),
 ):
     year, month = base_ym.split("-")
-    rows = db.execute(text(f"""
-        SELECT
-            t.category, t.sum_acct,
-            (t.opening_signed + COALESCE(je_cum.net,0)) *
-                CASE t.category WHEN '자산' THEN 1 ELSE -1 END AS ending,
-            t.opening_balance AS opening,
-            t.opening_signed
-        FROM tb_account t
-        LEFT JOIN (
-            SELECT account_code, SUM(signed_amount) AS net
-            FROM je WHERE section='BS'
-            AND substr(year_month,1,4)='{year}'
-            AND substr(year_month,6,2)<='{month}'
-            GROUP BY account_code
-        ) je_cum ON t.account_code = je_cum.account_code
-        ORDER BY t.category, t.sum_acct
-    """)).fetchall()
+    prior_bs_ym = _bs_prior_ym(base_ym, bs_base)
 
-    # 합산계정별 집계
+    # 기말잔액 계산용 JE 누적
+    end_join = f"""
+        LEFT JOIN (
+            SELECT account_code, SUM(signed_amount) AS net FROM je
+            WHERE section='BS' AND substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'
+            GROUP BY account_code
+        ) je_cur ON t.account_code=je_cur.account_code
+    """
+
+    if prior_bs_ym is None:
+        # year_start: opening_balance 사용
+        rows = db.execute(text(f"""
+            SELECT
+                t.category, t.sum_acct,
+                (t.opening_signed + COALESCE(je_cur.net,0)) *
+                    CASE t.category WHEN '자산' THEN 1 ELSE -1 END AS ending,
+                t.opening_balance AS opening
+            FROM tb_account t
+            {end_join}
+            ORDER BY t.category, t.sum_acct
+        """)).fetchall()
+    else:
+        py, pm = prior_bs_ym.split("-")
+        rows = db.execute(text(f"""
+            SELECT
+                t.category, t.sum_acct,
+                (t.opening_signed + COALESCE(je_cur.net,0)) *
+                    CASE t.category WHEN '자산' THEN 1 ELSE -1 END AS ending,
+                (t.opening_signed + COALESCE(je_pri.net,0)) *
+                    CASE t.category WHEN '자산' THEN 1 ELSE -1 END AS opening
+            FROM tb_account t
+            {end_join}
+            LEFT JOIN (
+                SELECT account_code, SUM(signed_amount) AS net FROM je
+                WHERE section='BS' AND substr(year_month,1,4)='{py}' AND substr(year_month,6,2)<='{pm}'
+                GROUP BY account_code
+            ) je_pri ON t.account_code=je_pri.account_code
+            ORDER BY t.category, t.sum_acct
+        """)).fetchall()
+
     from collections import defaultdict
-    by_sum = defaultdict(lambda: {"ending": 0, "opening": 0, "category": ""})
+    by_sum = defaultdict(lambda: {"ending": 0.0, "opening": 0.0, "category": ""})
     for r in rows:
-        key = r[1]  # sum_acct
-        by_sum[key]["ending"] += float(r[2] or 0)
-        by_sum[key]["opening"] += float(r[3] or 0)
+        key = r[1]
+        by_sum[key]["ending"]   += float(r[2] or 0)
+        by_sum[key]["opening"]  += float(r[3] or 0)
         by_sum[key]["category"] = r[0]
 
-    # 대분류(자산/부채/자본) 집계
-    by_cat = defaultdict(lambda: {"ending": 0, "opening": 0})
+    by_cat = defaultdict(lambda: {"ending": 0.0, "opening": 0.0})
     for key, v in by_sum.items():
-        by_cat[v["category"]]["ending"] += v["ending"]
+        by_cat[v["category"]]["ending"]  += v["ending"]
         by_cat[v["category"]]["opening"] += v["opening"]
 
     result = []
     for cat in ["자산", "부채", "자본"]:
         c = by_cat[cat]
-        chg = round((c["ending"]-c["opening"])/abs(c["opening"]), 4) if c["opening"] else 0
+        chg = round((c["ending"] - c["opening"]) / abs(c["opening"]), 4) if c["opening"] else 0
         result.append({"account": cat, "current": c["ending"], "prior": c["opening"],
                        "change_pct": chg, "indent": 0})
         for key, v in by_sum.items():
             if v["category"] == cat:
-                chg2 = round((v["ending"]-v["opening"])/abs(v["opening"]), 4) if v["opening"] else 0
+                chg2 = round((v["ending"] - v["opening"]) / abs(v["opening"]), 4) if v["opening"] else 0
                 result.append({"account": key, "current": v["ending"], "prior": v["opening"],
                                 "change_pct": chg2, "indent": 1})
     return result
@@ -194,28 +268,31 @@ def get_bs_table(
 def get_indicators(
     base_ym: str = Query(...),
     period_type: str = Query("cumulative"),
+    compare_target: str = Query("prev_year_cum"),
     db: Session = Depends(get_db),
 ):
-    rev = _je_sum(db, base_ym, period_type, "매출액")
-    cogs = -_je_sum(db, base_ym, period_type, "매출원가")
-    판관비 = -_je_sum(db, base_ym, period_type, "판매비와관리비")
-    기타수익 = _je_sum(db, base_ym, period_type, "기타수익")
-    기타비용 = -_je_sum(db, base_ym, period_type, "기타비용")
-    금융수익 = _je_sum(db, base_ym, period_type, "금융수익")
-    금융비용 = -_je_sum(db, base_ym, period_type, "금융비용")
-    법인세 = -_je_sum(db, base_ym, period_type, "법인세비용")
+    def s(acct): return _je_sum_ym(db, base_ym, period_type, acct)
 
-    gross = rev - cogs
-    op_inc = gross - 판관비 + 기타수익 - 기타비용
-    net_inc = op_inc + 금융수익 - 금융비용 + 법인세
+    rev   = s("매출액")
+    cogs  = -s("매출원가")
+    sga   = -s("판매비와관리비")
+    oth_r = s("기타수익")
+    oth_e = -s("기타비용")
+    fin_r = s("금융수익")
+    fin_e = -s("금융비용")
+    tax   = -s("법인세비용")
+
+    gross  = rev + cogs
+    op_inc = gross + sga + oth_r + oth_e
+    net_inc = op_inc + fin_r + fin_e + tax
 
     year, month = base_ym.split("-")
     bs = db.execute(text(f"""
         SELECT
-            SUM(CASE WHEN t.sum_acct='유동자산' THEN (t.opening_signed+COALESCE(j.net,0)) ELSE 0 END) AS 유동자산,
-            SUM(CASE WHEN t.sum_acct='유동부채' THEN -(t.opening_signed+COALESCE(j.net,0)) ELSE 0 END) AS 유동부채,
-            SUM(CASE WHEN t.category='부채' THEN -(t.opening_signed+COALESCE(j.net,0)) ELSE 0 END) AS 부채,
-            SUM(CASE WHEN t.category='자본' THEN -(t.opening_signed+COALESCE(j.net,0)) ELSE 0 END) AS 자본
+            SUM(CASE WHEN t.sum_acct='유동자산' THEN  (t.opening_signed+COALESCE(j.net,0)) ELSE 0 END),
+            SUM(CASE WHEN t.sum_acct='유동부채' THEN -(t.opening_signed+COALESCE(j.net,0)) ELSE 0 END),
+            SUM(CASE WHEN t.category='부채'     THEN -(t.opening_signed+COALESCE(j.net,0)) ELSE 0 END),
+            SUM(CASE WHEN t.category='자본'     THEN -(t.opening_signed+COALESCE(j.net,0)) ELSE 0 END)
         FROM tb_account t
         LEFT JOIN (
             SELECT account_code, SUM(signed_amount) AS net FROM je
@@ -226,20 +303,20 @@ def get_indicators(
 
     유동자산 = float(bs[0] or 0)
     유동부채 = float(bs[1] or 0)
-    부채 = float(bs[2] or 0)
-    자본 = float(bs[3] or 0)
+    부채     = float(bs[2] or 0)
+    자본     = float(bs[3] or 0)
 
     def safe_div(a, b): return round(a / b, 4) if b else 0.0
 
     return {
         "pl": {
-            "gross_profit_margin": safe_div(gross, rev),
+            "gross_profit_margin": safe_div(gross,  rev),
             "operating_margin":    safe_div(op_inc, rev),
             "net_margin":          safe_div(net_inc, rev),
         },
         "bs": {
-            "current_ratio":  safe_div(유동자산, 유동부채),
-            "debt_ratio":     safe_div(부채, 자본),
+            "current_ratio": safe_div(유동자산, 유동부채),
+            "debt_ratio":    safe_div(부채, 자본),
         }
     }
 
@@ -252,16 +329,15 @@ def get_top3(
 ):
     year, month = base_ym.split("-")
     if period_type == "monthly":
-        ym_filter = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)='{month}'"
+        ym_filter     = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)='{month}'"
         ym_filter_pri = f"substr(year_month,1,4)='{int(year)-1}' AND substr(year_month,6,2)='{month}'"
     else:
-        ym_filter = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'"
+        ym_filter     = f"substr(year_month,1,4)='{year}' AND substr(year_month,6,2)<='{month}'"
         ym_filter_pri = f"substr(year_month,1,4)='{int(year)-1}' AND substr(year_month,6,2)<='{month}'"
 
-    # 매출 거래처 Top3 (전기 대비 증감 상위)
     rev_top3 = db.execute(text(f"""
         SELECT counterparty,
-               SUM(CASE WHEN {ym_filter} THEN -signed_amount ELSE 0 END) AS cur,
+               SUM(CASE WHEN {ym_filter}     THEN -signed_amount ELSE 0 END) AS cur,
                SUM(CASE WHEN {ym_filter_pri} THEN -signed_amount ELSE 0 END) AS pri
         FROM je WHERE disclosure_acct='매출액' AND counterparty IS NOT NULL
         GROUP BY counterparty
@@ -270,10 +346,9 @@ def get_top3(
         LIMIT 3
     """)).fetchall()
 
-    # 비용 계정 Top3 (전기 대비 증감 상위)
     cost_top3 = db.execute(text(f"""
         SELECT mgmt_acct,
-               SUM(CASE WHEN {ym_filter} THEN signed_amount ELSE 0 END) AS cur,
+               SUM(CASE WHEN {ym_filter}     THEN signed_amount ELSE 0 END) AS cur,
                SUM(CASE WHEN {ym_filter_pri} THEN signed_amount ELSE 0 END) AS pri
         FROM je WHERE section='PL' AND category='비용' AND mgmt_acct IS NOT NULL
         GROUP BY mgmt_acct
@@ -282,7 +357,6 @@ def get_top3(
         LIMIT 3
     """)).fetchall()
 
-    # BS 자산/부채 증감 Top3
     asset_top3 = db.execute(text(f"""
         SELECT t.mgmt_acct,
                (t.opening_signed + COALESCE(je_cur.net,0)) AS ending,
@@ -309,13 +383,11 @@ def get_top3(
         LIMIT 3
     """)).fetchall()
 
-    def to_top3(rows, value_col_idx=1, prior_col_idx=2):
-        items = [{"name": r[0], "value": float(r[value_col_idx] or 0),
-                  "change": float(r[value_col_idx] or 0) - float(r[prior_col_idx] or 0)}
-                 for r in rows]
+    def to_top3(rows):
+        items = [{"name": r[0], "value": float(r[1] or 0),
+                  "change": float(r[1] or 0) - float(r[2] or 0)} for r in rows]
         max_val = max((i["change"] for i in items), default=1)
-        return [{"rank": i+1, "name": v["name"],
-                 "value": v["change"],
+        return [{"rank": i + 1, "name": v["name"], "value": v["change"],
                  "bar_pct": round(v["change"] / max_val * 100, 1) if max_val else 0}
                 for i, v in enumerate(items)]
 
@@ -332,56 +404,46 @@ def get_scenario_count(
     base_ym: str = Query(...),
     db: Session = Depends(get_db),
 ):
-    year, month = base_ym.split("-")
     ym = base_ym
 
-    # SC1: 동일연월+계정코드+차대+금액 조합 2회 이상
     sc1 = db.execute(text(f"""
         SELECT COUNT(*) FROM (
             SELECT year_month, account_code, dr_cr, amount, COUNT(*) AS cnt
             FROM je WHERE year_month='{ym}'
-            GROUP BY year_month, account_code, dr_cr, amount
-            HAVING cnt >= 2
+            GROUP BY year_month, account_code, dr_cr, amount HAVING cnt >= 2
         )
     """)).scalar() or 0
 
-    # SC2: 동일연월+금액에서 현금대변 + 부채대변(월말) 동시 존재
     sc2 = db.execute(text(f"""
         SELECT COUNT(DISTINCT amount) FROM (
             SELECT amount,
                 SUM(CASE WHEN is_cash=1 AND dr_cr='대변' THEN 1 ELSE 0 END) AS cash_cnt,
                 SUM(CASE WHEN category='부채' AND dr_cr='대변' THEN 1 ELSE 0 END) AS debt_cnt
             FROM je WHERE year_month='{ym}'
-            GROUP BY amount
-            HAVING cash_cnt>0 AND debt_cnt>0
+            GROUP BY amount HAVING cash_cnt>0 AND debt_cnt>0
         )
     """)).scalar() or 0
 
-    # SC3: 주말 + 현금 대변
     sc3 = db.execute(text(f"""
         SELECT COUNT(DISTINCT voucher_no) FROM je
         WHERE year_month='{ym}' AND is_weekend=1 AND is_cash=1 AND dr_cr='대변'
     """)).scalar() or 0
 
-    # SC4: 현금 대변 + 금액 >= 1,000,000
     sc4 = db.execute(text(f"""
         SELECT COUNT(DISTINCT voucher_no) FROM je
         WHERE year_month='{ym}' AND is_cash=1 AND dr_cr='대변' AND amount >= 1000000
     """)).scalar() or 0
 
-    # SC5: 동일전표 내 비용차변 + 현금대변
     sc5 = db.execute(text(f"""
         SELECT COUNT(DISTINCT voucher_no) FROM (
             SELECT voucher_no,
                 SUM(CASE WHEN category='비용' AND dr_cr='차변' THEN 1 ELSE 0 END) AS cost_cnt,
                 SUM(CASE WHEN is_cash=1 AND dr_cr='대변' THEN 1 ELSE 0 END) AS cash_cnt
             FROM je WHERE year_month='{ym}'
-            GROUP BY voucher_no
-            HAVING cost_cnt>0 AND cash_cnt>0
+            GROUP BY voucher_no HAVING cost_cnt>0 AND cash_cnt>0
         )
     """)).scalar() or 0
 
-    # SC6: 전체 기간 거래처 전표건수 <= 10
     sc6 = db.execute(text(f"""
         SELECT COUNT(DISTINCT counterparty) FROM (
             SELECT counterparty, COUNT(DISTINCT voucher_no) AS cnt
