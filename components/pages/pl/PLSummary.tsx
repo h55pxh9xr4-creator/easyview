@@ -104,7 +104,7 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
       onBarClick(selectedIdx === idx ? null : idx);
     },
   };
-  return <div style={{ height: 155, cursor: "pointer" }}><Chart type="bar" data={chartData} options={opts as never} /></div>;
+  return <div style={{ height: 155, position: "relative" }}><Chart type="bar" data={chartData} options={opts as never} /></div>;
 }
 
 // ── 이익률 꺾은선 차트 ────────────────────────────────────────
@@ -391,7 +391,7 @@ export default function PLSummary() {
 
           return (
             <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: `${card.title} 추이`, value: `${fmtB(cur)}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
-              <div style={{ display: "grid", gridTemplateColumns: "190px 1fr" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "190px minmax(0, 1fr)" }}>
 
                 {/* 왼쪽: 통계 */}
                 <div style={{ padding: "14px 14px 14px 16px", borderRight: "1px solid #F5F5F5", display: "flex", flexDirection: "column" }}>
@@ -429,7 +429,7 @@ export default function PLSummary() {
                 </div>
 
                 {/* 오른쪽: 미니 차트 */}
-                <div style={{ padding: "12px 12px 10px" }}>
+                <div style={{ padding: "12px 12px 10px", minWidth: 0, overflow: "hidden" }}>
                   <div style={{ fontSize: 11, color: "#999", marginBottom: 2, fontWeight: 600 }}>{card.title} 추이</div>
                   <MiniBarChart
                     curData={curD} priData={priD} labels={labels} color={card.color}
