@@ -17,7 +17,7 @@ export default function CommentPanel() {
     : "";
 
   const [form, setForm] = useState({
-    category: "기타 문의",
+    category: "Comment",
     title: defaultTitle,
     content: defaultContent,
     is_secret: false,
