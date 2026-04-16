@@ -390,7 +390,7 @@ export default function PLSummary() {
           const margin = isRev ? null : cur / curRev;
 
           return (
-            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: card.title, value: `${fmtB(cur)}백만` }, { top: r.top, right: r.right }); }}>
+            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: card.title, value: `${fmtB(cur)}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
               <div style={{ display: "grid", gridTemplateColumns: "190px 1fr" }}>
 
                 {/* 왼쪽: 통계 */}
