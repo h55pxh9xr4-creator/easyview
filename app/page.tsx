@@ -95,8 +95,8 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleNavigate = (tab: string, sub: string, label: string) => {
-    closeAll();
+  const handleNavigate = (tab: string, sub: string, label: string, keepComment = false) => {
+    if (!keepComment) closeAll();
     setActiveTab(tab);
     setActiveSub(sub);
     setPageLabel(label);

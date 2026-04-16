@@ -32,7 +32,7 @@ function parseCommentTarget(content: string) {
   return { page: get("페이지"), label: get("항목"), value: get("값"), sub: get("선택 월") };
 }
 
-export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
+export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string, keepComment?: boolean) => void }) {
   const [view,       setView]      = useState<View>("list");
   const [list,       setList]      = useState<InquiryItem[]>([]);
   const [detail,     setDetail]    = useState<InquiryDetail | null>(null);
@@ -365,7 +365,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                       onClick={() => {
                         triggerComment({ page: parsed.page!, label: parsed.label ?? "", value: parsed.value, sub: parsed.sub });
                         openPanel();
-                        onNavigate(nav.tab, nav.sub, nav.label);
+                        onNavigate(nav.tab, nav.sub, nav.label, true);
                       }}
                     >
                       원문 보기
