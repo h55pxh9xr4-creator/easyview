@@ -19,6 +19,16 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
     fetchMonths().then(setMonths).catch(console.error);
   }, []);
 
+  // 기간 전환 시 compareTarget을 해당 기간의 기본값으로 리셋
+  useEffect(() => {
+    if (periodType === "monthly" && !["prev_year_month", "prev_month"].includes(compareTarget)) {
+      setCompareTarget("prev_year_month");
+    } else if (periodType === "cumulative" && !["prev_year_cum", "prev_month_cum"].includes(compareTarget)) {
+      setCompareTarget("prev_year_cum");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodType]);
+
   const fmtYm = (ym: string) => {
     const [y, m] = ym.split("-");
     return `${y}년 ${m}월`;
@@ -59,9 +69,22 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
       {showCompare && (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="flabel">분석대상</span>
-          <select className="fsel" value={compareTarget} onChange={(e) => setCompareTarget(e.target.value as never)}>
-            <option value="prev_year_cum">전년누적</option>
-            <option value="prev_month">전월비교</option>
+          <select
+            className="fsel"
+            value={compareTarget}
+            onChange={(e) => setCompareTarget(e.target.value as never)}
+          >
+            {periodType === "monthly" ? (
+              <>
+                <option value="prev_year_month">전년동월</option>
+                <option value="prev_month">전월</option>
+              </>
+            ) : (
+              <>
+                <option value="prev_year_cum">전년누적</option>
+                <option value="prev_month_cum">전월누적</option>
+              </>
+            )}
           </select>
         </div>
       )}

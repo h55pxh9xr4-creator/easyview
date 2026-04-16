@@ -1,7 +1,7 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type PeriodType = "monthly" | "cumulative";
-export type CompareTarget = "prev_year_cum" | "prev_year_month" | "prev_month";
+export type CompareTarget = "prev_year_cum" | "prev_year_month" | "prev_month" | "prev_month_cum";
 export type BsBase = "year_start" | "month_start";
 
 export interface FilterState {
