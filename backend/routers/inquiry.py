@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 # ── Schemas ──────────────────────────────────────────────────
-CATEGORIES = ["조회 오류", "데이터 오류", "기타 문의"]
+CATEGORIES = ["Comment", "조회 오류", "데이터 오류", "기타 문의"]
 
 class InquiryCreate(BaseModel):
     category:  str = "기타 문의"
@@ -18,6 +18,12 @@ class InquiryCreate(BaseModel):
     content:   str
     author:    str
     is_secret: bool = False
+
+class InquiryUpdate(BaseModel):
+    category:  Optional[str] = None
+    title:     Optional[str] = None
+    content:   Optional[str] = None
+    is_secret: Optional[bool] = None
 
 class ReplyCreate(BaseModel):
     reply: str
@@ -67,6 +73,19 @@ def get_inquiry(inquiry_id: int, db: Session = Depends(get_db)):
         "reply_at":   row.reply_at.strftime("%Y-%m-%d %H:%M") if row.reply_at else None,
         "created_at": row.created_at.strftime("%Y-%m-%d %H:%M") if row.created_at else "",
     }
+
+
+@router.patch("/{inquiry_id}")
+def update_inquiry(inquiry_id: int, body: InquiryUpdate, db: Session = Depends(get_db)):
+    row = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Not found")
+    if body.category  is not None: row.category  = body.category
+    if body.title     is not None: row.title     = body.title
+    if body.content   is not None: row.content   = body.content
+    if body.is_secret is not None: row.is_secret = body.is_secret
+    db.commit()
+    return {"ok": True}
 
 
 @router.post("/{inquiry_id}/reply")
