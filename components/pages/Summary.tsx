@@ -294,16 +294,21 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
             <table>
               <thead><tr><th>공시용계정</th><th>당기</th><th>전기</th><th>증감률</th></tr></thead>
               <tbody>
-                {plTable.map((row) => (
-                  <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) }, { top: r.top, right: r.right }); }}>
-                    <td className={!row.is_subtotal ? "td-s1" : ""}>{row.account}</td>
-                    <td>{fmt(row.current)}</td>
-                    <td>{fmt(row.prior)}</td>
-                    <td className={row.change_pct >= 0 ? "up-t" : "dn-t"}>
-                      {row.change_pct >= 0 ? "▲" : "▼"}{Math.abs(row.change_pct * 100).toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
+                {plTable.map((row) => {
+                  const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
+                  const tc = (label: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    triggerComment({ page: "Summary", label: `${row.account} (${label})`, value }, { top: r.top, right: r.right });
+                  };
+                  return (
+                    <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""}>
+                      <td className={!row.is_subtotal ? "td-s1" : ""}>{row.account}</td>
+                      <td style={{ cursor: "pointer" }} onClick={tc("당기", fmt(row.current))}>{fmt(row.current)}</td>
+                      <td style={{ cursor: "pointer" }} onClick={tc("전기", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={{ cursor: "pointer" }} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -314,16 +319,21 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
             <table>
               <thead><tr><th>재무항목</th><th>기말</th><th>기초</th><th>증감률</th></tr></thead>
               <tbody>
-                {bsTable.map((row) => (
-                  <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) }, { top: r.top, right: r.right }); }}>
-                    <td className={row.indent === 1 ? "td-s1" : ""}>{row.account}</td>
-                    <td>{fmt(row.current)}</td>
-                    <td>{fmt(row.prior)}</td>
-                    <td className={row.change_pct >= 0 ? "up-t" : "dn-t"}>
-                      {row.change_pct >= 0 ? "▲" : "▼"}{Math.abs(row.change_pct * 100).toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
+                {bsTable.map((row) => {
+                  const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
+                  const tc = (label: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    triggerComment({ page: "Summary", label: `${row.account} (${label})`, value }, { top: r.top, right: r.right });
+                  };
+                  return (
+                    <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""}>
+                      <td className={row.indent === 1 ? "td-s1" : ""}>{row.account}</td>
+                      <td style={{ cursor: "pointer" }} onClick={tc("기말", fmt(row.current))}>{fmt(row.current)}</td>
+                      <td style={{ cursor: "pointer" }} onClick={tc("기초", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={{ cursor: "pointer" }} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
