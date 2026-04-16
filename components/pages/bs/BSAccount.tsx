@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
+import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { fetchBSAccount, fetchBSDisclosureDetail, BSDisclosureDetail } from "@/lib/api";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
@@ -32,6 +33,7 @@ const CAT_COLOR: Record<string, string> = { 자산: "#2563EB", 부채: "#EF4444"
 export default function BSAccount() {
   const filter  = useFilter();
   const { triggerComment } = useComment();
+  const ck = useCommentedItems(state => state.keys);
   const [rows,     setRows]     = useState<BSAcctRow[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);   // disclosure_acct
@@ -186,7 +188,7 @@ export default function BSAccount() {
                                 {fmtChg(discChg)}
                                 <button
                                   onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: disc, value: `${fmtB(discEnd)}백만` }, { top: r.top, right: r.right }); }}
-                                  style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#bbb", padding: 0, lineHeight: 1 }}
+                                  style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: ck.has(commentKey("BS 계정분석", disc)) ? "#E87722" : "#bbb", padding: 0, lineHeight: 1 }}
                                   title="코멘트"
                                 >💬</button>
                               </td>

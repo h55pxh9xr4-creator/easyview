@@ -11,6 +11,7 @@ import LoginPage from "@/components/layout/LoginPage";
 import Summary from "@/components/pages/Summary";
 import Inquiry from "@/components/pages/Inquiry";
 import { useComment } from "@/hooks/useComment";
+import { useCommentedItems } from "@/hooks/useCommentedItems";
 
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
 const PLTrend      = dynamic(() => import("@/components/pages/pl/PLTrend"),      { ssr: false });
@@ -61,6 +62,7 @@ function PageInner() {
   const [user, setUser] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
+  const loadCommentedItems = useCommentedItems(state => state.load);
 
   // mount 시점의 params를 ref에 고정 — effect 재실행으로 인한 루프 방지
   const initParams = useRef({
@@ -79,6 +81,8 @@ function PageInner() {
     const ok  = sessionStorage.getItem("ev_auth") === "1";
     const { tab, sub, label } = initParams.current;
     setUser(sessionStorage.getItem("ev_user") ?? "");
+
+    if (ok) loadCommentedItems();
 
     if (ok && tab && sub && label) {
       setActiveTab(tab);

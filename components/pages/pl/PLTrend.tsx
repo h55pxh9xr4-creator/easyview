@@ -4,6 +4,7 @@ import Loading from "@/components/ui/Loading";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
+import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 
@@ -301,6 +302,7 @@ function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
 export default function PLTrend() {
   const filter = useFilter();
   const { triggerComment } = useComment();
+  const ck = useCommentedItems(state => state.keys);
   const [accounts,      setAccounts]      = useState<AccountTrend[] | null>(null);
   const [selected,      setSelected]      = useState<string | null>(null);
   const [detail,        setDetail]        = useState<Detail | null>(null);
@@ -404,19 +406,23 @@ export default function PLTrend() {
         gap: 10,
       }}>
         {filtered.map(a => (
-          <AccountCard
-            key={a.mgmt_acct}
-            acct={a}
-            months={allMonths}
-            showDisc={discFilter === "전체"}
-            isSelected={selected === a.mgmt_acct}
-            onClick={(e) => {
-              setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct);
-              const cur = allMonths.map(m => a.cur[m] ?? 0).reduce((s, v) => s + v, 0);
-              const r = e.currentTarget.getBoundingClientRect();
-              triggerComment({ page: "PL 추이분석", label: a.mgmt_acct, value: `${fmtM(cur)}백만` }, { top: r.top, right: r.right });
-            }}
-          />
+          <div key={a.mgmt_acct} style={{ position: "relative" }}>
+            {ck.has(commentKey("PL 추이분석", a.mgmt_acct)) && (
+              <span style={{ position: "absolute", top: 7, right: 7, width: 8, height: 8, borderRadius: "50%", background: "#E87722", boxShadow: "0 0 0 2.5px #fff, 0 0 0 4px rgba(232,119,34,0.3)", zIndex: 5, pointerEvents: "none" }} />
+            )}
+            <AccountCard
+              acct={a}
+              months={allMonths}
+              showDisc={discFilter === "전체"}
+              isSelected={selected === a.mgmt_acct}
+              onClick={(e) => {
+                setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct);
+                const cur = allMonths.map(m => a.cur[m] ?? 0).reduce((s, v) => s + v, 0);
+                const r = e.currentTarget.getBoundingClientRect();
+                triggerComment({ page: "PL 추이분석", label: a.mgmt_acct, value: `${fmtM(cur)}백만` }, { top: r.top, right: r.right });
+              }}
+            />
+          </div>
         ))}
       </div>
 

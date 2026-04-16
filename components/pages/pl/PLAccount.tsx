@@ -4,6 +4,7 @@ import Loading from "@/components/ui/Loading";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
+import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 
@@ -119,6 +120,7 @@ function CounterpartyChangeBar({ data }: { data: Detail["counterparty"] }) {
 export default function PLAccount() {
   const filter  = useFilter();
   const { triggerComment } = useComment();
+  const ck = useCommentedItems(state => state.keys);
   const [rows,     setRows]     = useState<AcctRow[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);   // mgmt_acct
@@ -255,7 +257,7 @@ export default function PLAccount() {
                             {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toFixed(1)}%
                             <button
                               onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: mgmt, value: fmt(mgmtCur) }, { top: r.top, right: r.right }); }}
-                              style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#bbb", padding: 0, lineHeight: 1 }}
+                              style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: ck.has(commentKey("PL 계정분석", mgmt)) ? "#E87722" : "#bbb", padding: 0, lineHeight: 1 }}
                               title="코멘트"
                             >💬</button>
                           </td>

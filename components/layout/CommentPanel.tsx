@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useComment } from "@/hooks/useComment";
+import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { createInquiry, replyInquiry, INQUIRY_CATEGORIES } from "@/lib/api";
 
 export default function CommentPanel() {
   const { target, closeAll } = useComment();
+  const refreshCommentedItems = useCommentedItems(state => state.refresh);
 
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
   const isAdmin = currentUser === "admin";
@@ -35,6 +37,7 @@ export default function CommentPanel() {
     setSubmitting(true);
     try {
       await createInquiry({ ...form, author: currentUser });
+      refreshCommentedItems();
       setDone(true);
     } catch {
       alert("등록 중 오류가 발생했습니다.");

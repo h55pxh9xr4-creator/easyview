@@ -4,6 +4,8 @@ import Loading from "@/components/ui/Loading";
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
+import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
+import { CommentDot } from "@/components/ui/CommentDot";
 import {
   fetchKPI, fetchTop3, fetchIndicators,
   fetchPLTable, fetchBSTable, fetchScenarioCount, fetchPLTrend, fetchBSTrend,
@@ -95,6 +97,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
 export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
   const filter = useFilter();
   const { triggerComment } = useComment();
+  const ck = useCommentedItems(state => state.keys);
   const [kpi,        setKpi]        = useState<KPIData | null>(null);
   const [top3,       setTop3]       = useState<Top3Data | null>(null);
   const [indicators, setIndicators] = useState<IndicatorData | null>(null);
@@ -186,6 +189,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           const idx = selMonth[key];
           return (
             <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); const selVal = idx !== null ? fmtB(sparkData[key][idx]) : fmtB(d.value); const selLabel = idx !== null ? months[idx] : undefined; triggerComment({ page: "Summary", label, value: `${selVal}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
+              {ck.has(commentKey("Summary", label)) && <CommentDot />}
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div className="kpi-lbl">{label}</div>
                 {idx !== null && (
@@ -235,7 +239,8 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               )}
             </div>
             {(activeTop3?.[key] ?? []).map((item) => (
-              <div key={item.rank} className="t3-item" style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtB(item.value)}백만`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }); }}>
+              <div key={item.rank} className="t3-item" style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtB(item.value)}백만`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }); }}>
+                {ck.has(commentKey("Summary", item.name)) && <CommentDot />}
                 <div className={`t3-badge${item.rank === 1 ? " r1" : ""}`}>{item.rank}</div>
                 <div className="t3-name">
                   {item.name}
@@ -263,7 +268,8 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               { label: "영업이익률",   value: indicators.pl.operating_margin,    color: "#D5476E" },
               { label: "당기손익률",   value: indicators.pl.net_margin,          color: "#6D4C41" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="ind-item" style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+              <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+                {ck.has(commentKey("Summary", label)) && <CommentDot />}
                 <div className="ind-lbl">{label}</div>
                 <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
               </div>
@@ -277,7 +283,8 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               { label: "부채비율", value: indicators.bs.debt_ratio,    color: "#2563EB" },
               { label: "유동비율", value: indicators.bs.current_ratio,  color: "#16A34A" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="ind-item" style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+              <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+                {ck.has(commentKey("Summary", label)) && <CommentDot />}
                 <div className="ind-lbl">{label}</div>
                 <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
               </div>

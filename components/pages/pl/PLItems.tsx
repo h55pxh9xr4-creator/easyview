@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
+import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
+import { CommentDot } from "@/components/ui/CommentDot";
 import { fetchPLItemsTable, ViewType } from "@/lib/api";
 
 const fmt = (n: number) =>
@@ -27,6 +29,7 @@ const ORANGE_L   = "rgba(232,119,34,0.12)";
 export default function PLItems() {
   const filter = useFilter();
   const { triggerComment } = useComment();
+  const ck = useCommentedItems(state => state.keys);
   const [viewType,  setViewType]  = useState<ViewType>("quarter");
   const [levelType, setLevelType] = useState<LevelType>("all");
   const [data,    setData]    = useState<TableData | null>(null);
@@ -183,6 +186,9 @@ export default function PLItems() {
                       }}>
                         {isMgmt && <span style={{ color: "#D0D0D0", marginRight: 6, fontSize: 10 }}>└</span>}
                         {row.label}
+                        {ck.has(commentKey("손익항목", row.label)) && (
+                          <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#E87722", boxShadow: "0 0 0 1.5px #fff", marginLeft: 5, verticalAlign: "middle", flexShrink: 0 }} />
+                        )}
                       </td>
 
                       {/* 값 셀 */}
