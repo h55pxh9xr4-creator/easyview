@@ -61,7 +61,6 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
           <span className="flabel">분석대상</span>
           <select className="fsel" value={compareTarget} onChange={(e) => setCompareTarget(e.target.value as never)}>
             <option value="prev_year_cum">전년누적</option>
-            <option value="prev_year_month">전년동월</option>
             <option value="prev_month">전월비교</option>
           </select>
         </div>
