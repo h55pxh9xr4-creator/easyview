@@ -29,7 +29,7 @@ export default function Header({ user, onLogout }: Props) {
         {user && (
           <>
             <span className="hdr-username">
-              <b>{user}</b>님
+              <b>{user}</b>님, 환영합니다.
             </span>
             <button className="hdr-logout" onClick={onLogout}>
               로그아웃
