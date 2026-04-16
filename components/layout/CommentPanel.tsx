@@ -13,7 +13,7 @@ export default function CommentPanel() {
     ? `[${target.page}] ${target.label}${target.value ? ` (${target.value})` : ""} 관련 문의`
     : "";
   const defaultContent = target
-    ? `페이지: ${target.page}\n항목: ${target.label}${target.value ? `\n값: ${target.value}` : ""}${target.sub ? `\n${target.sub}` : ""}\n\n문의 내용:\n`
+    ? `페이지: ${target.page}\n항목: ${target.label}${target.sub ? `\n${target.sub}` : ""}${target.value ? `\n값: ${target.value}` : ""}\n\n문의 내용:\n`
     : "";
 
   const [form, setForm] = useState({
