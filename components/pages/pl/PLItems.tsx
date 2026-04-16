@@ -28,8 +28,10 @@ const ORANGE_L   = "rgba(232,119,34,0.12)";
 
 export default function PLItems() {
   const filter = useFilter();
-  const { triggerComment } = useComment();
+  const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const isHighlighted = (label: string) =>
+    panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "손익항목" && cmtTarget.label === label;
   const [viewType,  setViewType]  = useState<ViewType>("quarter");
   const [levelType, setLevelType] = useState<LevelType>("all");
   const [data,    setData]    = useState<TableData | null>(null);
@@ -171,7 +173,9 @@ export default function PLItems() {
                   return (
                     <tr key={ri} style={{
                       borderBottom: isSubtotal ? `1px solid rgba(232,119,34,0.2)` : "1px solid #F5F5F5",
-                      background: rowBg,
+                      background: isHighlighted(row.label) ? "rgba(232,119,34,0.08)" : rowBg,
+                      outline: isHighlighted(row.label) ? "2px solid rgba(232,119,34,0.4)" : "none",
+                      transition: "background 0.25s, outline 0.25s",
                       cursor: "pointer",
                     }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "손익항목", label: row.label, value: fmt(row.values[row.values.length - 1]) }, { top: r.top, right: r.right }); }}>
                       {/* 계정명 셀 */}

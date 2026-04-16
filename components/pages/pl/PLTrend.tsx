@@ -302,8 +302,14 @@ function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
 // ── 메인 ─────────────────────────────────────────────────────
 export default function PLTrend() {
   const filter = useFilter();
-  const { triggerComment } = useComment();
+  const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const lift = (label: string): React.CSSProperties => {
+    const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "PL 추이분석" && cmtTarget.label === label;
+    return on
+      ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
+      : { transition: "box-shadow 0.25s, transform 0.25s" };
+  };
   const [accounts,      setAccounts]      = useState<AccountTrend[] | null>(null);
   const [selected,      setSelected]      = useState<string | null>(null);
   const [detail,        setDetail]        = useState<Detail | null>(null);
@@ -407,7 +413,7 @@ export default function PLTrend() {
         gap: 10,
       }}>
         {filtered.map(a => (
-          <div key={a.mgmt_acct} style={{ position: "relative" }}>
+          <div key={a.mgmt_acct} style={{ position: "relative", ...lift(a.mgmt_acct) }}>
             {ck.has(commentKey("PL 추이분석", a.mgmt_acct)) && (
               <CommentDot inquiryId={ck.get(commentKey("PL 추이분석", a.mgmt_acct))!} />
             )}

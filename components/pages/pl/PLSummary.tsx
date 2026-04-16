@@ -153,8 +153,14 @@ function StatRow({ label, value, cls }: { label: string; value: string; cls?: st
 
 export default function PLSummary() {
   const filter = useFilter();
-  const { triggerComment } = useComment();
+  const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const lift = (label: string): React.CSSProperties => {
+    const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "PL 요약" && cmtTarget.label === label;
+    return on
+      ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
+      : { transition: "box-shadow 0.25s, transform 0.25s" };
+  };
   const [data,        setData]        = useState<PLData | null>(null);
   const [trend,       setTrend]       = useState<TrendRow[] | null>(null);
   const [waterfall,   setWaterfall]   = useState<WaterfallRow[] | null>(null);
@@ -393,7 +399,7 @@ export default function PLSummary() {
           const margin = isRev ? null : cur / curRev;
 
           return (
-            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: `${card.title} 추이`, value: `${fmtB(cur)}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
+            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer", position: "relative", ...lift(`${card.title} 추이`) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: `${card.title} 추이`, value: `${fmtB(cur)}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
               {ck.has(commentKey("PL 요약", `${card.title} 추이`)) && <CommentDot inquiryId={ck.get(commentKey("PL 요약", `${card.title} 추이`))!} />}
               <div style={{ display: "grid", gridTemplateColumns: "190px minmax(0, 1fr)" }}>
 

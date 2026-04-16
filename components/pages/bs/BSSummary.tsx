@@ -286,8 +286,14 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
 // ── 메인 ─────────────────────────────────────────────────────
 export default function BSSummary() {
   const filter = useFilter();
-  const { triggerComment } = useComment();
+  const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const lift = (label: string): React.CSSProperties => {
+    const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "BS 요약" && cmtTarget.label === label;
+    return on
+      ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
+      : { transition: "box-shadow 0.25s, transform 0.25s" };
+  };
   const [kpi,          setKpi]          = useState<KPIData | null>(null);
   const [trend,        setTrend]        = useState<TrendRow[]>([]);
   const [ratios,       setRatios]       = useState<RatioRow[]>([]);
@@ -383,7 +389,7 @@ export default function BSSummary() {
 
         return (
         <div key={cat} style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, alignItems: "stretch" }}>
-          {kpiLoading || !kpiForIdx ? <KpiSkeleton /> : <div style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: cat, value: `${fmtB(kpiForIdx.ending)}백만` }, { top: r.top, right: r.right }); }}>{ck.has(commentKey("BS 요약", cat)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", cat))!} />}<BSKpiCard cat={cat} data={kpiForIdx} selectedLabel={selectedLabel} current={currentVal} noncurrent={noncurrentVal} /></div>}
+          {kpiLoading || !kpiForIdx ? <KpiSkeleton /> : <div style={{ cursor: "pointer", position: "relative", ...lift(cat) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: cat, value: `${fmtB(kpiForIdx.ending)}백만` }, { top: r.top, right: r.right }); }}>{ck.has(commentKey("BS 요약", cat)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", cat))!} />}<BSKpiCard cat={cat} data={kpiForIdx} selectedLabel={selectedLabel} current={currentVal} noncurrent={noncurrentVal} /></div>}
           <div className="card">
             <div className="card-title">{title}</div>
             {trendLoading
@@ -464,7 +470,7 @@ export default function BSSummary() {
           return (
           <div key={item.label} style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, alignItems: "stretch", marginBottom: 14 }}>
             {/* 왼쪽 카드 */}
-            <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: item.label, value: `${days.toFixed(1)}일` }, { top: r.top, right: r.right }); }}>
+            <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", cursor: "pointer", position: "relative", ...lift(item.label) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: item.label, value: `${days.toFixed(1)}일` }, { top: r.top, right: r.right }); }}>
               {ck.has(commentKey("BS 요약", item.label)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", item.label))!} />}
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>

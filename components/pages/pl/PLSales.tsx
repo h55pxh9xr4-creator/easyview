@@ -228,8 +228,14 @@ function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: 
 // ── 메인 ──────────────────────────────────────────────────────
 export default function PLSales() {
   const filter = useFilter();
-  const { triggerComment } = useComment();
+  const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const lift = (label: string): React.CSSProperties => {
+    const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "매출분석" && cmtTarget.label === label;
+    return on
+      ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
+      : { transition: "box-shadow 0.25s, transform 0.25s" };
+  };
 
   const [kpi, setKpi] = useState<KPIData | null>(null);
   const [trend, setTrend] = useState<TrendRow[]>([]);
@@ -409,7 +415,7 @@ export default function PLSales() {
 
         {/* [1,1] KPI 카드 2개 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, gridColumn: "1", gridRow: "1", alignSelf: "stretch" }}>
-          <div style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` }, { top: r.top, right: r.right }); }}>
+          <div style={{ cursor: "pointer", position: "relative", ...lift(kpiLabel) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` }, { top: r.top, right: r.right }); }}>
             {ck.has(commentKey("매출분석", kpiLabel)) && <CommentDot inquiryId={ck.get(commentKey("매출분석", kpiLabel))!} />}
             <KpiCard
               label={kpiLabel} unit="백만"
@@ -419,7 +425,7 @@ export default function PLSales() {
               vsPrevMonth={Math.round(rev.vs_prev_month / 1_000_000)}
             />
           </div>
-          <div style={{ cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) }, { top: r.top, right: r.right }); }}>
+          <div style={{ cursor: "pointer", position: "relative", ...lift("거래처수") }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) }, { top: r.top, right: r.right }); }}>
             {ck.has(commentKey("매출분석", "거래처수")) && <CommentDot inquiryId={ck.get(commentKey("매출분석", "거래처수"))!} />}
             <KpiCard
               label="거래처수" unit="개"
