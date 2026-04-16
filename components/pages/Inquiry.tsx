@@ -366,6 +366,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                         triggerComment({
                           page: parsed.page!, label: parsed.label ?? "", value: parsed.value, sub: parsed.sub,
                           existingTitle: detail.title, existingContent: detail.content, existingCategory: detail.category,
+                          inquiryId: detail.id, existingReply: detail.reply,
                         });
                         openPanel();
                         onNavigate(nav.tab, nav.sub, nav.label, true);
