@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -54,7 +54,6 @@ const PAGE_MAP: Record<string, React.ComponentType<any>> = {
 };
 
 function PageInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("summary");
@@ -91,11 +90,10 @@ function PageInner() {
       setActiveTab(tab);
       setActiveSub(sub);
       setPageLabel(decodeURIComponent(label));
-      setAuthed(true);
-      // router 건드리지 않고 URL만 조용히 정리 (effect 재실행 없음)
       window.history.replaceState(null, "", window.location.pathname);
-    } else if (ok) {
-      router.replace("/home");
+    }
+    if (ok) {
+      setAuthed(true);
     } else {
       setAuthed(false);
     }
@@ -131,7 +129,8 @@ function PageInner() {
   if (!authed) {
     return <LoginPage onLogin={() => {
       setUser(sessionStorage.getItem("ev_user") ?? "");
-      router.push("/home");
+      loadCommentedItems();
+      setAuthed(true);
     }} />;
   }
 

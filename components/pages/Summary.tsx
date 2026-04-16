@@ -309,13 +309,18 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <tbody>
                 {plTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
-                  const tc = (label: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
+                  const tc = (col: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
                     const r = e.currentTarget.getBoundingClientRect();
-                    triggerComment({ page: "Summary", label: `${row.account} (${label})`, value }, { top: r.top, right: r.right });
+                    triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right });
                   };
+                  // 당기/전기/증감률 중 comment가 있는 첫 번째 inquiryId
+                  const plDotId = ["당기", "전기", "증감률"].map(c => ck.get(commentKey("Summary", `${row.account} (${c})`))).find(v => v !== undefined);
                   return (
                     <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""}>
-                      <td className={!row.is_subtotal ? "td-s1" : ""}>{row.account}</td>
+                      <td className={!row.is_subtotal ? "td-s1" : ""} style={{ position: "relative" }}>
+                        {row.account}
+                        {plDotId !== undefined && <CommentDot inquiryId={plDotId} inline />}
+                      </td>
                       <td style={{ cursor: "pointer" }} onClick={tc("당기", fmt(row.current))}>{fmt(row.current)}</td>
                       <td style={{ cursor: "pointer" }} onClick={tc("전기", fmt(row.prior))}>{fmt(row.prior)}</td>
                       <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={{ cursor: "pointer" }} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
@@ -334,13 +339,17 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <tbody>
                 {bsTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
-                  const tc = (label: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
+                  const tc = (col: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
                     const r = e.currentTarget.getBoundingClientRect();
-                    triggerComment({ page: "Summary", label: `${row.account} (${label})`, value }, { top: r.top, right: r.right });
+                    triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right });
                   };
+                  const bsDotId = ["기말", "기초", "증감률"].map(c => ck.get(commentKey("Summary", `${row.account} (${c})`))).find(v => v !== undefined);
                   return (
                     <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""}>
-                      <td className={row.indent === 1 ? "td-s1" : ""}>{row.account}</td>
+                      <td className={row.indent === 1 ? "td-s1" : ""} style={{ position: "relative" }}>
+                        {row.account}
+                        {bsDotId !== undefined && <CommentDot inquiryId={bsDotId} inline />}
+                      </td>
                       <td style={{ cursor: "pointer" }} onClick={tc("기말", fmt(row.current))}>{fmt(row.current)}</td>
                       <td style={{ cursor: "pointer" }} onClick={tc("기초", fmt(row.prior))}>{fmt(row.prior)}</td>
                       <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={{ cursor: "pointer" }} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
