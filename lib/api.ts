@@ -45,10 +45,10 @@ export const fetchTop3 = (f: FilterState, base_ym_override?: string, period_type
   get<Top3Data>("/api/summary/top3", { base_ym: base_ym_override ?? f.baseYm, period_type: period_type_override ?? f.periodType });
 
 export const fetchIndicators = (f: FilterState) =>
-  get<IndicatorData>("/api/summary/indicators", { base_ym: f.baseYm, period_type: f.periodType });
+  get<IndicatorData>("/api/summary/indicators", { base_ym: f.baseYm, period_type: f.periodType, compare_target: f.compareTarget });
 
 export const fetchPLTable = (f: FilterState) =>
-  get<PLTableRow[]>("/api/summary/pl_table", { base_ym: f.baseYm, period_type: f.periodType });
+  get<PLTableRow[]>("/api/summary/pl_table", { base_ym: f.baseYm, period_type: f.periodType, compare_target: f.compareTarget });
 
 export const fetchBSTable = (f: FilterState) =>
   get<BSTableRow[]>("/api/summary/bs_table", { base_ym: f.baseYm, bs_base: f.bsBase });
