@@ -362,7 +362,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                   {detail.title}
                 </span>
                 <span style={{ ...badge, ...catColor(detail.category) }}>{detail.category}</span>
-                <span style={{ ...badge, background: detail.status === "답변완료" ? "#EBF0FD" : "#FFF5EE", color: detail.status === "답변완료" ? "#2563EB" : "#E87722" }}>{detail.status}</span>
+                <span style={{ ...badge, background: "#EFEFEF", color: "#444" }}>{detail.status}</span>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {(() => {
