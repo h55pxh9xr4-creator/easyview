@@ -235,7 +235,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               )}
             </div>
             {(activeTop3?.[key] ?? []).map((item) => (
-              <div key={item.rank} className="t3-item">
+              <div key={item.rank} className="t3-item" style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtB(item.value)}백만`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }); }}>
                 <div className={`t3-badge${item.rank === 1 ? " r1" : ""}`}>{item.rank}</div>
                 <div className="t3-name">
                   {item.name}
