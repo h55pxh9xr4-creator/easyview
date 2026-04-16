@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import { fetchPLItemsTable, ViewType } from "@/lib/api";
 
 const fmt = (n: number) =>
@@ -25,6 +26,7 @@ const ORANGE_L   = "rgba(232,119,34,0.12)";
 
 export default function PLItems() {
   const filter = useFilter();
+  const { triggerComment } = useComment();
   const [viewType,  setViewType]  = useState<ViewType>("quarter");
   const [levelType, setLevelType] = useState<LevelType>("all");
   const [data,    setData]    = useState<TableData | null>(null);
@@ -167,7 +169,8 @@ export default function PLItems() {
                     <tr key={ri} style={{
                       borderBottom: isSubtotal ? `1px solid rgba(232,119,34,0.2)` : "1px solid #F5F5F5",
                       background: rowBg,
-                    }}>
+                      cursor: "pointer",
+                    }} onClick={() => triggerComment({ page: "손익항목", label: row.label, value: fmt(row.values[row.values.length - 1]) })}>
                       {/* 계정명 셀 */}
                       <td style={{
                         padding: isMgmt ? "5px 16px 5px 32px" : isSubtotal ? "8px 16px" : "6px 16px",

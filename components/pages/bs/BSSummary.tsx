@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import { fetchBSKPI, fetchBSTrendDetail, fetchBSRatios, fetchBSActivity } from "@/lib/api";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
@@ -283,6 +284,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
 // ── 메인 ─────────────────────────────────────────────────────
 export default function BSSummary() {
   const filter = useFilter();
+  const { triggerComment } = useComment();
   const [kpi,          setKpi]          = useState<KPIData | null>(null);
   const [trend,        setTrend]        = useState<TrendRow[]>([]);
   const [ratios,       setRatios]       = useState<RatioRow[]>([]);
@@ -378,7 +380,7 @@ export default function BSSummary() {
 
         return (
         <div key={cat} style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, alignItems: "stretch" }}>
-          {kpiLoading || !kpiForIdx ? <KpiSkeleton /> : <BSKpiCard cat={cat} data={kpiForIdx} selectedLabel={selectedLabel} current={currentVal} noncurrent={noncurrentVal} />}
+          {kpiLoading || !kpiForIdx ? <KpiSkeleton /> : <div style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "BS 요약", label: cat, value: `${fmtB(kpiForIdx.ending)}백만` })}><BSKpiCard cat={cat} data={kpiForIdx} selectedLabel={selectedLabel} current={currentVal} noncurrent={noncurrentVal} /></div>}
           <div className="card">
             <div className="card-title">{title}</div>
             {trendLoading
@@ -459,7 +461,7 @@ export default function BSSummary() {
           return (
           <div key={item.label} style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, alignItems: "stretch", marginBottom: 14 }}>
             {/* 왼쪽 카드 */}
-            <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", cursor: "pointer" }} onClick={() => triggerComment({ page: "BS 요약", label: item.label, value: `${days.toFixed(1)}일` })}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#999" }}>{item.label}</div>

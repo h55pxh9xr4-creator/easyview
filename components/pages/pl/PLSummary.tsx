@@ -3,6 +3,7 @@
 import Loading from "@/components/ui/Loading";
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import { fetchPLSummary, fetchPLTrend, fetchPLWaterfall } from "@/lib/api";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
@@ -150,6 +151,7 @@ function StatRow({ label, value, cls }: { label: string; value: string; cls?: st
 
 export default function PLSummary() {
   const filter = useFilter();
+  const { triggerComment } = useComment();
   const [data,        setData]        = useState<PLData | null>(null);
   const [trend,       setTrend]       = useState<TrendRow[] | null>(null);
   const [waterfall,   setWaterfall]   = useState<WaterfallRow[] | null>(null);
@@ -388,7 +390,7 @@ export default function PLSummary() {
           const margin = isRev ? null : cur / curRev;
 
           return (
-            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={() => triggerComment({ page: "PL 요약", label: card.title, value: `${fmtB(cur)}백만` })}>
               <div style={{ display: "grid", gridTemplateColumns: "190px 1fr" }}>
 
                 {/* 왼쪽: 통계 */}

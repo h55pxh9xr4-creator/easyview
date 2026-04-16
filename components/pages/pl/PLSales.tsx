@@ -3,6 +3,7 @@
 import Loading from "@/components/ui/Loading";
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import {
   fetchPLSalesKPI, fetchPLSalesTrend, fetchPLSalesTopDonut,
   fetchPLSalesTopChange, fetchPLSalesCounterpartyList,
@@ -172,7 +173,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
 }
 
 // ── 전표 테이블 ────────────────────────────────────────────────
-function VoucherTable({ rows, title }: { rows: VoucherRow[]; title: string }) {
+function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: string; onRowClick?: (r: VoucherRow) => void }) {
   const [open, setOpen] = useState(true);
   const total = rows.reduce((s, r) => s + r.amount, 0);
   return (
@@ -200,7 +201,7 @@ function VoucherTable({ rows, title }: { rows: VoucherRow[]; title: string }) {
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i}>
+                <tr key={i} style={{ cursor: onRowClick ? "pointer" : undefined }} onClick={() => onRowClick?.(r)}>
                   <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{r.date}</td>
                   <td style={{ fontSize: 11, textAlign: "center" }}>{r.voucher_no}</td>
                   <td style={{ whiteSpace: "nowrap", textAlign: "left" }}>{r.counterparty}</td>
@@ -225,6 +226,7 @@ function VoucherTable({ rows, title }: { rows: VoucherRow[]; title: string }) {
 // ── 메인 ──────────────────────────────────────────────────────
 export default function PLSales() {
   const filter = useFilter();
+  const { triggerComment } = useComment();
 
   const [kpi, setKpi] = useState<KPIData | null>(null);
   const [trend, setTrend] = useState<TrendRow[]>([]);
@@ -404,20 +406,24 @@ export default function PLSales() {
 
         {/* [1,1] KPI 카드 2개 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, gridColumn: "1", gridRow: "1", alignSelf: "stretch" }}>
-          <KpiCard
-            label={kpiLabel} unit="백만"
-            value={fmtB(rev.current)} prior={fmtB(rev.prior)}
-            change={Math.round(rev.change / 1_000_000)}
-            changePct={rev.change_pct}
-            vsPrevMonth={Math.round(rev.vs_prev_month / 1_000_000)}
-          />
-          <KpiCard
-            label="거래처수" unit="개"
-            value={cnt.current} prior={cnt.prior}
-            change={cnt.change}
-            changePct={cnt.change_pct}
-            vsPrevMonth={cnt.vs_prev_month}
-          />
+          <div style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` })}>
+            <KpiCard
+              label={kpiLabel} unit="백만"
+              value={fmtB(rev.current)} prior={fmtB(rev.prior)}
+              change={Math.round(rev.change / 1_000_000)}
+              changePct={rev.change_pct}
+              vsPrevMonth={Math.round(rev.vs_prev_month / 1_000_000)}
+            />
+          </div>
+          <div style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) })}>
+            <KpiCard
+              label="거래처수" unit="개"
+              value={cnt.current} prior={cnt.prior}
+              change={cnt.change}
+              changePct={cnt.change_pct}
+              vsPrevMonth={cnt.vs_prev_month}
+            />
+          </div>
         </div>
 
         {/* [1,2] 매출액 추이 차트 */}
@@ -684,8 +690,8 @@ export default function PLSales() {
       {/* ── 전표 내역 ─────────────────────────────────────────── */}
       {vouchers && (
         <>
-          <VoucherTable rows={vouchers.current} title="당기 전표 내역" />
-          <VoucherTable rows={vouchers.prior}   title="전기 전표 내역" />
+          <VoucherTable rows={vouchers.current} title="당기 전표 내역" onRowClick={(r) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") })} />
+          <VoucherTable rows={vouchers.prior}   title="전기 전표 내역" onRowClick={(r) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") })} />
         </>
       )}
 

@@ -3,6 +3,7 @@
 import Loading from "@/components/ui/Loading";
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import {
   fetchKPI, fetchTop3, fetchIndicators,
   fetchPLTable, fetchBSTable, fetchScenarioCount, fetchPLTrend, fetchBSTrend,
@@ -91,6 +92,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
 
 export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
   const filter = useFilter();
+  const { triggerComment } = useComment();
   const [kpi,        setKpi]        = useState<KPIData | null>(null);
   const [top3,       setTop3]       = useState<Top3Data | null>(null);
   const [indicators, setIndicators] = useState<IndicatorData | null>(null);
@@ -181,7 +183,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           const d = kpi[key];
           const idx = selMonth[key];
           return (
-            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0 }}>
+            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer" }} onClick={() => triggerComment({ page: "Summary", label, value: `${fmtB(d.value)}백만` })}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div className="kpi-lbl">{label}</div>
                 {idx !== null && (
@@ -292,7 +294,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <thead><tr><th>공시용계정</th><th>당기</th><th>전기</th><th>증감률</th></tr></thead>
               <tbody>
                 {plTable.map((row) => (
-                  <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""}>
+                  <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) })}>
                     <td className={!row.is_subtotal ? "td-s1" : ""}>{row.account}</td>
                     <td>{fmt(row.current)}</td>
                     <td>{fmt(row.prior)}</td>
@@ -312,7 +314,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <thead><tr><th>재무항목</th><th>기말</th><th>기초</th><th>증감률</th></tr></thead>
               <tbody>
                 {bsTable.map((row) => (
-                  <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""}>
+                  <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "Summary", label: row.account, value: fmt(row.current) })}>
                     <td className={row.indent === 1 ? "td-s1" : ""}>{row.account}</td>
                     <td>{fmt(row.current)}</td>
                     <td>{fmt(row.prior)}</td>

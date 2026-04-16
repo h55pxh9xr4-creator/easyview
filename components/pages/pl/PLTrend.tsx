@@ -3,6 +3,7 @@
 import Loading from "@/components/ui/Loading";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 
@@ -299,6 +300,7 @@ function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
 // ── 메인 ─────────────────────────────────────────────────────
 export default function PLTrend() {
   const filter = useFilter();
+  const { triggerComment } = useComment();
   const [accounts,      setAccounts]      = useState<AccountTrend[] | null>(null);
   const [selected,      setSelected]      = useState<string | null>(null);
   const [detail,        setDetail]        = useState<Detail | null>(null);
@@ -408,7 +410,11 @@ export default function PLTrend() {
             months={allMonths}
             showDisc={discFilter === "전체"}
             isSelected={selected === a.mgmt_acct}
-            onClick={() => setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct)}
+            onClick={() => {
+              setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct);
+              const cur = allMonths.map(m => a.cur[m] ?? 0).reduce((s, v) => s + v, 0);
+              triggerComment({ page: "PL 추이분석", label: a.mgmt_acct, value: `${fmtM(cur)}백만` });
+            }}
           />
         ))}
       </div>
@@ -490,7 +496,7 @@ export default function PLTrend() {
                             <tr><td colSpan={6} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
                           )}
                           {vouchers.map((v, i) => (
-                            <tr key={i}>
+                            <tr key={i} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "PL 추이분석", label: v.counterparty ?? v.description ?? "-", value: fmt(v.amount), sub: detail.mgmt_acct })}>
                               <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
                               <td>{v.voucher_no}</td>
                               <td>{v.counterparty ?? "-"}</td>

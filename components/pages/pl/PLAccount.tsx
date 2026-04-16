@@ -3,6 +3,7 @@
 import Loading from "@/components/ui/Loading";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 
@@ -117,6 +118,7 @@ function CounterpartyChangeBar({ data }: { data: Detail["counterparty"] }) {
 
 export default function PLAccount() {
   const filter  = useFilter();
+  const { triggerComment } = useComment();
   const [rows,     setRows]     = useState<AcctRow[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);   // mgmt_acct
@@ -251,6 +253,11 @@ export default function PLAccount() {
                           <td>{fmt(mgmtPri)}</td>
                           <td className={mgmtChg >= 0 ? "up-t" : "dn-t"}>
                             {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toFixed(1)}%
+                            <button
+                              onClick={(e) => { e.stopPropagation(); triggerComment({ page: "PL 계정분석", label: mgmt, value: fmt(mgmtCur) }); }}
+                              style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#bbb", padding: 0, lineHeight: 1 }}
+                              title="코멘트"
+                            >💬</button>
                           </td>
                         </tr>,
                         ...(!mgmtOpen ? [] : accts.map(r => (
@@ -349,7 +356,7 @@ export default function PLAccount() {
                               <tr><td colSpan={6} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
                             )}
                             {vouchers.map((v, i) => (
-                              <tr key={i}>
+                              <tr key={i} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "PL 계정분석", label: v.counterparty ?? v.description ?? "-", value: fmt(v.amount), sub: detail.mgmt_acct })}>
                                 <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
                                 <td style={{ textAlign: "center" }}>{v.voucher_no}</td>
                                 <td style={{ textAlign: "left" }}>{v.counterparty ?? "-"}</td>

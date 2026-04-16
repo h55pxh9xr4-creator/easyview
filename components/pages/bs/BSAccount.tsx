@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useComment } from "@/hooks/useComment";
 import { fetchBSAccount, fetchBSDisclosureDetail, BSDisclosureDetail } from "@/lib/api";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
@@ -30,6 +31,7 @@ const CAT_COLOR: Record<string, string> = { 자산: "#2563EB", 부채: "#EF4444"
 
 export default function BSAccount() {
   const filter  = useFilter();
+  const { triggerComment } = useComment();
   const [rows,     setRows]     = useState<BSAcctRow[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);   // disclosure_acct
@@ -180,7 +182,14 @@ export default function BSAccount() {
                               </td>
                               <td>{fmtB(discEnd)}</td>
                               <td>{fmtB(discOpn)}</td>
-                              <td className={discChg >= 0 ? "up-t" : "dn-t"}>{fmtChg(discChg)}</td>
+                              <td className={discChg >= 0 ? "up-t" : "dn-t"}>
+                                {fmtChg(discChg)}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); triggerComment({ page: "BS 계정분석", label: disc, value: `${fmtB(discEnd)}백만` }); }}
+                                  style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#bbb", padding: 0, lineHeight: 1 }}
+                                  title="코멘트"
+                                >💬</button>
+                              </td>
                             </tr>
                           );
                         })),
@@ -336,7 +345,7 @@ export default function BSAccount() {
                       </thead>
                       <tbody>
                         {detail.vouchers.map((v, i) => (
-                          <tr key={i}>
+                          <tr key={i} style={{ cursor: "pointer" }} onClick={() => triggerComment({ page: "BS 계정분석", label: v.counterparty || v.account_name, value: `${fmtB(v.amount)}백만`, sub: selected ?? undefined })}>
                             <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
                             <td style={{ textAlign: "center", color: "#888", fontSize: 11 }}>{v.voucher_no}</td>
                             <td style={{ textAlign: "left" }}>{v.account_name}</td>
