@@ -104,6 +104,13 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
       ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
       : { transition: "box-shadow 0.25s, transform 0.25s" };
   };
+  // 테이블 행/셀 강조: 원문 보기 시 해당 account + column 매칭
+  const isRowHighlighted = (account: string) =>
+    panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "Summary" &&
+    !!cmtTarget.label?.startsWith(account + " (");
+  const isCellHighlighted = (account: string, col: string) =>
+    panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "Summary" &&
+    cmtTarget.label === `${account} (${col})`;
   const [kpi,        setKpi]        = useState<KPIData | null>(null);
   const [top3,       setTop3]       = useState<Top3Data | null>(null);
   const [indicators, setIndicators] = useState<IndicatorData | null>(null);
@@ -313,17 +320,21 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                     const r = e.currentTarget.getBoundingClientRect();
                     triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right });
                   };
-                  // 당기/전기/증감률 중 comment가 있는 첫 번째 inquiryId
                   const plDotId = ["당기", "전기", "증감률"].map(c => ck.get(commentKey("Summary", `${row.account} (${c})`))).find(v => v !== undefined);
+                  const rowHl = isRowHighlighted(row.account);
+                  const cellBg = (col: string) => isCellHighlighted(row.account, col)
+                    ? { background: "rgba(232,119,34,0.13)", fontWeight: 700 as const, outline: "2px solid rgba(232,119,34,0.45)", outlineOffset: -2, cursor: "pointer" as const }
+                    : { cursor: "pointer" as const };
                   return (
-                    <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""}>
+                    <tr key={row.account} className={row.is_subtotal ? "tr-sum" : ""}
+                      style={rowHl ? { background: "rgba(232,119,34,0.05)", transition: "background 0.25s" } : undefined}>
                       <td className={!row.is_subtotal ? "td-s1" : ""} style={{ position: "relative" }}>
                         {row.account}
                         {plDotId !== undefined && <CommentDot inquiryId={plDotId} inline />}
                       </td>
-                      <td style={{ cursor: "pointer" }} onClick={tc("당기", fmt(row.current))}>{fmt(row.current)}</td>
-                      <td style={{ cursor: "pointer" }} onClick={tc("전기", fmt(row.prior))}>{fmt(row.prior)}</td>
-                      <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={{ cursor: "pointer" }} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
+                      <td style={cellBg("당기")} onClick={tc("당기", fmt(row.current))}>{fmt(row.current)}</td>
+                      <td style={cellBg("전기")} onClick={tc("전기", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={cellBg("증감률")} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
                     </tr>
                   );
                 })}
@@ -344,15 +355,20 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                     triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right });
                   };
                   const bsDotId = ["기말", "기초", "증감률"].map(c => ck.get(commentKey("Summary", `${row.account} (${c})`))).find(v => v !== undefined);
+                  const rowHl = isRowHighlighted(row.account);
+                  const cellBg = (col: string) => isCellHighlighted(row.account, col)
+                    ? { background: "rgba(232,119,34,0.13)", fontWeight: 700 as const, outline: "2px solid rgba(232,119,34,0.45)", outlineOffset: -2, cursor: "pointer" as const }
+                    : { cursor: "pointer" as const };
                   return (
-                    <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""}>
+                    <tr key={`${row.account}-${row.indent}`} className={row.indent === 0 ? "tr-sum" : ""}
+                      style={rowHl ? { background: "rgba(232,119,34,0.05)", transition: "background 0.25s" } : undefined}>
                       <td className={row.indent === 1 ? "td-s1" : ""} style={{ position: "relative" }}>
                         {row.account}
                         {bsDotId !== undefined && <CommentDot inquiryId={bsDotId} inline />}
                       </td>
-                      <td style={{ cursor: "pointer" }} onClick={tc("기말", fmt(row.current))}>{fmt(row.current)}</td>
-                      <td style={{ cursor: "pointer" }} onClick={tc("기초", fmt(row.prior))}>{fmt(row.prior)}</td>
-                      <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={{ cursor: "pointer" }} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
+                      <td style={cellBg("기말")} onClick={tc("기말", fmt(row.current))}>{fmt(row.current)}</td>
+                      <td style={cellBg("기초")} onClick={tc("기초", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={cellBg("증감률")} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
                     </tr>
                   );
                 })}
