@@ -75,7 +75,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
   }, [pendingId]);
 
   const openDetail = (id: number) => {
-    fetchInquiry(id).then(d => { setDetail(d); setReplyText(d.reply ?? ""); setView("detail"); });
+    fetchInquiry(id).then(d => { setDetail(d); setReplyText(""); setView("detail"); });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
