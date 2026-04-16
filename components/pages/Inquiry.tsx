@@ -382,7 +382,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                         onNavigate(nav.tab, nav.sub, nav.label, true);
                       }}
                     >
-                      원문 보기
+                      Report 보기
                     </button>
                   );
                 })()}
