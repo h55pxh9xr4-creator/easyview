@@ -322,16 +322,20 @@ export default function Inquiry() {
         <Toast />
         <div className="card">
           <div style={{ borderBottom: "1px solid #EBEBEB", paddingBottom: 14, marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#2C2C2C", flex: 1, lineHeight: 1.4 }}>
-                {detail.is_secret && <span style={{ fontSize: 13, marginRight: 5 }}>🔒</span>}
-                {detail.title}
-              </span>
-              <span style={{ ...badge, ...catColor(detail.category), flexShrink: 0 }}>{detail.category}</span>
-              <span style={{ ...badge, flexShrink: 0, background: detail.status === "답변완료" ? "#EBF0FD" : "#FFF5EE", color: detail.status === "답변완료" ? "#2563EB" : "#E87722" }}>{detail.status}</span>
-              <button onClick={() => setView("list")} style={backBtn}>목록으로</button>
-              {canEdit && <button onClick={() => { setForm({ category: detail.category, title: detail.title, content: detail.content, is_secret: detail.is_secret }); setView("edit"); }} style={cancelBtn}>수정</button>}
-              {canEdit && <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: "#FCCAC7" }}>삭제</button>}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#2C2C2C", lineHeight: 1.4 }}>
+                  {detail.is_secret && <span style={{ fontSize: 13, marginRight: 5 }}>🔒</span>}
+                  {detail.title}
+                </span>
+                <span style={{ ...badge, ...catColor(detail.category) }}>{detail.category}</span>
+                <span style={{ ...badge, background: detail.status === "답변완료" ? "#EBF0FD" : "#FFF5EE", color: detail.status === "답변완료" ? "#2563EB" : "#E87722" }}>{detail.status}</span>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <button onClick={() => setView("list")} style={backBtn}>목록으로</button>
+                {canEdit && <button onClick={() => { setForm({ category: detail.category, title: detail.title, content: detail.content, is_secret: detail.is_secret }); setView("edit"); }} style={cancelBtn}>수정</button>}
+                {canEdit && <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: "#FCCAC7" }}>삭제</button>}
+              </div>
             </div>
             <div style={{ fontSize: 12, color: "#aaa", display: "flex", gap: 20 }}>
               <span>작성자: <strong style={{ color: "#666" }}>{detail.author}</strong></span>
