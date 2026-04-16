@@ -26,7 +26,7 @@ export default function CommentPanel() {
     content: defaultContent,
     is_secret: false,
   });
-  const [replyText, setReplyText] = useState(target?.existingReply ?? "");
+  const [replyText, setReplyText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [replyDone, setReplyDone] = useState(false);
