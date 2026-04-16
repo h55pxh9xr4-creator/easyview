@@ -43,7 +43,7 @@ def _prior_ym_pt(base_ym: str, period_type: str, compare_target: str) -> tuple[s
     """compare_target에 따른 비교기준 연월·기간타입 반환"""
     year, month = int(base_ym.split("-")[0]), int(base_ym.split("-")[1])
     if compare_target == "prev_year_cum":
-        return f"{year - 1}-{month:02d}", period_type
+        return f"{year - 1}-{month:02d}", "cumulative"
     elif compare_target == "prev_year_month":
         return f"{year - 1}-{month:02d}", "monthly"
     elif compare_target == "prev_month":
@@ -51,11 +51,22 @@ def _prior_ym_pt(base_ym: str, period_type: str, compare_target: str) -> tuple[s
         if pm == 0:
             pm, py = 12, year - 1
         return f"{py}-{pm:02d}", "monthly"
-    return f"{year - 1}-{month:02d}", period_type
+    elif compare_target == "prev_month_cum":
+        # 전년도 전월까지 누적: 2024.01~08
+        pm, py = month - 1, year - 1
+        if pm == 0:
+            pm, py = 12, py - 1
+        return f"{py}-{pm:02d}", "cumulative"
+    return f"{year - 1}-{month:02d}", "cumulative"
 
 
-def _vs_label(compare_target: str) -> str:
-    return {"prev_year_cum": "vs 전기", "prev_year_month": "vs 전년동월", "prev_month": "vs 전월"}.get(compare_target, "vs 전기")
+def _vs_label(compare_target: str, period_type: str = "cumulative") -> str:
+    return {
+        "prev_year_cum":   "vs 전년누적",
+        "prev_year_month": "vs 전년동월",
+        "prev_month":      "vs 전월",
+        "prev_month_cum":  "vs 전월누적",
+    }.get(compare_target, "vs 전기")
 
 
 def _bs_vs_label(bs_base: str) -> str:
