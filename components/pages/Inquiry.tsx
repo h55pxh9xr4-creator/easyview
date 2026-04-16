@@ -5,12 +5,34 @@ import {
   fetchInquiries, fetchInquiry, createInquiry, updateInquiry, replyInquiry, deleteInquiry,
   InquiryItem, InquiryDetail, INQUIRY_CATEGORIES,
 } from "@/lib/api";
+import { useComment } from "@/hooks/useComment";
 
 type View = "list" | "detail" | "write" | "edit";
 const ADMIN_ID = "admin";
 const PAGE_SIZE = 10;
 
-export default function Inquiry() {
+// 페이지명 → 탭/서브 매핑
+const PAGE_NAV: Record<string, { tab: string; sub: string; label: string }> = {
+  "Summary":     { tab: "summary", sub: "summary",      label: "Summary" },
+  "PL 요약":     { tab: "pl",      sub: "pl-sum",        label: "PL 요약" },
+  "PL 추이분석": { tab: "pl",      sub: "pl-trend",      label: "PL 추이" },
+  "PL 계정분석": { tab: "pl",      sub: "pl-acct",       label: "PL 계정" },
+  "매출분석":    { tab: "pl",      sub: "pl-sale",       label: "매출분석" },
+  "손익항목":    { tab: "pl",      sub: "pl-item",       label: "손익항목" },
+  "BS 요약":     { tab: "bs",      sub: "bs-sum",        label: "BS 요약" },
+  "BS 추이분석": { tab: "bs",      sub: "bs-trend",      label: "BS 추이" },
+  "BS 계정분석": { tab: "bs",      sub: "bs-acct",       label: "BS 계정" },
+  "전표분석":    { tab: "vch",     sub: "vch-analysis",  label: "전표분석" },
+  "전표검색":    { tab: "vch",     sub: "vch-search",    label: "전표검색" },
+};
+
+// 내용에서 페이지/항목/값/참고 파싱
+function parseCommentTarget(content: string) {
+  const get = (key: string) => content.match(new RegExp(`^${key}: (.+)$`, "m"))?.[1]?.trim();
+  return { page: get("페이지"), label: get("항목"), value: get("값"), sub: get("선택 월") };
+}
+
+export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
   const [view,       setView]      = useState<View>("list");
   const [list,       setList]      = useState<InquiryItem[]>([]);
   const [detail,     setDetail]    = useState<InquiryDetail | null>(null);
@@ -26,6 +48,7 @@ export default function Inquiry() {
 
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
   const isAdmin = currentUser === ADMIN_ID;
+  const { triggerComment, openPanel } = useComment();
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -332,6 +355,23 @@ export default function Inquiry() {
                 <span style={{ ...badge, background: detail.status === "답변완료" ? "#EBF0FD" : "#FFF5EE", color: detail.status === "답변완료" ? "#2563EB" : "#E87722" }}>{detail.status}</span>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {(() => {
+                  const parsed = parseCommentTarget(detail.content);
+                  const nav = parsed.page ? PAGE_NAV[parsed.page] : null;
+                  if (!nav || !onNavigate) return null;
+                  return (
+                    <button
+                      style={{ ...cancelBtn, background: "#FFF8F3", color: "#E87722", borderColor: "#F5C8A0" }}
+                      onClick={() => {
+                        triggerComment({ page: parsed.page!, label: parsed.label ?? "", value: parsed.value, sub: parsed.sub });
+                        openPanel();
+                        onNavigate(nav.tab, nav.sub, nav.label);
+                      }}
+                    >
+                      원문 보기
+                    </button>
+                  );
+                })()}
                 <button onClick={() => setView("list")} style={backBtn}>목록으로</button>
                 {canEdit && <button onClick={() => { setForm({ category: detail.category, title: detail.title, content: detail.content, is_secret: detail.is_secret }); setView("edit"); }} style={cancelBtn}>수정</button>}
                 {canEdit && <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: "#FCCAC7" }}>삭제</button>}
