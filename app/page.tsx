@@ -8,12 +8,12 @@ import Sidebar from "@/components/layout/Sidebar";
 import FilterBar from "@/components/layout/FilterBar";
 import CommentPanel from "@/components/layout/CommentPanel";
 import LoginPage from "@/components/layout/LoginPage";
-import Summary from "@/components/pages/Summary";
 import Inquiry from "@/components/pages/Inquiry";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 
+const Summary      = dynamic(() => import("@/components/pages/Summary"),         { ssr: false });
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
 const PLTrend      = dynamic(() => import("@/components/pages/pl/PLTrend"),      { ssr: false });
 const PLAccount    = dynamic(() => import("@/components/pages/pl/PLAccount"),    { ssr: false });
