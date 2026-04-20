@@ -472,11 +472,8 @@ export default function PLTrend() {
               showDisc={discFilter === "전체"}
               isSelected={selected === a.mgmt_acct}
               isDark={isDark}
-              onClick={(e) => {
+              onClick={() => {
                 setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct);
-                const cur = allMonths.map(m => a.cur[m] ?? 0).reduce((s, v) => s + v, 0);
-                const r = e.currentTarget.getBoundingClientRect();
-                triggerComment({ page: "PL 추이분석", label: a.mgmt_acct, value: `${fmtM(cur)}백만` }, { top: r.top, right: r.right });
               }}
             />
           </div>
@@ -544,44 +541,88 @@ export default function PLTrend() {
 
               {/* 전표 내역 */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {[
-                  { title: "당기 기표 내역", vouchers: detail.cur_vouchers },
-                  { title: "전기 기표 내역", vouchers: detail.pri_vouchers },
-                ].map(({ title, vouchers }) => (
-                  <div key={title} className="card">
-                    <div className="card-title">{title}</div>
-                    <div className="tbl-wrap" style={{ maxHeight: 280, overflowY: "auto" }}>
-                      <table>
-                        <thead>
-                          <tr><th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>차/대</th><th>금액</th></tr>
-                        </thead>
-                        <tbody>
-                          {vouchers.length === 0 && (
-                            <tr><td colSpan={6} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
-                          )}
-                          {vouchers.map((v, i) => (
-                            <tr key={i} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 추이분석", label: v.counterparty ?? v.description ?? "-", value: fmt(v.amount), sub: detail.mgmt_acct }, { top: r.top, right: r.right }); }}>
-                              <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
-                              <td>{v.voucher_no}</td>
-                              <td>{v.counterparty ?? "-"}</td>
-                              <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
-                              <td style={{ color: v.dr_cr === "차변" ? BLUE : "#EF4444", fontWeight: 600 }}>{v.dr_cr}</td>
-                              <td>{fmt(v.amount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        {vouchers.length > 0 && (
-                          <tfoot>
-                            <tr className="tr-sum">
-                              <td colSpan={5}>합계</td>
-                              <td>{fmt(vouchers.reduce((s, v) => s + v.amount, 0))}</td>
-                            </tr>
-                          </tfoot>
+                {/* 당기 기표 내역 — Comment 가능 */}
+                <div className="card">
+                  <div className="card-title">당기 기표 내역</div>
+                  <div className="tbl-wrap" style={{ maxHeight: 280, overflowY: "auto" }}>
+                    <table>
+                      <thead>
+                        <tr><th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>금액</th></tr>
+                      </thead>
+                      <tbody>
+                        {detail.cur_vouchers.length === 0 && (
+                          <tr><td colSpan={5} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
                         )}
-                      </table>
-                    </div>
+                        {detail.cur_vouchers.map((v, i) => (
+                          <tr
+                            key={i}
+                            style={{ cursor: "pointer" }}
+                            onClick={(e) => {
+                              const r = e.currentTarget.getBoundingClientRect();
+                              triggerComment(
+                                {
+                                  page: "PL 추이분석",
+                                  label: v.counterparty ?? v.description ?? "-",
+                                  value: `일자: ${v.date} | 전표번호: ${v.voucher_no} | 거래처: ${v.counterparty ?? "-"} | 적요: ${v.description ?? "-"} | 금액: ${fmt(v.amount)}`,
+                                  sub: detail.mgmt_acct,
+                                },
+                                { top: r.top, right: r.right }
+                              );
+                            }}
+                          >
+                            <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
+                            <td>{v.voucher_no}</td>
+                            <td>{v.counterparty ?? "-"}</td>
+                            <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
+                            <td>{fmt(v.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      {detail.cur_vouchers.length > 0 && (
+                        <tfoot>
+                          <tr className="tr-sum">
+                            <td colSpan={4}>합계</td>
+                            <td>{fmt(detail.cur_vouchers.reduce((s, v) => s + v.amount, 0))}</td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
                   </div>
-                ))}
+                </div>
+
+                {/* 전기 기표 내역 — Comment 없음 */}
+                <div className="card">
+                  <div className="card-title">전기 기표 내역</div>
+                  <div className="tbl-wrap" style={{ maxHeight: 280, overflowY: "auto" }}>
+                    <table>
+                      <thead>
+                        <tr><th>일자</th><th>전표번호</th><th>거래처</th><th>적요</th><th>금액</th></tr>
+                      </thead>
+                      <tbody>
+                        {detail.pri_vouchers.length === 0 && (
+                          <tr><td colSpan={5} style={{ textAlign: "center", color: "#bbb", padding: 16 }}>내역 없음</td></tr>
+                        )}
+                        {detail.pri_vouchers.map((v, i) => (
+                          <tr key={i}>
+                            <td style={{ whiteSpace: "nowrap" }}>{v.date}</td>
+                            <td>{v.voucher_no}</td>
+                            <td>{v.counterparty ?? "-"}</td>
+                            <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
+                            <td>{fmt(v.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      {detail.pri_vouchers.length > 0 && (
+                        <tfoot>
+                          <tr className="tr-sum">
+                            <td colSpan={4}>합계</td>
+                            <td>{fmt(detail.pri_vouchers.reduce((s, v) => s + v.amount, 0))}</td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </div>
               </div>
 
             </div>
