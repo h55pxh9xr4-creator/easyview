@@ -213,7 +213,6 @@ export default function ChatBot() {
         <button
           className="chatbot-fab"
           onClick={() => setOpen(p => !p)}
-          title="AI 어시스턴트"
         >
           <AccountantPixel />
         </button>
