@@ -290,7 +290,7 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
 .chatbot-speech::before{content:"";position:absolute;bottom:-6px;right:19px;border:4px solid transparent;border-top-color:#fff;z-index:1}
 .chatbot-fab{width:auto;height:auto;border-radius:0;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;transition:transform .2s;padding:0;overflow:visible}
 .chatbot-fab:hover{transform:scale(1.1) rotate(-4deg)}
-.chatbot-panel{position:fixed;bottom:128px;right:24px;width:360px;height:500px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;z-index:599;overflow:hidden;animation:panel-in .2s ease}
+.chatbot-panel{position:fixed;bottom:108px;right:24px;width:360px;height:500px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;z-index:599;overflow:hidden;animation:panel-in .2s ease}
 .chatbot-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #F0F0F0;flex-shrink:0}
 .chatbot-icon-sm{font-size:16px;color:#E87722}
 .chatbot-close{display:flex;align-items:center;padding:4px;border:none;background:none;cursor:pointer;color:#aaa;border-radius:4px}
