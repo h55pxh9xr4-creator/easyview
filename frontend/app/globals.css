@@ -18,6 +18,23 @@ body{font-family:'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif;backg
 .hdr-username b{color:#E87722;font-weight:700}
 .hdr-logout{padding:4px 12px;border:1px solid #E0E0E0;border-radius:6px;background:#fff;color:#888;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
 .hdr-logout:hover{border-color:#E87722;color:#E87722}
+.hdr-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:180px;background:#fff;border:1px solid #EDEDED;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:999;overflow:hidden;animation:drop-in .12s ease}
+@keyframes drop-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.hdr-dropdown-user{padding:12px 14px 10px}
+.hdr-dropdown-name{display:block;font-size:13px;font-weight:700;color:#2C2C2C}
+.hdr-dropdown-role{display:block;font-size:11px;color:#aaa;margin-top:2px}
+.hdr-dropdown-divider{height:1px;background:#F0F0F0;margin:0}
+.hdr-dropdown-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;background:none;font-family:inherit;font-size:13px;color:#444;cursor:pointer;text-align:left;transition:background .1s}
+.hdr-dropdown-item:hover{background:#F7F7F7;color:#2C2C2C}
+.hdr-dropdown-logout{color:#EF4444}
+.hdr-dropdown-logout:hover{background:#FFF5F5;color:#EF4444}
+[data-theme="dark"] .hdr-dropdown{background:#161B22;border-color:#30363D;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+[data-theme="dark"] .hdr-dropdown-name{color:#E6EDF3}
+[data-theme="dark"] .hdr-dropdown-divider{background:#30363D}
+[data-theme="dark"] .hdr-dropdown-item{color:#8B949E}
+[data-theme="dark"] .hdr-dropdown-item:hover{background:#1C2128;color:#E6EDF3}
+[data-theme="dark"] .hdr-dropdown-logout{color:#F87171}
+[data-theme="dark"] .hdr-dropdown-logout:hover{background:#2A1A1A;color:#F87171}
 .hdr-user-icon{width:32px;height:32px;border-radius:50%;border:1px solid #E0E0E0;display:flex;align-items:center;justify-content:center;color:#666;flex-shrink:0}
 
 /* ── App body layout ── */
