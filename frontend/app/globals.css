@@ -512,3 +512,5 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
   to   { transform: scaleY(1); }
 }
 .svc-intro-wrap { overflow-x: hidden; }
+
+.svc-intro-wrap { width: 100%; overflow-x: hidden; }
