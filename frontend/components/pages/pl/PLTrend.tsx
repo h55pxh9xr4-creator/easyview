@@ -9,6 +9,18 @@ import { CommentDot } from "@/components/ui/CommentDot";
 import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 
+function useDarkMode() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.getAttribute("data-theme") === "dark");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
+
 const fmtM  = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmt   = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
@@ -32,7 +44,7 @@ interface Detail {
 }
 
 // ── ECharts 스파크라인 ────────────────────────────────────────
-function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthClick, selectedMonthIdx }: {
+function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthClick, selectedMonthIdx, isDark = false }: {
   months: string[];
   cur: number[];
   pri: number[];
@@ -40,9 +52,17 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
   expanded?: boolean;
   onMonthClick?: (idx: number) => void;
   selectedMonthIdx?: number | null;
+  isDark?: boolean;
 }) {
+  const axisColor   = isDark ? "#5A6070" : "#bbb";
+  const gridColor   = isDark ? "#2E3039" : "#f0f0f0";
+  const tooltipBg   = isDark ? "#1C1F26" : "#fff";
+  const tooltipBdr  = isDark ? "#2E3039" : "#eee";
+  const tooltipTxt  = isDark ? "#E2E5EC" : "#333";
+
   const option = {
     animation: false,
+    backgroundColor: "transparent",
     grid: { top: expanded ? 16 : 4, bottom: expanded ? 44 : 4, left: expanded ? 40 : 4, right: expanded ? 16 : 4 },
     xAxis: {
       type: "category" as const,
@@ -50,13 +70,13 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
       show: expanded,
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { fontSize: 10, color: "#bbb" },
+      axisLabel: { fontSize: 10, color: axisColor },
     },
     yAxis: {
       type: "value" as const,
       show: expanded,
-      axisLabel: { fontSize: 9, color: "#bbb", formatter: (v: number) => `${Math.round(v / 1_000_000)}백만` },
-      splitLine: { lineStyle: { color: "#f5f5f5" } },
+      axisLabel: { fontSize: 9, color: axisColor, formatter: (v: number) => `${Math.round(v / 1_000_000)}백만` },
+      splitLine: { lineStyle: { color: gridColor, width: 1 } },
     },
     series: [
       {
@@ -97,31 +117,37 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
     ],
     tooltip: expanded ? {
       trigger: "axis" as const,
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBdr,
+      textStyle: { color: tooltipTxt, fontSize: 11 },
       axisPointer: {
         type: "line" as const,
-        lineStyle: { color: "#bbb", width: 1, type: "dashed" as const },
+        lineStyle: { color: isDark ? "#3A3F4A" : "#bbb", width: 1, type: "dashed" as const },
       },
       formatter: (params: { seriesName: string; value: number; dataIndex: number }[]) => {
         const idx = params[0]?.dataIndex;
         const mo  = months[idx] ?? "";
         const lines = params.filter(p => p.value !== 0).map(p => `${p.seriesName}: <b>${fmtM(p.value)}백만</b>`);
-        return `<span style="font-size:10px;color:#999">${mo}</span><br/>${lines.join("<br/>")}`;
+        return `<span style="font-size:10px;color:${axisColor}">${mo}</span><br/>${lines.join("<br/>")}`;
       },
     } : {
       trigger: "axis" as const,
-      axisPointer: { type: "line" as const, lineStyle: { color: "#ddd", width: 1 } },
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBdr,
+      textStyle: { color: tooltipTxt, fontSize: 11 },
+      axisPointer: { type: "line" as const, lineStyle: { color: isDark ? "#3A3F4A" : "#ddd", width: 1 } },
       formatter: (params: { seriesName: string; value: number; dataIndex: number }[]) => {
         const mo = months[params[0]?.dataIndex] ?? "";
         const lines = params.filter(p => p.value !== 0)
           .map(p => `${p.seriesName}: <b>${fmtM(p.value)}백만</b>`);
-        return `<span style="font-size:10px;color:#999">${mo}</span><br/>${lines.join("<br/>")}`;
+        return `<span style="font-size:10px;color:${axisColor}">${mo}</span><br/>${lines.join("<br/>")}`;
       },
     },
     legend: expanded ? {
       show: true,
       bottom: 0,
       left: "center",
-      textStyle: { color: "#888", fontSize: 10 },
+      textStyle: { color: isDark ? "#9198A8" : "#888", fontSize: 10 },
       itemWidth: 16, itemHeight: 8,
     } : { show: false },
   };
@@ -149,13 +175,14 @@ function toPriYm(m: string) {
 }
 
 function AccountCard({
-  acct, months, showDisc, isSelected, onClick,
+  acct, months, showDisc, isSelected, onClick, isDark = false,
 }: {
   acct: AccountTrend;
   months: string[];
   showDisc: boolean;
   isSelected: boolean;
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  isDark?: boolean;
 }) {
   const cur  = months.map(m => acct.cur[m] ?? 0);
   const pri  = months.map(m => acct.pri[toPriYm(m)] ?? 0);
@@ -164,81 +191,93 @@ function AccountCard({
   const chg  = total - priTotal;
   const monthLabels = months.map(m => m.slice(5) + "월");
 
+  const bg     = isDark ? "#1C1F26" : "#fff";
+  const bdr    = isSelected ? `2px solid ${ORANGE}` : `1px solid ${isDark ? "#2E3039" : "#EDEDED"}`;
+  const txtPri = isDark ? "#E2E5EC" : "#222";
+  const txtSec = isDark ? "#9198A8" : "#444";
+  const txtDim = isDark ? "#5A6070" : "#bbb";
+
   return (
     <div
       onClick={onClick}
       style={{
-        background: "#fff",
+        background: bg,
         borderRadius: 10,
         padding: "12px 14px",
         cursor: "pointer",
-        border: isSelected ? `2px solid ${ORANGE}` : "1px solid #EDEDED",
+        border: bdr,
         borderTop: isSelected ? `3px solid ${ORANGE}` : `3px solid ${ORANGE}22`,
         boxShadow: isSelected
           ? "0 4px 16px rgba(232,119,34,.18)"
-          : "0 1px 4px rgba(0,0,0,.05)",
+          : isDark ? "0 1px 4px rgba(0,0,0,.25)" : "0 1px 4px rgba(0,0,0,.05)",
         transition: "all .15s",
       }}
     >
       {showDisc && (
-        <div style={{ fontSize: 9, color: "#bbb", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ fontSize: 9, color: txtDim, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {acct.disclosure_acct}
         </div>
       )}
-      <div style={{ fontSize: 12, fontWeight: 700, color: isSelected ? ORANGE : "#444", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: isSelected ? ORANGE : txtSec, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {acct.mgmt_acct}
       </div>
       <div style={{ marginTop: 4, display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span style={{ fontSize: 18, fontWeight: 800, color: "#222", letterSpacing: "-0.5px" }}>
+        <span style={{ fontSize: 18, fontWeight: 800, color: txtPri, letterSpacing: "-0.5px" }}>
           {fmtM(total)}
         </span>
-        <span style={{ fontSize: 10, color: "#bbb" }}>백만</span>
+        <span style={{ fontSize: 10, color: txtDim }}>백만</span>
         <span style={{ fontSize: 10, color: chg >= 0 ? "#EF4444" : BLUE, marginLeft: 2 }}>
           {chg >= 0 ? "▲" : "▼"}{fmtM(Math.abs(chg))}
         </span>
       </div>
       <div style={{ marginTop: 6 }}>
-        <SparkLine months={monthLabels} cur={cur} pri={pri} height={56} />
+        <SparkLine months={monthLabels} cur={cur} pri={pri} height={56} isDark={isDark} />
       </div>
     </div>
   );
 }
 
 // ── 확대 차트 카드 ────────────────────────────────────────────
-function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx }: {
+function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx, isDark = false }: {
   acct: AccountTrend;
   months: string[];
   onClose: () => void;
   onMonthClick?: (idx: number) => void;
   selectedMonthIdx?: number | null;
+  isDark?: boolean;
 }) {
   const cur  = months.map(m => acct.cur[m] ?? 0);
   const pri  = months.map(m => acct.pri[toPriYm(m)] ?? 0);
   const monthLabels = months.map(m => m.slice(5) + "월");
 
-  // 월 선택 시 해당 월, 없으면 전체 합산
   const dispCur    = selectedMonthIdx != null ? cur[selectedMonthIdx]    : cur.reduce((s, v) => s + v, 0);
   const dispPri    = selectedMonthIdx != null ? pri[selectedMonthIdx]    : pri.reduce((s, v) => s + v, 0);
   const dispChg    = dispCur - dispPri;
   const dispChgPct = dispPri !== 0 ? (dispChg / Math.abs(dispPri) * 100) : 0;
   const monthLabel = selectedMonthIdx != null ? monthLabels[selectedMonthIdx] : "누적";
+  void dispChgPct;
+
+  const txtPri = isDark ? "#E2E5EC" : "#222";
+  const txtDim = isDark ? "#5A6070" : "#bbb";
+  const btnBdr = isDark ? "#2E3039" : "#eee";
+  const btnTxt = isDark ? "#9198A8" : "#aaa";
 
   return (
     <div className="card" style={{ borderTop: `3px solid ${ORANGE}` }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 11, color: "#bbb", marginBottom: 2 }}>{acct.disclosure_acct}</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#222" }}>{acct.mgmt_acct}</div>
+          <div style={{ fontSize: 11, color: txtDim, marginBottom: 2 }}>{acct.disclosure_acct}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: txtPri }}>{acct.mgmt_acct}</div>
           <div style={{ fontSize: 11, color: ORANGE, marginTop: 2 }}>
             {selectedMonthIdx != null
               ? <span style={{ background: "rgba(232,119,34,0.1)", padding: "2px 8px", borderRadius: 10 }}>{monthLabel} 선택됨 · 클릭으로 변경, 재클릭으로 해제</span>
-              : <span style={{ color: "#bbb" }}>차트 월 클릭 시 해당 월 데이터로 전환</span>
+              : <span style={{ color: txtDim }}>차트 월 클릭 시 해당 월 데이터로 전환</span>
             }
           </div>
         </div>
         <button
           onClick={onClose}
-          style={{ background: "none", border: "1px solid #eee", borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "#aaa", cursor: "pointer" }}
+          style={{ background: "none", border: `1px solid ${btnBdr}`, borderRadius: 6, padding: "4px 10px", fontSize: 11, color: btnTxt, cursor: "pointer" }}
         >
           닫기
         </button>
@@ -248,13 +287,14 @@ function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx }:
         height={200} expanded
         onMonthClick={onMonthClick}
         selectedMonthIdx={selectedMonthIdx}
+        isDark={isDark}
       />
-      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: "#aaa" }}>
+      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: isDark ? "#9198A8" : "#aaa" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ display: "inline-block", width: 14, height: 2, background: ORANGE }} />당기
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ display: "inline-block", width: 14, height: 2, background: "#ccc", borderTop: "1px dashed #ccc" }} />전기
+          <span style={{ display: "inline-block", width: 14, height: 2, background: isDark ? "#5A6070" : "#ccc", borderTop: `1px dashed ${isDark ? "#5A6070" : "#ccc"}` }} />전기
         </span>
       </div>
     </div>
@@ -262,16 +302,23 @@ function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx }:
 }
 
 // ── 거래처 바 ─────────────────────────────────────────────────
-function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
-  const maxVal = Math.max(...data.flatMap(d => [Math.abs(d.cur), Math.abs(d.pri)]), 1);
+function CounterpartyBar({ data, isDark = false }: { data: Detail["counterparty"]; isDark?: boolean }) {
+  const maxVal    = Math.max(...data.flatMap(d => [Math.abs(d.cur), Math.abs(d.pri)]), 1);
+  const trackBg   = isDark ? "#252830" : "#F0F0F0";
+  const priBarBg  = isDark ? "rgba(100,110,130,0.55)" : "rgba(160,160,160,0.4)";
+  const priBarBdr = isDark ? "#3A3F4A" : "#D0D0D0";
+  const labelClr  = isDark ? "#9198A8" : "#555";
+  const valClr    = isDark ? "#7A8295" : "#777";
+  const legendClr = isDark ? "#9198A8" : "#888";
+
   return (
     <div>
-      <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 10, color: "#888" }}>
+      <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 10, color: legendClr }}>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ display: "inline-block", width: 10, height: 10, background: ORANGE, borderRadius: 2 }} />당기
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, background: "rgba(160,160,160,0.35)", border: "1px solid #ccc", borderRadius: 2 }} />전기
+          <span style={{ display: "inline-block", width: 10, height: 10, background: priBarBg, border: `1px solid ${priBarBdr}`, borderRadius: 2 }} />전기
         </span>
       </div>
       {data.map(d => {
@@ -279,16 +326,16 @@ function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
         const priPct = Math.abs(d.pri) / maxVal * 100;
         return (
           <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 180, fontSize: 11, color: "#555", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
+            <div style={{ width: 180, fontSize: 11, color: labelClr, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
             <div style={{ flex: 1, position: "relative", height: 28 }}>
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 12, background: "#F0F0F0", borderRadius: 3 }}>
-                <div style={{ width: `${priPct}%`, height: "100%", background: "rgba(160,160,160,0.4)", border: "1px solid #D0D0D0", borderRadius: 3, boxSizing: "border-box" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 12, background: trackBg, borderRadius: 3 }}>
+                <div style={{ width: `${priPct}%`, height: "100%", background: priBarBg, border: `1px solid ${priBarBdr}`, borderRadius: 3, boxSizing: "border-box" }} />
               </div>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 12, background: "#F5F5F5", borderRadius: 3 }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 12, background: trackBg, borderRadius: 3 }}>
                 <div style={{ width: `${curPct}%`, height: "100%", background: ORANGE, borderRadius: 3 }} />
               </div>
             </div>
-            <div style={{ width: 80, fontSize: 10, color: "#777", textAlign: "right", flexShrink: 0, lineHeight: 1.6 }}>
+            <div style={{ width: 80, fontSize: 10, color: valClr, textAlign: "right", flexShrink: 0, lineHeight: 1.6 }}>
               <div style={{ color: ORANGE, fontWeight: 700 }}>{fmtM(Math.abs(d.cur))}백만</div>
               <div>{fmtM(Math.abs(d.pri))}백만</div>
             </div>
@@ -301,6 +348,7 @@ function CounterpartyBar({ data }: { data: Detail["counterparty"] }) {
 
 // ── 메인 ─────────────────────────────────────────────────────
 export default function PLTrend() {
+  const isDark = useDarkMode();
   const filter = useFilter();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
@@ -366,7 +414,7 @@ export default function PLTrend() {
         {selected && (
           <button
             onClick={() => { setSelected(null); setDetail(null); setChartMonthIdx(null); }}
-            style={{ fontSize: 11, color: "#aaa", background: "none", border: "1px solid #E0E0E0", borderRadius: 4, padding: "2px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
+            style={{ fontSize: 11, color: isDark ? "#9198A8" : "#aaa", background: "none", border: `1px solid ${isDark ? "#2E3039" : "#E0E0E0"}`, borderRadius: 4, padding: "2px 10px", cursor: "pointer", whiteSpace: "nowrap" }}
           >
             선택 해제
           </button>
@@ -382,9 +430,9 @@ export default function PLTrend() {
             style={{
               fontSize: 11, fontWeight: discFilter === d ? 700 : 400,
               padding: "4px 14px", borderRadius: 20, cursor: "pointer",
-              border: discFilter === d ? `1.5px solid ${ORANGE}` : "1px solid #E0E0E0",
-              background: discFilter === d ? "#FFF4EC" : "#fff",
-              color: discFilter === d ? ORANGE : "#666",
+              border: discFilter === d ? `1.5px solid ${ORANGE}` : `1px solid ${isDark ? "#2E3039" : "#E0E0E0"}`,
+              background: discFilter === d ? (isDark ? "rgba(232,119,34,0.15)" : "#FFF4EC") : (isDark ? "#1C1F26" : "#fff"),
+              color: discFilter === d ? ORANGE : (isDark ? "#9198A8" : "#666"),
               transition: "all .15s",
             }}
           >
@@ -402,6 +450,7 @@ export default function PLTrend() {
             onClose={() => { setSelected(null); setDetail(null); setChartMonthIdx(null); }}
             onMonthClick={idx => setChartMonthIdx(prev => prev === idx ? null : idx)}
             selectedMonthIdx={chartMonthIdx}
+            isDark={isDark}
           />
         </div>
       )}
@@ -422,6 +471,7 @@ export default function PLTrend() {
               months={allMonths}
               showDisc={discFilter === "전체"}
               isSelected={selected === a.mgmt_acct}
+              isDark={isDark}
               onClick={(e) => {
                 setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct);
                 const cur = allMonths.map(m => a.cur[m] ?? 0).reduce((s, v) => s + v, 0);
@@ -489,7 +539,7 @@ export default function PLTrend() {
               {/* 거래처별 차트 */}
               <div className="card">
                 <div className="card-title">{detail.mgmt_acct} — 거래처별 당기/전기</div>
-                <CounterpartyBar data={detail.counterparty} />
+                <CounterpartyBar data={detail.counterparty} isDark={isDark} />
               </div>
 
               {/* 전표 내역 */}
