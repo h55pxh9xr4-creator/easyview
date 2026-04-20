@@ -316,7 +316,7 @@ export default function VCHSearch() {
                     <thead style={{ position: "sticky", top: 0, background: theadBg, zIndex: 1 }}>
                       <tr>
                         <th style={{ textAlign: "left" }}>계정과목</th>
-                        <th style={{ textAlign: "left", color: dimTxt, fontSize: 10, fontWeight: 400 }}>공시용계정</th>
+                        <th style={{ textAlign: "left", color: subTxt, fontSize: 11, fontWeight: 500 }}>공시용계정</th>
                         <th>차변</th>
                         <th>대변</th>
                       </tr>
@@ -325,7 +325,7 @@ export default function VCHSearch() {
                       {detailSummary.map((r, i) => (
                         <tr key={i}>
                           <td style={{ fontWeight: 600 }}>{r.account_name}</td>
-                          <td style={{ color: dimTxt, fontSize: 11 }}>{r.disclosure_acct}</td>
+                          <td style={{ color: subTxt, fontSize: 11 }}>{r.disclosure_acct}</td>
                           <td style={{ textAlign: "right", color: r.dr > 0 ? BLUE : zeroClr, whiteSpace: "nowrap" }}>
                             {r.dr > 0 ? fmtN(r.dr) : "-"}
                           </td>
