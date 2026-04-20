@@ -8,116 +8,112 @@ interface Message {
   text: string;
 }
 
-// ── 픽셀 아트 회계사 (전신 · 메이플 치비 스타일) ──────────────
+// ── 픽셀 아트 회계사 (전신 · 밝고 귀여운 치비 스타일) ──────────
 function AccountantPixel() {
   return (
     <svg
-      width="54" height="99" viewBox="0 0 18 33"
+      width="40" height="65" viewBox="0 0 16 26"
       shapeRendering="crispEdges"
-      style={{ filter: "drop-shadow(1px 3px 5px rgba(0,0,0,0.35))" }}
+      style={{ filter: "drop-shadow(1px 3px 4px rgba(0,0,0,0.22))" }}
     >
-      {/* ── 머리카락 ── */}
-      <rect x="4"  y="0" width="10" height="1" fill="#3D2008"/>
-      <rect x="3"  y="1" width="12" height="1" fill="#3D2008"/>
-      <rect x="3"  y="2" width="1"  height="6" fill="#3D2008"/>
-      <rect x="14" y="2" width="1"  height="6" fill="#3D2008"/>
-      {/* 옆머리 볼륨 */}
-      <rect x="3"  y="8" width="2"  height="1" fill="#3D2008"/>
-      <rect x="13" y="8" width="2"  height="1" fill="#3D2008"/>
+      {/* ── 머리카락 (따뜻한 밤색) ── */}
+      <rect x="3"  y="0" width="10" height="1" fill="#7B4520"/>
+      <rect x="2"  y="1" width="12" height="1" fill="#7B4520"/>
+      <rect x="2"  y="2" width="1"  height="5" fill="#7B4520"/>
+      <rect x="13" y="2" width="1"  height="5" fill="#7B4520"/>
 
-      {/* ── 얼굴 ── */}
-      <rect x="4"  y="1" width="10" height="9" fill="#FFD5A8"/>
+      {/* ── 얼굴 (밝은 복숭아) ── */}
+      <rect x="3"  y="1" width="10" height="8" fill="#FFCFA0"/>
 
       {/* 귀 */}
-      <rect x="3"  y="4" width="1"  height="3" fill="#FFC090"/>
-      <rect x="14" y="4" width="1"  height="3" fill="#FFC090"/>
+      <rect x="2"  y="4" width="1"  height="2" fill="#FFB888"/>
+      <rect x="13" y="4" width="1"  height="2" fill="#FFB888"/>
 
-      {/* 왼쪽 안경 프레임 */}
-      <rect x="4"  y="2" width="4"  height="4" fill="#222"/>
-      <rect x="5"  y="3" width="2"  height="2" fill="#7EC8F0"/>
-      <rect x="5"  y="3" width="1"  height="1" fill="#C4E8FF"/>
+      {/* 왼쪽 둥근 안경 (하늘색 프레임) */}
+      <rect x="4"  y="2" width="1"  height="1" fill="#5599CC"/>
+      <rect x="5"  y="2" width="2"  height="1" fill="#5599CC"/>
+      <rect x="6"  y="2" width="1"  height="1" fill="#5599CC"/>
+      <rect x="3"  y="3" width="1"  height="2" fill="#5599CC"/>
+      <rect x="7"  y="3" width="1"  height="2" fill="#5599CC"/>
+      <rect x="4"  y="5" width="1"  height="1" fill="#5599CC"/>
+      <rect x="5"  y="5" width="2"  height="1" fill="#5599CC"/>
+      <rect x="6"  y="5" width="1"  height="1" fill="#5599CC"/>
+      {/* 왼쪽 렌즈 */}
+      <rect x="4"  y="3" width="3"  height="2" fill="#C8EEFF"/>
+      <rect x="4"  y="3" width="1"  height="1" fill="#E8F8FF"/>
 
-      {/* 오른쪽 안경 프레임 */}
-      <rect x="10" y="2" width="4"  height="4" fill="#222"/>
-      <rect x="11" y="3" width="2"  height="2" fill="#7EC8F0"/>
-      <rect x="11" y="3" width="1"  height="1" fill="#C4E8FF"/>
+      {/* 오른쪽 둥근 안경 */}
+      <rect x="9"  y="2" width="1"  height="1" fill="#5599CC"/>
+      <rect x="10" y="2" width="2"  height="1" fill="#5599CC"/>
+      <rect x="11" y="2" width="1"  height="1" fill="#5599CC"/>
+      <rect x="8"  y="3" width="1"  height="2" fill="#5599CC"/>
+      <rect x="12" y="3" width="1"  height="2" fill="#5599CC"/>
+      <rect x="9"  y="5" width="1"  height="1" fill="#5599CC"/>
+      <rect x="10" y="5" width="2"  height="1" fill="#5599CC"/>
+      <rect x="11" y="5" width="1"  height="1" fill="#5599CC"/>
+      {/* 오른쪽 렌즈 */}
+      <rect x="9"  y="3" width="3"  height="2" fill="#C8EEFF"/>
+      <rect x="9"  y="3" width="1"  height="1" fill="#E8F8FF"/>
 
-      {/* 안경 브릿지 */}
-      <rect x="8"  y="4" width="2"  height="1" fill="#222"/>
+      {/* 브릿지 */}
+      <rect x="7"  y="4" width="2"  height="1" fill="#5599CC"/>
 
       {/* 코 */}
-      <rect x="8"  y="7" width="2"  height="1" fill="#D9845A"/>
+      <rect x="7"  y="6" width="2"  height="1" fill="#D9885A"/>
 
-      {/* 볼터치 */}
-      <rect x="4"  y="6" width="2"  height="1" fill="#FFB0C0" opacity="0.8"/>
-      <rect x="12" y="6" width="2"  height="1" fill="#FFB0C0" opacity="0.8"/>
+      {/* 큼직한 볼터치 */}
+      <rect x="3"  y="5" width="2"  height="2" fill="#FF9999" opacity="0.65"/>
+      <rect x="11" y="5" width="2"  height="2" fill="#FF9999" opacity="0.65"/>
 
-      {/* 미소 */}
-      <rect x="6"  y="7" width="1"  height="1" fill="#CC3030"/>
-      <rect x="7"  y="8" width="4"  height="1" fill="#CC3030"/>
-      <rect x="11" y="7" width="1"  height="1" fill="#CC3030"/>
+      {/* 웃음 */}
+      <rect x="5"  y="7" width="1"  height="1" fill="#CC3333"/>
+      <rect x="6"  y="8" width="4"  height="1" fill="#CC3333"/>
+      <rect x="10" y="7" width="1"  height="1" fill="#CC3333"/>
 
       {/* ── 목 ── */}
-      <rect x="7"  y="10" width="4" height="2" fill="#FFD5A8"/>
+      <rect x="6"  y="9" width="4"  height="2" fill="#FFCFA0"/>
 
-      {/* ── 상체 (재킷) ── */}
-      <rect x="2"  y="12" width="14" height="9" fill="#1E2D40"/>
+      {/* ── 재킷 (밝은 네이비) ── */}
+      <rect x="1"  y="11" width="14" height="7" fill="#2E5C8A"/>
+      <rect x="0"  y="11" width="1"  height="6" fill="#2E5C8A"/>
+      <rect x="15" y="11" width="1"  height="6" fill="#2E5C8A"/>
 
-      {/* 왼팔 */}
-      <rect x="0"  y="12" width="2"  height="8" fill="#1E2D40"/>
-      {/* 오른팔 */}
-      <rect x="16" y="12" width="2"  height="8" fill="#1E2D40"/>
-
-      {/* 왼손 */}
-      <rect x="0"  y="20" width="2"  height="2" fill="#FFD5A8"/>
-      {/* 오른손 */}
-      <rect x="16" y="20" width="2"  height="2" fill="#FFD5A8"/>
+      {/* 손 */}
+      <rect x="0"  y="17" width="1"  height="2" fill="#FFCFA0"/>
+      <rect x="15" y="17" width="1"  height="2" fill="#FFCFA0"/>
 
       {/* 흰 셔츠 */}
-      <rect x="6"  y="12" width="6"  height="9" fill="#F0F0F0"/>
+      <rect x="5"  y="11" width="6"  height="7" fill="#F8F8F8"/>
 
       {/* 왼쪽 라펠 */}
-      <rect x="6"  y="13" width="2"  height="1" fill="#1E2D40"/>
-      <rect x="6"  y="14" width="1"  height="7" fill="#1E2D40"/>
+      <rect x="5"  y="12" width="2"  height="1" fill="#2E5C8A"/>
+      <rect x="5"  y="13" width="1"  height="5" fill="#2E5C8A"/>
 
       {/* 오른쪽 라펠 */}
-      <rect x="10" y="13" width="2"  height="1" fill="#1E2D40"/>
-      <rect x="11" y="14" width="1"  height="7" fill="#1E2D40"/>
+      <rect x="9"  y="12" width="2"  height="1" fill="#2E5C8A"/>
+      <rect x="10" y="13" width="1"  height="5" fill="#2E5C8A"/>
 
       {/* 넥타이 */}
-      <rect x="8"  y="12" width="2"  height="9" fill="#E87722"/>
-      {/* 넥타이 매듭 */}
-      <rect x="8"  y="12" width="2"  height="1" fill="#FF9944"/>
+      <rect x="7"  y="11" width="2"  height="7" fill="#E87722"/>
+      <rect x="7"  y="11" width="2"  height="1" fill="#FFAA44"/>
 
       {/* 포켓 스퀘어 */}
-      <rect x="3"  y="13" width="2"  height="1" fill="#E87722"/>
-      <rect x="4"  y="14" width="1"  height="1" fill="#E87722"/>
+      <rect x="2"  y="12" width="2"  height="1" fill="#FFAA44"/>
 
-      {/* ── 허리띠 ── */}
-      <rect x="4"  y="21" width="10" height="1" fill="#111"/>
-      <rect x="8"  y="21" width="2"  height="1" fill="#888"/>
+      {/* ── 벨트 ── */}
+      <rect x="3"  y="18" width="10" height="1" fill="#555"/>
+      <rect x="7"  y="18" width="2"  height="1" fill="#AAA"/>
 
-      {/* ── 바지 ── */}
-      {/* 왼다리 */}
-      <rect x="4"  y="22" width="4"  height="5" fill="#1E3A5F"/>
-      {/* 오른다리 */}
-      <rect x="10" y="22" width="4"  height="5" fill="#1E3A5F"/>
-      {/* 가랑이 그림자 */}
-      <rect x="8"  y="22" width="2"  height="4" fill="#0D1F33"/>
+      {/* ── 바지 (중간 블루) ── */}
+      <rect x="3"  y="19" width="4"  height="3" fill="#2A4F82"/>
+      <rect x="9"  y="19" width="4"  height="3" fill="#2A4F82"/>
+      <rect x="7"  y="19" width="2"  height="2" fill="#1A3255"/>
 
-      {/* ── 구두 ── */}
-      {/* 왼쪽 구두 */}
-      <rect x="3"  y="27" width="6"  height="3" fill="#111"/>
-      <rect x="3"  y="27" width="4"  height="1" fill="#2A2A2A"/>
-      <rect x="3"  y="29" width="5"  height="1" fill="#080808"/>
-      {/* 오른쪽 구두 */}
-      <rect x="9"  y="27" width="6"  height="3" fill="#111"/>
-      <rect x="9"  y="27" width="4"  height="1" fill="#2A2A2A"/>
-      <rect x="10" y="29" width="5"  height="1" fill="#080808"/>
-
-      {/* 구두 굽 */}
-      <rect x="4"  y="30" width="4"  height="1" fill="#080808"/>
-      <rect x="10" y="30" width="4"  height="1" fill="#080808"/>
+      {/* ── 구두 (짙은 회색, 너무 검지 않게) ── */}
+      <rect x="2"  y="22" width="5"  height="2" fill="#444"/>
+      <rect x="9"  y="22" width="5"  height="2" fill="#444"/>
+      <rect x="2"  y="23" width="4"  height="1" fill="#333"/>
+      <rect x="10" y="23" width="4"  height="1" fill="#333"/>
     </svg>
   );
 }
