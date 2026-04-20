@@ -230,15 +230,15 @@ export default function PLAccount() {
       <div style={{ display: "grid", gridTemplateColumns: selected ? "2fr 3fr" : "1fr", gap: 14, alignItems: "start" }}>
 
         {/* ── 손익계산서 테이블 ── */}
-        <div ref={leftRef} className="card" style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div ref={leftRef} className="card" style={{ minWidth: 0, position: "relative" }}>
+          {selected && (
+            <button
+              onClick={() => { setSelected(null); setDetail(null); }}
+              style={{ position: "absolute", top: 12, right: 12, fontSize: 10, color: btnClr, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer", zIndex: 1 }}
+            >선택 해제</button>
+          )}
+          <div style={{ marginBottom: 10 }}>
             <div className="card-title" style={{ marginBottom: 0 }}>손익항목</div>
-            {selected && (
-              <button
-                onClick={() => { setSelected(null); setDetail(null); }}
-                style={{ fontSize: 10, color: btnClr, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}
-              >선택 해제</button>
-            )}
           </div>
           {!selected && (
             <div style={{
@@ -248,7 +248,7 @@ export default function PLAccount() {
               padding: "7px 12px", marginBottom: 10, fontSize: 11, color: "#E87722",
             }}>
               <span style={{ fontSize: 14 }}>👆</span>
-              관리계정 행을 클릭하면 거래처별 증감 및 전표 내역을 확인할 수 있습니다.
+              계정명을 클릭하면 상세 확인, 숫자를 클릭하면 코멘트를 달 수 있습니다.
             </div>
           )}
           <div className="tbl-wrap">
@@ -282,17 +282,21 @@ export default function PLAccount() {
                       const mgmtOpen = expanded[mgmtKey];
                       const isActive = selected === mgmt;
 
+                      const cmtCellStyle = (label: string): React.CSSProperties => ({
+                        textAlign: "right", cursor: "pointer",
+                        background: ck.has(commentKey("PL 계정분석", label))
+                          ? (isDark ? "rgba(232,119,34,0.12)" : "rgba(232,119,34,0.06)") : undefined,
+                      });
                       return [
                         <tr
                           key={mgmtKey}
                           style={{
-                            cursor: "pointer",
                             background: isActive ? rowMgmtActive : rowMgmtBg,
                             borderLeft: isActive ? "3px solid #E87722" : "3px solid transparent",
                           }}
-                          onClick={() => selectMgmt(mgmt)}
                         >
-                          <td className="td-s1" style={{ color: isActive ? "#E87722" : undefined, fontWeight: isActive ? 700 : undefined }}>
+                          <td className="td-s1" style={{ color: isActive ? "#E87722" : undefined, fontWeight: isActive ? 700 : undefined, cursor: "pointer" }}
+                            onClick={() => selectMgmt(mgmt)}>
                             <span
                               style={{ marginRight: 4, fontSize: 10, color: arrowClr }}
                               onClick={(e) => { e.stopPropagation(); toggle(mgmtKey); }}
@@ -301,14 +305,17 @@ export default function PLAccount() {
                             </span>
                             {mgmt}
                           </td>
-                          <td>{fmt(mgmtCur)}</td>
-                          <td>{fmt(mgmtPri)}</td>
-                          <td className={mgmtChg >= 0 ? "up-t" : "dn-t"}>
+                          <td style={cmtCellStyle(`${mgmt} 당기`)}
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 당기`, value: fmt(mgmtCur) }, { top: r.top, right: r.right }); }}>
+                            {fmt(mgmtCur)}
+                          </td>
+                          <td style={cmtCellStyle(`${mgmt} 전기`)}
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 전기`, value: fmt(mgmtPri) }, { top: r.top, right: r.right }); }}>
+                            {fmt(mgmtPri)}
+                          </td>
+                          <td style={cmtCellStyle(`${mgmt} 증감`)} className={mgmtChg >= 0 ? "up-t" : "dn-t"}
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toFixed(1)}%` }, { top: r.top, right: r.right }); }}>
                             {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toFixed(1)}%
-                            <button
-                              onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: mgmt, value: fmt(mgmtCur) }, { top: r.top, right: r.right }); }}
-                              style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: ck.has(commentKey("PL 계정분석", mgmt)) ? "#E87722" : arrowClr, padding: 0, lineHeight: 1 }}
-                            >💬</button>
                           </td>
                         </tr>,
                         ...(!mgmtOpen ? [] : accts.map(r => (
