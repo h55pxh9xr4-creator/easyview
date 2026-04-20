@@ -61,7 +61,7 @@ const PAGE_MAP: Record<string, React.ComponentType<any>> = {
 function PageInner() {
   const searchParams = useSearchParams();
   const [authed, setAuthed] = useState<boolean | null>(null);
-  const [topTab, setTopTab] = useState<TopTab>("리포트");
+  const [topTab, setTopTab] = useState<TopTab>("서비스 소개");
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
@@ -140,6 +140,7 @@ function PageInner() {
     return <LoginPage onLogin={() => {
       setUser(sessionStorage.getItem("ev_user") ?? "");
       loadCommentedItems();
+      setTopTab("서비스 소개");
       setAuthed(true);
     }} />;
   }
