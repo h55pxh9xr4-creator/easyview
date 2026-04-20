@@ -1,11 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 
-// 빈 네모 아이콘 (나중에 실제 아이콘으로 교체)
-const BoxIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <rect x="2" y="2" width="14" height="14" rx="2"/>
-  </svg>
+const NavIcon = ({ src }: { src: string }) => (
+  <img src={src} alt="" width={22} height={22} style={{ display: "block", opacity: 1 }} />
 );
 
 const ChevronDown = () => (
@@ -23,15 +20,16 @@ const ChevronUp = () => (
 interface NavGroup {
   tab: string;
   label: string;
+  icon?: string;
   directSub?: string;
   sub?: { id: string; label: string }[];
   dividerAfter?: boolean;
 }
 
 const NAV: NavGroup[] = [
-  { tab: "summary", label: "Summary", directSub: "summary" },
+  { tab: "summary", label: "Summary", directSub: "summary", icon: "/easyview/icons/icon-dashboard.svg" },
   {
-    tab: "pl", label: "손익분석",
+    tab: "pl", label: "손익분석", icon: "/easyview/icons/icon-pl.svg",
     sub: [
       { id: "pl-sum",   label: "PL 요약" },
       { id: "pl-trend", label: "PL 추이분석" },
@@ -41,7 +39,7 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    tab: "bs", label: "재무상태분석",
+    tab: "bs", label: "재무상태분석", icon: "/easyview/icons/icon-balance.svg",
     sub: [
       { id: "bs-sum",   label: "BS 요약" },
       { id: "bs-trend", label: "BS 추이분석" },
@@ -49,14 +47,14 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    tab: "vch", label: "전표분석",
+    tab: "vch", label: "전표분석", icon: "/easyview/icons/icon-journal.svg",
     sub: [
       { id: "vch-analysis", label: "전표분석내역" },
       { id: "vch-search",   label: "전표검색" },
     ],
   },
   {
-    tab: "sc", label: "시나리오분석",
+    tab: "sc", label: "시나리오분석", icon: "/easyview/icons/icon-scenario.svg",
     dividerAfter: true,
     sub: [
       { id: "sc-dup",  label: "동일금액 중복 전표" },
@@ -67,7 +65,7 @@ const NAV: NavGroup[] = [
       { id: "sc-sc6",  label: "Seldom Used Customer" },
     ],
   },
-  { tab: "inquiry", label: "문의게시판", directSub: "inquiry" },
+  { tab: "inquiry", label: "문의게시판", directSub: "inquiry", icon: "/easyview/icons/icon-email.svg" },
 ];
 
 interface Props {
@@ -119,7 +117,7 @@ export default function Sidebar({ activeTab, activeSub, onNavigate, collapsed, o
                   }
                 }}
               >
-                <span className="sb-icon"><BoxIcon /></span>
+                <span className="sb-icon">{item.icon ? <NavIcon src={item.icon} /> : null}</span>
                 {!collapsed && <span className="sb-label">{item.label}</span>}
                 {!collapsed && item.sub && (
                   <span className="sb-arrow">
