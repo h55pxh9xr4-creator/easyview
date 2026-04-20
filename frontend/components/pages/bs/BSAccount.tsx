@@ -145,15 +145,15 @@ export default function BSAccount() {
       <div style={{ display: "grid", gridTemplateColumns: selected ? "2fr 3fr" : "1fr", gap: 14, alignItems: "start" }}>
 
         {/* ── 재무항목 표 ─────────────────────────────────────── */}
-        <div className="card" style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div className="card" style={{ minWidth: 0, position: "relative" }}>
+          {selected && (
+            <button
+              onClick={() => { setSelected(null); setDetail(null); }}
+              style={{ position: "absolute", top: 12, right: 12, fontSize: 10, color: subTxt, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer", zIndex: 1 }}
+            >선택 해제</button>
+          )}
+          <div style={{ marginBottom: 10 }}>
             <div className="card-title" style={{ marginBottom: 0 }}>재무항목</div>
-            {selected && (
-              <button
-                onClick={() => { setSelected(null); setDetail(null); }}
-                style={{ fontSize: 10, color: subTxt, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}
-              >선택 해제</button>
-            )}
           </div>
           {!selected && (
             <div style={{
@@ -162,7 +162,7 @@ export default function BSAccount() {
               padding: "7px 12px", marginBottom: 10, fontSize: 11, color: "#E87722",
             }}>
               <span style={{ fontSize: 14 }}>👆</span>
-              행을 클릭하면 거래처별 증감 및 전표 내역을 확인할 수 있습니다.
+              계정명을 클릭하면 상세 확인, 숫자를 클릭하면 코멘트를 달 수 있습니다.
             </div>
           )}
           <div className="tbl-wrap">
@@ -214,27 +214,35 @@ export default function BSAccount() {
                           const discChg  = discOpn ? (discEnd - discOpn) / Math.abs(discOpn) : 0;
                           const isActive = selected === disc;
 
+                          const cmtStyle = (label: string): React.CSSProperties => ({
+                            textAlign: "right", cursor: "pointer",
+                            background: ck.has(commentKey("BS 계정분석", label))
+                              ? (isDark ? "rgba(232,119,34,0.12)" : "rgba(232,119,34,0.06)") : undefined,
+                          });
                           return (
                             <tr key={`${cat}-${sum}-${disc}`}
                               style={{
-                                cursor: "pointer",
                                 background: isActive ? actRowBg : discRowBg,
                                 borderLeft: isActive ? `3px solid ${ORANGE}` : "3px solid transparent",
                               }}
-                              onClick={() => selectDisc(disc)}
                             >
-                              <td style={{ paddingLeft: 32, color: isActive ? ORANGE : (isDark ? "#C8CCDA" : "#444"), fontWeight: isActive ? 700 : undefined }}>
+                              <td
+                                style={{ paddingLeft: 32, color: isActive ? ORANGE : (isDark ? "#C8CCDA" : "#444"), fontWeight: isActive ? 700 : undefined, cursor: "pointer" }}
+                                onClick={() => selectDisc(disc)}
+                              >
                                 {disc}
                               </td>
-                              <td>{fmtB(discEnd)}</td>
-                              <td>{fmtB(discOpn)}</td>
-                              <td className={discChg >= 0 ? "up-t" : "dn-t"}>
+                              <td style={cmtStyle(`${disc} 기말`)}
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기말`, value: `${fmtB(discEnd)}백만` }, { top: r.top, right: r.right }); }}>
+                                {fmtB(discEnd)}
+                              </td>
+                              <td style={cmtStyle(`${disc} 기초`)}
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기초`, value: `${fmtB(discOpn)}백만` }, { top: r.top, right: r.right }); }}>
+                                {fmtB(discOpn)}
+                              </td>
+                              <td style={{ ...cmtStyle(`${disc} 증감`) }} className={discChg >= 0 ? "up-t" : "dn-t"}
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 증감`, value: fmtChg(discChg) }, { top: r.top, right: r.right }); }}>
                                 {fmtChg(discChg)}
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: disc, value: `${fmtB(discEnd)}백만` }, { top: r.top, right: r.right }); }}
-                                  style={{ marginLeft: 6, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: ck.has(commentKey("BS 계정분석", disc)) ? "#E87722" : zeroClr, padding: 0, lineHeight: 1 }}
-                                  title="코멘트"
-                                >💬</button>
                               </td>
                             </tr>
                           );
