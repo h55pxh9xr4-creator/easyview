@@ -13,6 +13,7 @@ import {
   fetchPLSalesBarRace,
 } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
+import { useDarkMode } from "@/hooks/useDarkMode";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarController, LineController,
@@ -72,17 +73,20 @@ interface VoucherRow { date: string; voucher_no: string; counterparty: string; d
 interface VoucherData { current: VoucherRow[]; prior: VoucherRow[] }
 
 // ── KPI 카드 ──────────────────────────────────────────────────
-function KpiCard({ label, value, unit, prior, change, changePct, vsPrevMonth }: {
+function KpiCard({ label, value, unit, prior, change, changePct, vsPrevMonth, isDark = false }: {
   label: string; value: number | string; unit: string;
   prior: number | string; change: number; changePct: number; vsPrevMonth: number;
+  isDark?: boolean;
 }) {
   const up = change >= 0;
+  const secClr  = isDark ? "#9198A8" : "#999";
+  const priorClr = isDark ? "#E2E5EC" : "#555";
   return (
     <div className="kpi" style={{ flex: 1 }}>
       <div className="kpi-lbl">{label}</div>
       <div className="kpi-val">{typeof value === "number" ? value.toLocaleString("ko-KR") : value}<span className="u">{unit}</span></div>
-      <div style={{ marginTop: 10, fontSize: 11, color: "#999", display: "flex", flexDirection: "column", gap: 3 }}>
-        <div>전기 &nbsp;<span style={{ color: "#555" }}>{typeof prior === "number" ? prior.toLocaleString("ko-KR") : prior}{unit}</span></div>
+      <div style={{ marginTop: 10, fontSize: 11, color: secClr, display: "flex", flexDirection: "column", gap: 3 }}>
+        <div>전기 &nbsp;<span style={{ color: priorClr }}>{typeof prior === "number" ? prior.toLocaleString("ko-KR") : prior}{unit}</span></div>
         <div>증감 &nbsp;
           <span className={up ? "up-t" : "dn-t"}>{sign(change)}{typeof change === "number" ? Math.abs(change).toLocaleString("ko-KR") : change}{unit}</span>
           &nbsp;<span style={{ fontSize: 10 }}>({fmtPct(Math.abs(changePct))})</span>
@@ -96,16 +100,15 @@ function KpiCard({ label, value, unit, prior, change, changePct, vsPrevMonth }: 
 }
 
 // ── 월별 거래처 순위 ECharts 바 (Bar Race) ────────────────────
-function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
+function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap, isDark = false }: {
   barRace: BarRaceData | null;
   selectedMonth: number | null;
   topN: number;
   colorMap: Record<string, string>;
+  isDark?: boolean;
 }) {
   if (!barRace) return <Loading />;
 
-
-  // 월 선택 없으면 전체 합산
   let items: { counterparty: string; amount: number }[];
   if (selectedMonth === null) {
     const totals: Record<string, number> = {};
@@ -121,18 +124,21 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
       .slice(0, topN);
   }
 
-  // ECharts는 역순(아래→위)으로 표시하므로 뒤집기
   const sorted = [...items].reverse();
+  const gridClr  = isDark ? "#2E3039" : "#f5f5f5";
+  const axisClr  = isDark ? "#9198A8" : "#555";
+  const xAxisClr = isDark ? "#9198A8" : "#bbb";
 
   const option = {
+    backgroundColor: "transparent",
     grid: { top: 8, bottom: 28, left: 140, right: 100 },
     xAxis: {
       max: "dataMax",
       axisLabel: {
         formatter: (n: number) => `${Math.round(n / 1_000_000).toLocaleString("ko-KR")}백만`,
-        fontSize: 10, color: "#bbb",
+        fontSize: 10, color: xAxisClr,
       },
-      splitLine: { lineStyle: { color: "#f5f5f5" } },
+      splitLine: { lineStyle: { color: gridClr } },
     },
     yAxis: {
       type: "category",
@@ -140,7 +146,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
       animationDuration: 300,
       animationDurationUpdate: 700,
       axisLabel: {
-        fontSize: 11, color: "#555",
+        fontSize: 11, color: axisClr,
         formatter: (v: string) => v.length > 16 ? v.slice(0, 16) + "…" : v,
       },
     },
@@ -154,7 +160,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
       label: {
         show: true, position: "right",
         formatter: (p: { value: number }) => `${Math.round(p.value / 1_000_000).toLocaleString("ko-KR")}백만`,
-        fontSize: 10, color: "#555",
+        fontSize: 10, color: axisClr,
       },
       barMaxWidth: 28,
     }],
@@ -175,24 +181,27 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap }: {
 }
 
 // ── 전표 테이블 ────────────────────────────────────────────────
-function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: string; onRowClick?: (r: VoucherRow, rect: { top: number; right: number }) => void }) {
+function VoucherTable({ rows, title, onRowClick, isDark = false }: {
+  rows: VoucherRow[]; title: string;
+  onRowClick?: (r: VoucherRow, rect: { top: number; right: number }) => void;
+  isDark?: boolean;
+}) {
   const [open, setOpen] = useState(true);
   const total = rows.reduce((s, r) => s + r.amount, 0);
+  const stickyHd = isDark ? "#1C1F26" : "#fff";
+  const stickyFt = isDark ? "#252830" : "#fafafa";
+  const arrowClr = isDark ? "#9198A8" : "#aaa";
   return (
     <div className="card">
-      <div
-        className="sec-hd"
-        style={{ cursor: "pointer" }}
-        onClick={() => setOpen(v => !v)}
-      >
-        <span style={{ fontSize: 13, color: "#aaa" }}>{open ? "▾" : "▸"}</span>
+      <div className="sec-hd" style={{ cursor: "pointer" }} onClick={() => setOpen(v => !v)}>
+        <span style={{ fontSize: 13, color: arrowClr }}>{open ? "▾" : "▸"}</span>
         <span className="sec-hd-txt">{title}</span>
         <div className="sec-hd-line" />
       </div>
       {open && (
         <div style={{ overflowY: "auto", maxHeight: 280, overflowX: "auto" }}>
           <table style={{ minWidth: 700 }}>
-            <thead style={{ position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
+            <thead style={{ position: "sticky", top: 0, background: stickyHd, zIndex: 1 }}>
               <tr>
                 <th style={{ textAlign: "center" }}>일자</th>
                 <th style={{ textAlign: "center" }}>전표번호</th>
@@ -213,7 +222,7 @@ function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: 
               ))}
             </tbody>
             <tfoot>
-              <tr style={{ fontWeight: 700, background: "#fafafa", position: "sticky", bottom: 0 }}>
+              <tr className="tr-sum" style={{ position: "sticky", bottom: 0, background: stickyFt }}>
                 <td colSpan={4}>합계</td>
                 <td style={{ textAlign: "right" }}>{total.toLocaleString("ko-KR")}</td>
               </tr>
@@ -227,6 +236,7 @@ function VoucherTable({ rows, title, onRowClick }: { rows: VoucherRow[]; title: 
 
 // ── 메인 ──────────────────────────────────────────────────────
 export default function PLSales() {
+  const isDark = useDarkMode();
   const filter = useFilter();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
@@ -315,12 +325,28 @@ export default function PLSales() {
   });
 
   // ── 도넛 차트 데이터 ─────────────────────────────────────────
+  // 다크모드 차트 색상
+  const gridClr     = isDark ? "#2E3039" : "#f0f0f0";
+  const axisLineClr = isDark ? "#2E3039" : "#eee";
+  const axisLblClr  = isDark ? "#9198A8" : "#bbb";
+  const lgdClr      = isDark ? "#9198A8" : "#888";
+  const tooltipBg   = isDark ? "#1C1F26" : "#fff";
+  const tooltipBdr  = isDark ? "#2E3039" : "#eee";
+  const tooltipTxt  = isDark ? "#E2E5EC" : "#333";
+  const selectBdr   = isDark ? "#2E3039" : "#ddd";
+  const selectClr   = isDark ? "#E2E5EC" : "#555";
+  const selectBg    = isDark ? "#1C1F26" : "#fff";
+  const donutBdr    = isDark ? "#1C1F26" : "#fff";
+
   // ── 거래처별 비교 차트 ───────────────────────────────────────
   const cpLabels = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
   const cpOption = cpTrend ? {
+    backgroundColor: "transparent",
     grid: { top: 48, bottom: 8, left: 8, right: 16, containLabel: true },
     tooltip: {
       trigger: "axis",
+      backgroundColor: tooltipBg, borderColor: tooltipBdr,
+      textStyle: { color: tooltipTxt, fontSize: 11 },
       formatter: (params: { seriesName: string; value: number }[]) =>
         params.map(p => `${p.seriesName}: ${(p.value ?? 0).toLocaleString("ko-KR")}만`).join("<br/>"),
     },
@@ -328,20 +354,20 @@ export default function PLSales() {
       data: [cp1 || "거래처1", cp2 || "거래처2"],
       top: 0,
       left: "center",
-      textStyle: { color: "#888", fontSize: 11 },
+      textStyle: { color: lgdClr, fontSize: 11 },
       itemWidth: 10, itemHeight: 10,
     },
     xAxis: {
       type: "category",
       data: cpLabels,
-      axisLabel: { color: "#bbb", fontSize: 10 },
+      axisLabel: { color: axisLblClr, fontSize: 10 },
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#eee" } },
+      axisLine: { lineStyle: { color: axisLineClr } },
     },
     yAxis: {
       type: "value",
-      axisLabel: { color: "#bbb", fontSize: 10 },
-      splitLine: { lineStyle: { color: "#f0f0f0" } },
+      axisLabel: { color: axisLblClr, fontSize: 10 },
+      splitLine: { lineStyle: { color: gridClr } },
     },
     series: [
       {
@@ -423,6 +449,7 @@ export default function PLSales() {
               change={Math.round(rev.change / 1_000_000)}
               changePct={rev.change_pct}
               vsPrevMonth={Math.round(rev.vs_prev_month / 1_000_000)}
+              isDark={isDark}
             />
           </div>
           <div style={{ cursor: "pointer", position: "relative", ...lift("거래처수") }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) }, { top: r.top, right: r.right }); }}>
@@ -433,6 +460,7 @@ export default function PLSales() {
               change={cnt.change}
               changePct={cnt.change_pct}
               vsPrevMonth={cnt.vs_prev_month}
+              isDark={isDark}
             />
           </div>
         </div>
@@ -480,9 +508,12 @@ export default function PLSales() {
                 : trendPri;
 
               const trendOption = {
+                backgroundColor: "transparent",
                 grid: { top: 56, bottom: 40, left: 8, right: 16, containLabel: true },
                 tooltip: {
                   trigger: "axis",
+                  backgroundColor: tooltipBg, borderColor: tooltipBdr,
+                  textStyle: { color: tooltipTxt, fontSize: 11 },
                   formatter: (params: {seriesName: string; value: number}[]) =>
                     params.map(p => `${p.seriesName}: ${p.value.toLocaleString("ko-KR")}백만`).join("<br/>"),
                 },
@@ -490,20 +521,20 @@ export default function PLSales() {
                   data: ["당기", "전기"],
                   bottom: 0,
                   left: "center",
-                  textStyle: { color: "#888", fontSize: 10 },
+                  textStyle: { color: lgdClr, fontSize: 10 },
                   itemWidth: 10, itemHeight: 10,
                 },
                 xAxis: {
                   type: "category",
                   data: trendLabels,
-                  axisLabel: { color: "#bbb", fontSize: 10 },
+                  axisLabel: { color: axisLblClr, fontSize: 10 },
                   axisTick: { show: false },
-                  axisLine: { lineStyle: { color: "#eee" } },
+                  axisLine: { lineStyle: { color: axisLineClr } },
                 },
                 yAxis: {
                   type: "value",
-                  axisLabel: { color: "#bbb", fontSize: 10 },
-                  splitLine: { lineStyle: { color: "#f0f0f0" } },
+                  axisLabel: { color: axisLblClr, fontSize: 10 },
+                  splitLine: { lineStyle: { color: gridClr } },
                 },
                 series: [
                   {
@@ -586,7 +617,7 @@ export default function PLSales() {
             <select
               value={topN}
               onChange={e => setTopN(Number(e.target.value))}
-              style={{ fontSize: 11, padding: "2px 6px", borderRadius: 5, border: "1px solid #ddd", color: "#555" }}
+              style={{ fontSize: 11, padding: "2px 6px", borderRadius: 5, border: `1px solid ${selectBdr}`, color: selectClr, background: selectBg }}
             >
               {[5, 10, 15, 20].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
@@ -594,8 +625,11 @@ export default function PLSales() {
           {donut && (
             <ReactECharts
               option={{
+                backgroundColor: "transparent",
                 tooltip: {
                   trigger: "item",
+                  backgroundColor: tooltipBg, borderColor: tooltipBdr,
+                  textStyle: { color: tooltipTxt, fontSize: 11 },
                   position: (point: number[], _params: unknown, _dom: unknown, _rect: unknown, size: { contentSize: number[]; viewSize: number[] }) => {
                     const [x, y] = point;
                     const [w, h] = size.contentSize;
@@ -612,21 +646,18 @@ export default function PLSales() {
                   radius: ["38%", "68%"],
                   center: ["50%", "55%"],
                   avoidLabelOverlap: false,
-                  itemStyle: {
-                    borderRadius: 6,
-                    borderColor: "#fff",
-                    borderWidth: 2,
-                  },
+                  itemStyle: { borderRadius: 6, borderColor: donutBdr, borderWidth: 2 },
                   label: { show: false, position: "center" },
                   emphasis: {
                     label: {
                       show: true,
                       fontSize: 14,
                       fontWeight: "bold",
+                      color: isDark ? "#E2E5EC" : "#333",
                       formatter: (p: { name: string; percent: number }) =>
                         `${p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name}\n${p.percent.toFixed(1)}%`,
                     },
-                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.18)" },
+                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.28)" },
                   },
                   labelLine: { show: false },
                   data: donut.items.map((item, i) => ({
@@ -637,6 +668,7 @@ export default function PLSales() {
                         ? "#2563EB"
                         : (colorMap[item.counterparty] ?? RACE_COLORS[i % RACE_COLORS.length]),
                       borderWidth: item.counterparty === selectedCp ? 3 : 2,
+                      opacity: selectedCp && item.counterparty !== selectedCp ? 0.4 : 1,
                     },
                   })),
                 }],
@@ -664,7 +696,7 @@ export default function PLSales() {
               }
             </div>
           </div>
-          <MonthlyRaceBar barRace={barRace} selectedMonth={selectedMonth} topN={topN} colorMap={colorMap} />
+          <MonthlyRaceBar barRace={barRace} selectedMonth={selectedMonth} topN={topN} colorMap={colorMap} isDark={isDark} />
         </div>
       </div>
 
@@ -676,7 +708,7 @@ export default function PLSales() {
             <select
               value={cp1}
               onChange={e => setCp1(e.target.value)}
-              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid #ddd", color: "#555", maxWidth: 200 }}
+              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectBdr}`, color: selectClr, background: selectBg, maxWidth: 200 }}
             >
               <option value="">거래처1 선택</option>
               {cpList.map(cp => <option key={cp} value={cp}>{cp}</option>)}
@@ -684,7 +716,7 @@ export default function PLSales() {
             <select
               value={cp2}
               onChange={e => setCp2(e.target.value)}
-              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid #ddd", color: "#555", maxWidth: 200 }}
+              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectBdr}`, color: selectClr, background: selectBg, maxWidth: 200 }}
             >
               <option value="">거래처2 선택</option>
               {cpList.map(cp => <option key={cp} value={cp}>{cp}</option>)}
@@ -701,8 +733,8 @@ export default function PLSales() {
       {/* ── 전표 내역 ─────────────────────────────────────────── */}
       {vouchers && (
         <>
-          <VoucherTable rows={vouchers.current} title="당기 전표 내역" onRowClick={(r, rect) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") }, rect)} />
-          <VoucherTable rows={vouchers.prior}   title="전기 전표 내역" onRowClick={(r, rect) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") }, rect)} />
+          <VoucherTable rows={vouchers.current} title="당기 전표 내역" isDark={isDark} onRowClick={(r, rect) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") }, rect)} />
+          <VoucherTable rows={vouchers.prior}   title="전기 전표 내역" isDark={isDark} />
         </>
       )}
 
