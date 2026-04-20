@@ -389,7 +389,7 @@ function KpiCard({ label, value, sub, active, isDark, color }: { label: string; 
   const valClr   = color ?? (isDark ? "#E2E5EC" : "#1a1a1a");
   const subClr   = active ? ORANGE : (isDark ? "#5A6070" : "#bbb");
   return (
-    <div className="card" style={{ padding: "12px 20px", minWidth: 0, flex: 1, borderTop: active ? "3px solid #E87722" : "3px solid transparent", transition: "border-color 0.2s" }}>
+    <div className="card" style={{ padding: "12px 20px", minWidth: 0, flex: 1,  }}>
       <div style={{ fontSize: 11, color: labelClr, marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 20, fontWeight: 800, color: valClr }}>{value}</div>
       {sub && <div style={{ fontSize: 10, color: subClr, marginTop: 4, fontWeight: active ? 600 : 400 }}>{sub}</div>}
