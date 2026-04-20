@@ -2,15 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 
+export type TopTab = "서비스 소개" | "리포트" | "자료실";
+const TOP_TABS: TopTab[] = ["서비스 소개", "리포트", "자료실"];
+
 interface Props {
   user?: string;
+  activeTopTab?: TopTab;
+  onTopTabChange?: (tab: TopTab) => void;
   onLogout?: () => void;
   onSettings?: () => void;
 }
 
-const OTHER_TABS = ["Our Solutions", "Robotic", "XBRL", "Tax Hub"];
-
-export default function Header({ user, onLogout, onSettings }: Props) {
+export default function Header({ user, activeTopTab = "리포트", onTopTabChange, onLogout, onSettings }: Props) {
   const [displayName, setDisplayName] = useState(user ?? "");
   const [avatar, setAvatar]           = useState<string | null>(null);
   const [dropOpen, setDropOpen]       = useState(false);
@@ -21,7 +24,6 @@ export default function Header({ user, onLogout, onSettings }: Props) {
     setAvatar(localStorage.getItem("ev_avatar") || null);
   }, [user]);
 
-  // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
@@ -37,15 +39,21 @@ export default function Header({ user, onLogout, onSettings }: Props) {
       {/* 로고 + 포털명 */}
       <div className="hdr-brand">
         <img src="/easyview/logo2.png" alt="PwC" className="logo-img" />
-        <span className="hdr-portal-name">Digital Finance Portal</span>
+        <span className="hdr-portal-name">Easyview</span>
       </div>
 
       {/* 상단 탭 */}
       <nav className="hdr-tabs">
-        {OTHER_TABS.map(t => (
-          <span key={t} className="hdr-tab">{t}</span>
+        {TOP_TABS.map(t => (
+          <span
+            key={t}
+            className={`hdr-tab${activeTopTab === t ? " active" : ""}`}
+            onClick={() => onTopTabChange?.(t)}
+            style={{ cursor: "pointer" }}
+          >
+            {t}
+          </span>
         ))}
-        <span className="hdr-tab active">Easyview</span>
       </nav>
 
       {/* 유저 영역 */}
@@ -56,7 +64,6 @@ export default function Header({ user, onLogout, onSettings }: Props) {
           </span>
         )}
 
-        {/* 아이콘 + 드롭다운 */}
         <div ref={dropRef} style={{ position: "relative" }}>
           <button
             className="hdr-user-icon"

@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import Header from "@/components/layout/Header";
+import Header, { type TopTab } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
+import BookShelf from "@/components/layout/BookShelf";
 import FilterBar from "@/components/layout/FilterBar";
 import CommentPanel from "@/components/layout/CommentPanel";
 import ChatBot from "@/components/ui/ChatBot";
@@ -59,6 +60,7 @@ const PAGE_MAP: Record<string, React.ComponentType<any>> = {
 function PageInner() {
   const searchParams = useSearchParams();
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [topTab, setTopTab] = useState<TopTab>("리포트");
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
@@ -143,27 +145,58 @@ function PageInner() {
 
   const ActivePage = PAGE_MAP[activeSub] ?? Summary;
 
+  const handleTopTabChange = (tab: TopTab) => {
+    setTopTab(tab);
+    closeAll();
+  };
+
   return (
     <>
-      <Header user={user} onLogout={handleLogout} onSettings={() => handleNavigate("settings", "settings", "설정")} />
+      <Header
+        user={user}
+        activeTopTab={topTab}
+        onTopTabChange={handleTopTabChange}
+        onLogout={handleLogout}
+        onSettings={() => { handleNavigate("settings", "settings", "설정"); setTopTab("리포트"); }}
+      />
       <div className="app-body">
-        <Sidebar
-          activeTab={activeTab}
-          activeSub={activeSub}
-          onNavigate={handleNavigate}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(p => !p)}
-        />
-        <div className={`main-content${panelOpen ? " panel-open" : ""}`}>
-          <div className="ptb">
-            <span className="ptb-sub">{pageLabel}</span>
-            <FilterBar activeSub={activeSub} inline />
-          </div>
-          <ActivePage onNavigate={handleNavigate} />
-        </div>
 
-        {/* Comment 배지 — 클릭된 요소 오른쪽 상단 */}
-        {commentTarget && !panelOpen && (
+        {/* ── 서비스 소개 ── */}
+        {topTab === "서비스 소개" && (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 16 }}>
+            서비스 소개 페이지 (준비 중)
+          </div>
+        )}
+
+        {/* ── 리포트 ── */}
+        {topTab === "리포트" && (
+          <>
+            <Sidebar
+              activeTab={activeTab}
+              activeSub={activeSub}
+              onNavigate={handleNavigate}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed(p => !p)}
+            />
+            <div className={`main-content${panelOpen ? " panel-open" : ""}`}>
+              <div className="ptb">
+                <span className="ptb-sub">{pageLabel}</span>
+                <FilterBar activeSub={activeSub} inline />
+              </div>
+              <ActivePage onNavigate={handleNavigate} />
+            </div>
+          </>
+        )}
+
+        {/* ── 자료실 ── */}
+        {topTab === "자료실" && (
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <BookShelf onNavigate={(tab, sub, label) => { handleNavigate(tab, sub, label); setTopTab("리포트"); }} />
+          </div>
+        )}
+
+        {/* Comment 배지 — 리포트 탭에서만 */}
+        {topTab === "리포트" && commentTarget && !panelOpen && (
           <button
             className="comment-badge"
             onClick={openPanel}
@@ -181,11 +214,9 @@ function PageInner() {
           </button>
         )}
 
-        {/* Comment 패널 — target이 바뀔 때마다 재마운트해서 상태 초기화 */}
-        {panelOpen && <CommentPanel key={`${commentTarget?.page ?? ""}-${commentTarget?.label ?? ""}-${commentTarget?.inquiryId ?? ""}`} />}
+        {topTab === "리포트" && panelOpen && <CommentPanel key={`${commentTarget?.page ?? ""}-${commentTarget?.label ?? ""}-${commentTarget?.inquiryId ?? ""}`} />}
 
-        {/* AI 챗봇 */}
-        <ChatBot />
+        {topTab === "리포트" && <ChatBot />}
       </div>
     </>
   );
