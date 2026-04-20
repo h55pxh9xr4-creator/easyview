@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import SAMILKIM_IMG from "@/lib/samilkimImg";
 
 
 interface Message {
@@ -216,7 +217,7 @@ export default function ChatBot() {
           onClick={() => setOpen(p => !p)}
           title="AI 어시스턴트"
         >
-          <img src="/samilkim_nobg.svg" alt="김삼일" style={{ width: 64, height: 64, objectFit: "contain" }} />
+          <img src={SAMILKIM_IMG} alt="김삼일" style={{ width: 64, height: 64, objectFit: "contain" }} />
         </button>
       </div>
     </>
