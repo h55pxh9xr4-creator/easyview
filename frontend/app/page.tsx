@@ -160,12 +160,12 @@ function PageInner() {
         onLogout={handleLogout}
         onSettings={() => { handleNavigate("settings", "settings", "설정"); setTopTab("리포트"); }}
       />
-      <div className="app-body">
+      {/* ── 서비스 소개 ── */}
+      {topTab === "서비스 소개" && (
+        <ServiceIntro onNavigateToReport={() => { handleNavigate("summary", "summary", "Summary"); setTopTab("리포트"); }} />
+      )}
 
-        {/* ── 서비스 소개 ── */}
-        {topTab === "서비스 소개" && (
-          <ServiceIntro onNavigateToReport={() => { handleNavigate("summary", "summary", "Summary"); setTopTab("리포트"); }} />
-        )}
+      <div className="app-body" style={{ display: topTab !== "리포트" && topTab !== "자료실" ? "none" : undefined }}>
 
         {/* ── 리포트 ── */}
         {topTab === "리포트" && (

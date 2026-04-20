@@ -25,6 +25,18 @@ ChartJS.register(
 const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
 
+function useDark() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.getAttribute("data-theme") === "dark");
+    check();
+    const ob = new MutationObserver(check);
+    ob.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => ob.disconnect();
+  }, []);
+  return dark;
+}
+
 interface WaterfallRow {
   year_month: string;
   revenue: number; cogs: number; sga: number;
@@ -45,10 +57,10 @@ interface TrendRow {
 }
 
 // ── 미니 도넛 게이지 ──────────────────────────────────────────
-function MarginGauge({ value, label, color }: { value: number; label: string; color: string }) {
+function MarginGauge({ value, label, color, dark }: { value: number; label: string; color: string; dark: boolean }) {
   const pct = Math.min(Math.max(value * 100, 0), 100);
   const data = {
-    datasets: [{ data: [pct, 100 - pct], backgroundColor: [color, "#F0F0F0"], borderWidth: 0 }],
+    datasets: [{ data: [pct, 100 - pct], backgroundColor: [color, dark ? "#2E3039" : "#F0F0F0"], borderWidth: 0 }],
   };
   return (
     <div style={{ textAlign: "center", margin: "8px 0" }}>
@@ -58,17 +70,20 @@ function MarginGauge({ value, label, color }: { value: number; label: string; co
           {fmtPct(value)}
         </div>
       </div>
-      <div style={{ fontSize: 10, color: "#aaa", marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 10, color: dark ? "#5A6070" : "#aaa", marginTop: 2 }}>{label}</div>
     </div>
   );
 }
 
 // ── 미니 바 차트 ─────────────────────────────────────────────
-function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick }: {
+function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick, dark }: {
   curData: number[]; priData: number[]; labels: string[]; color: string;
   selectedIdx: number | null;
   onBarClick: (idx: number | null) => void;
+  dark: boolean;
 }) {
+  const tickColor = dark ? "#9198A8" : "#bbb";
+  const legendColor = dark ? "#9198A8" : "#888";
   const chartData = {
     labels,
     datasets: [
@@ -81,14 +96,15 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
       {
         type: "bar" as const, label: "전기",
         data: priData.map(v => Math.round(v / 1_000_000)),
-        backgroundColor: "rgba(180,180,180,0.4)", barPercentage: 0.65, categoryPercentage: 0.75,
+        backgroundColor: dark ? "rgba(150,160,180,0.35)" : "rgba(180,180,180,0.4)",
+        barPercentage: 0.65, categoryPercentage: 0.75,
       },
     ],
   };
   const opts = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, labels: { color: "#888", font: { size: 10 }, boxWidth: 8, padding: 6 } },
+      legend: { display: true, labels: { color: legendColor, font: { size: 10 }, boxWidth: 8, padding: 6 } },
       tooltip: {
         callbacks: {
           label: (ctx: {dataset: {label: string}; parsed: {y: number}}) =>
@@ -97,7 +113,7 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
       },
     },
     scales: {
-      x: { ticks: { color: "#bbb", font: { size: 9 } }, grid: { display: false } },
+      x: { ticks: { color: tickColor, font: { size: 9 } }, grid: { display: false } },
       y: { display: false },
     },
     onClick(_evt: unknown, elements: {index: number}[]) {
@@ -110,27 +126,31 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
 }
 
 // ── 이익률 꺾은선 차트 ────────────────────────────────────────
-function MarginLineChart({ curMargins, priMargins, labels, color, title }: {
-  curMargins: number[]; priMargins: number[]; labels: string[]; color: string; title: string;
+function MarginLineChart({ curMargins, priMargins, labels, color, title, dark }: {
+  curMargins: number[]; priMargins: number[]; labels: string[]; color: string; title: string; dark: boolean;
 }) {
+  const tickColor = dark ? "#9198A8" : "#aaa";
+  const gridColor = dark ? "#2E3039" : "#EEEEEE";
+  const legendColor = dark ? "#9198A8" : "#888";
+  const priColor = dark ? "rgba(145,152,168,0.8)" : "rgba(180,180,180,0.9)";
   const data = {
     labels,
     datasets: [
       { type: "line" as const, label: "당기", data: curMargins.map(v => parseFloat((v * 100).toFixed(1))), borderColor: color, backgroundColor: color, tension: 0.3, pointRadius: 3, pointHoverRadius: 5 },
-      { type: "line" as const, label: "전기", data: priMargins.map(v => parseFloat((v * 100).toFixed(1))), borderColor: "rgba(180,180,180,0.9)", backgroundColor: "rgba(180,180,180,0.9)", tension: 0.3, pointRadius: 2, borderDash: [3, 3] },
+      { type: "line" as const, label: "전기", data: priMargins.map(v => parseFloat((v * 100).toFixed(1))), borderColor: priColor, backgroundColor: priColor, tension: 0.3, pointRadius: 2, borderDash: [3, 3] },
     ],
   };
   const opts = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: "#888", font: { size: 11 }, boxWidth: 8 } },
+      legend: { labels: { color: legendColor, font: { size: 11 }, boxWidth: 8 } },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y}%` } },
     },
     scales: {
-      x: { ticks: { color: "#aaa", font: { size: 10 } }, grid: { color: "#EEEEEE" } },
+      x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      y: { ticks: { color: "#aaa", font: { size: 10 }, callback: (v: any) => `${v}%` }, grid: { color: "#EEEEEE" } },
+      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v: any) => `${v}%` }, grid: { color: gridColor } },
     },
   };
   return (
@@ -142,16 +162,17 @@ function MarginLineChart({ curMargins, priMargins, labels, color, title }: {
 }
 
 // ── 통계 행 ──────────────────────────────────────────────────
-function StatRow({ label, value, cls }: { label: string; value: string; cls?: string }) {
+function StatRow({ label, value, cls, dark }: { label: string; value: string; cls?: string; dark: boolean }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #F8F8F8", fontSize: 12 }}>
-      <span style={{ color: "#bbb", fontWeight: 500 }}>{label}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${dark ? "#2E3039" : "#F8F8F8"}`, fontSize: 12 }}>
+      <span style={{ color: dark ? "#5A6070" : "#bbb", fontWeight: 500 }}>{label}</span>
       <span className={cls} style={{ fontWeight: 700 }}>{value}</span>
     </div>
   );
 }
 
 export default function PLSummary() {
+  const dark = useDark();
   const filter = useFilter();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
@@ -296,11 +317,15 @@ export default function PLSummary() {
     ],
   };
 
+  const wfTickColor   = dark ? "#9198A8" : "#999";
+  const wfGridColor   = dark ? "#2E3039" : "#EEEEEE";
+  const wfLegendColor = dark ? "#9198A8" : "#555";
+
   const wfOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: "#555", font: { size: 11 }, boxWidth: 10, padding: 12 } },
+      legend: { labels: { color: wfLegendColor, font: { size: 11 }, boxWidth: 10, padding: 12 } },
       tooltip: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         callbacks: { label: (ctx: any) => {
@@ -313,14 +338,14 @@ export default function PLSummary() {
     },
     grouped: false,
     scales: {
-      x: { ticks: { color: "#999", font: { size: 10 } }, grid: { display: false } },
+      x: { ticks: { color: wfTickColor, font: { size: 10 } }, grid: { display: false } },
       y: {
         ticks: {
-          color: "#aaa", font: { size: 10 },
+          color: wfTickColor, font: { size: 10 },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           callback: (v: any) => `${Number(v).toLocaleString()}백만`,
         },
-        grid: { color: "#EEEEEE" },
+        grid: { color: wfGridColor },
       },
     },
   };
@@ -347,7 +372,7 @@ export default function PLSummary() {
 
       const idxs = Object.keys(barPos).map(Number).sort((a, b) => a - b);
       ctx.save();
-      ctx.strokeStyle = "#BBBBBB";
+      ctx.strokeStyle = dark ? "#4A5060" : "#BBBBBB";
       ctx.lineWidth   = 1;
       ctx.setLineDash([3, 3]);
 
@@ -404,35 +429,35 @@ export default function PLSummary() {
               <div style={{ display: "grid", gridTemplateColumns: "190px minmax(0, 1fr)" }}>
 
                 {/* 왼쪽: 통계 */}
-                <div style={{ padding: "14px 14px 14px 16px", borderRight: "1px solid #F5F5F5", display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#aaa", letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ padding: "14px 14px 14px 16px", borderRight: `1px solid ${dark ? "#2E3039" : "#F5F5F5"}`, display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: dark ? "#5A6070" : "#aaa", letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
                     {card.title}
                     {selLabel && (
-                      <span style={{ fontSize: 10, color: "#2563EB", fontWeight: 400, background: "rgba(37,99,235,0.08)", padding: "1px 6px", borderRadius: 8 }}>
+                      <span style={{ fontSize: 10, color: "#2563EB", fontWeight: 400, background: "rgba(37,99,235,0.12)", padding: "1px 6px", borderRadius: 8 }}>
                         {selLabel}
                       </span>
                     )}
                   </div>
                   <div style={{ fontSize: 26, fontWeight: 800, color: card.color, letterSpacing: "-1px", lineHeight: 1 }}>
                     {fmtB(cur)}
-                    <span style={{ fontSize: 12, fontWeight: 400, color: "#bbb", marginLeft: 3 }}>백만</span>
+                    <span style={{ fontSize: 12, fontWeight: 400, color: dark ? "#5A6070" : "#bbb", marginLeft: 3 }}>백만</span>
                   </div>
                   {margin !== null && margin !== undefined && (
-                    <MarginGauge value={margin} label={card.marginLabel} color={card.color} />
+                    <MarginGauge value={margin} label={card.marginLabel} color={card.color} dark={dark} />
                   )}
                   <div style={{ marginTop: margin !== null ? 0 : 12, flex: 1 }}>
-                    <StatRow label="전기" value={`${fmtB(pri)}백만`} />
-                    <StatRow label="증감" value={`${fmtB(diff)}백만`} cls={diff >= 0 ? "up-t" : "dn-t"} />
+                    <StatRow label="전기" value={`${fmtB(pri)}백만`} dark={dark} />
+                    <StatRow label="증감" value={`${fmtB(diff)}백만`} cls={diff >= 0 ? "up-t" : "dn-t"} dark={dark} />
                     <StatRow
                       label="△%"
                       value={chg >= 0 ? `▲${Math.abs(chg * 100).toFixed(1)}%` : `▼${Math.abs(chg * 100).toFixed(1)}%`}
-                      cls={chg >= 0 ? "up-t" : "dn-t"}
+                      cls={chg >= 0 ? "up-t" : "dn-t"} dark={dark}
                     />
                     {isRev && (
                       <StatRow
                         label="전월대비증감"
                         value={`${fmtB(data.prev_month_rev_diff)}백만`}
-                        cls={data.prev_month_rev_diff >= 0 ? "up-t" : "dn-t"}
+                        cls={data.prev_month_rev_diff >= 0 ? "up-t" : "dn-t"} dark={dark}
                       />
                     )}
                   </div>
@@ -440,11 +465,12 @@ export default function PLSummary() {
 
                 {/* 오른쪽: 미니 차트 */}
                 <div style={{ padding: "12px 12px 10px", minWidth: 0, overflow: "hidden" }}>
-                  <div style={{ fontSize: 11, color: "#999", marginBottom: 2, fontWeight: 600 }}>{card.title} 추이</div>
+                  <div style={{ fontSize: 11, color: dark ? "#9198A8" : "#999", marginBottom: 2, fontWeight: 600 }}>{card.title} 추이</div>
                   <MiniBarChart
                     curData={curD} priData={priD} labels={labels} color={card.color}
                     selectedIdx={idx}
                     onBarClick={(i) => setSelIdx(prev => ({ ...prev, [card.key]: i }))}
+                    dark={dark}
                   />
                 </div>
               </div>
@@ -460,9 +486,9 @@ export default function PLSummary() {
           <div className="sec-hd-line" />
         </div>
         <div className="g3">
-          <MarginLineChart curMargins={curGrossM} priMargins={priGrossM} labels={labels} color="#D5476E" title="매출총이익률 추이" />
-          <MarginLineChart curMargins={curOpM}    priMargins={priOpM}    labels={labels} color="#E87722" title="영업이익률 추이" />
-          <MarginLineChart curMargins={curNetM}   priMargins={priNetM}   labels={labels} color="#6D4C41" title="당기손익률 추이" />
+          <MarginLineChart curMargins={curGrossM} priMargins={priGrossM} labels={labels} color="#D5476E" title="매출총이익률 추이" dark={dark} />
+          <MarginLineChart curMargins={curOpM}    priMargins={priOpM}    labels={labels} color="#E87722" title="영업이익률 추이" dark={dark} />
+          <MarginLineChart curMargins={curNetM}   priMargins={priNetM}   labels={labels} color="#6D4C41" title="당기손익률 추이" dark={dark} />
         </div>
       </div>
 
@@ -488,10 +514,10 @@ export default function PLSummary() {
                   )}
                   style={{
                     padding: "3px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                    border: `1px solid ${sel ? "#E87722" : "#E0E0E0"}`,
+                    border: `1px solid ${sel ? "#E87722" : dark ? "#2E3039" : "#E0E0E0"}`,
                     borderRadius: 20,
-                    background: sel ? "#E87722" : "#fff",
-                    color: sel ? "#fff" : "#888",
+                    background: sel ? "#E87722" : dark ? "#252830" : "#fff",
+                    color: sel ? "#fff" : dark ? "#9198A8" : "#888",
                     transition: "all .15s",
                   }}
                 >

@@ -61,9 +61,9 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
   };
 
   return (
-    <div className="svc-intro-wrap overflow-y-scroll snap-y snap-mandatory bg-white" style={{ height: "calc(100dvh - 52px)" }}>
+    <div className="svc-intro-wrap overflow-y-scroll snap-y snap-mandatory bg-white" style={{ height: "calc(100vh - 52px)" }}>
       {/* ===== Hero ===== */}
-      <section className="snap-start min-h-[100dvh] relative overflow-hidden bg-[#F5F7F8] flex items-center">
+      <section className="snap-start min-h-[calc(100vh-52px)] relative overflow-hidden bg-[#F5F7F8] flex items-center">
         {/* Background blobs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-[-10%] right-[-8%] w-[700px] h-[700px] bg-[#FD5108]/5 rounded-full blur-[100px]" />
@@ -341,7 +341,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
       </section>
 
       {/* ===== 서비스 안내 ===== */}
-      <section id="services" className="snap-start min-h-[100dvh] py-12 md:py-16 bg-gradient-to-b from-white to-[#F5F7F8]">
+      <section id="services" className="snap-start min-h-[calc(100vh-52px)] py-12 md:py-16 bg-gradient-to-b from-white to-[#F5F7F8]">
         <div className="max-w-6xl mx-auto px-6">
           {/* Section Header */}
           <div className="text-center mb-10">
@@ -568,7 +568,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
       </section>
 
       {/* ===== 매뉴얼 & 가이드 ===== */}
-      <section id="manual" className="snap-start min-h-[100dvh] bg-white py-12 md:py-16">
+      <section id="manual" className="snap-start min-h-[calc(100vh-52px)] bg-white py-12 md:py-16">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-10">
             <div className="inline-block">
@@ -708,7 +708,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
       </section>
 
       {/* ===== Digital & AI ===== */}
-      <section id="digital" className="snap-start min-h-[100dvh] bg-[#F5F7F8] py-12 md:py-16">
+      <section id="digital" className="snap-start min-h-[calc(100vh-52px)] bg-[#F5F7F8] py-12 md:py-16">
         <div className="max-w-6xl mx-auto px-6 w-full">
 
           {/* 섹션 헤더 */}
@@ -836,7 +836,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
       </section>
 
       {/* ===== Managed Service ===== */}
-      <section id="managed" className="snap-start min-h-[100dvh] py-12 md:py-16 bg-white">
+      <section id="managed" className="snap-start min-h-[calc(100vh-52px)] py-12 md:py-16 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-10">
             <div className="inline-block">

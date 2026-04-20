@@ -1,11 +1,11 @@
 @import "tailwindcss";
-@source "../components/**/*.tsx";
-@source "../app/**/*.tsx";
 
 :root{--sb-w:220px}
 
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif;background:#F5F5F5;color:#2C2C2C;font-size:13px;font-variant-numeric:tabular-nums}
+@layer base {
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif;background:#F5F5F5;color:#2C2C2C;font-size:13px;font-variant-numeric:tabular-nums}
+}
 
 /* ── Header (PwC portal style) ── */
 .hdr{background:#fff;border-bottom:1px solid #EDEDED;height:52px;display:flex;align-items:center;padding:0 24px;position:sticky;top:0;z-index:200;gap:0;box-shadow:0 1px 3px rgba(0,0,0,.05)}

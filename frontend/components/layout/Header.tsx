@@ -17,12 +17,21 @@ export default function Header({ user, activeTopTab = "리포트", onTopTabChang
   const [displayName, setDisplayName] = useState(user ?? "");
   const [avatar, setAvatar]           = useState<string | null>(null);
   const [dropOpen, setDropOpen]       = useState(false);
+  const [isDark, setIsDark]           = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDisplayName(localStorage.getItem("ev_nickname") || user || "");
     setAvatar(localStorage.getItem("ev_avatar") || null);
   }, [user]);
+
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -38,7 +47,7 @@ export default function Header({ user, activeTopTab = "리포트", onTopTabChang
     <header className="hdr">
       {/* 로고 + 포털명 */}
       <div className="hdr-brand">
-        <img src="/easyview/logo2.png" alt="PwC" className="logo-img" />
+        <img src={isDark ? "/easyview/Logo_reverse.png" : "/easyview/logo2.png"} alt="PwC" className="logo-img" />
         <span className="hdr-portal-name">Easyview</span>
       </div>
 

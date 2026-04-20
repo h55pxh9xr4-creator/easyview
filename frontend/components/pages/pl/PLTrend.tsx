@@ -195,7 +195,6 @@ function AccountCard({
         padding: "12px 14px",
         cursor: "pointer",
         border: bdr,
-        borderTop: isSelected ? `3px solid ${ORANGE}` : `3px solid ${ORANGE}22`,
         boxShadow: isSelected
           ? "0 4px 16px rgba(232,119,34,.18)"
           : isDark ? "0 1px 4px rgba(0,0,0,.25)" : "0 1px 4px rgba(0,0,0,.05)",
@@ -252,7 +251,7 @@ function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx, i
   const btnTxt = isDark ? "#9198A8" : "#aaa";
 
   return (
-    <div className="card" style={{ borderTop: `3px solid ${ORANGE}` }}>
+    <div className="card">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 11, color: txtDim, marginBottom: 2 }}>{acct.disclosure_acct}</div>
@@ -510,7 +509,7 @@ export default function PLTrend() {
                   { label: "증감액",   value: (kpiChg < 0 ? "-" : "") + fmtM(Math.abs(kpiChg)) + "백만", color: kpiChg >= 0 ? "#EF4444" : BLUE },
                   { label: "증감률",   value: kpiChgPct !== null ? `${kpiChg >= 0 ? "▲" : "▼"}${Math.abs(kpiChgPct).toFixed(1)}%` : "-", color: kpiChg >= 0 ? "#EF4444" : BLUE },
                 ].map(({ label, value, color }) => (
-                  <div key={label} className="card" style={{ borderTop: `3px solid ${color}` }}>
+                  <div key={label} className="card">
                     <div style={{ fontSize: 11, fontWeight: 700, color: "#999", marginBottom: 6 }}>
                       {detail.mgmt_acct} — {label}
                       <span style={{ fontSize: 10, fontWeight: 400, color: "#bbb", marginLeft: 6 }}>{periodLabel}</span>
