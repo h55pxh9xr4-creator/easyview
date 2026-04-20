@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Header, { type TopTab } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import BookShelf from "@/components/layout/BookShelf";
+import ServiceIntro from "@/components/pages/ServiceIntro";
 import FilterBar from "@/components/layout/FilterBar";
 import CommentPanel from "@/components/layout/CommentPanel";
 import ChatBot from "@/components/ui/ChatBot";
@@ -163,9 +164,7 @@ function PageInner() {
 
         {/* ── 서비스 소개 ── */}
         {topTab === "서비스 소개" && (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 16 }}>
-            서비스 소개 페이지 (준비 중)
-          </div>
+          <ServiceIntro onNavigateToReport={() => { handleNavigate("summary", "summary", "Summary"); setTopTab("리포트"); }} />
         )}
 
         {/* ── 리포트 ── */}
