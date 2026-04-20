@@ -5,6 +5,7 @@ import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
+import { useDarkMode } from "@/hooks/useDarkMode";
 import { fetchBSKPI, fetchBSTrendDetail, fetchBSRatios, fetchBSActivity } from "@/lib/api";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
@@ -44,9 +45,9 @@ interface ActivityCurrent { year_month: string; 매출채권회전일수: number
 interface ActivityData { current: ActivityCurrent; trend: ActivityCurrent[] }
 
 // ── 로딩 오버레이 ─────────────────────────────────────────────
-function ChartLoading({ height = 110 }: { height?: number }) {
+function ChartLoading({ height = 110, isDark }: { height?: number; isDark?: boolean }) {
   return (
-    <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: "#bbb" }}>
+    <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: isDark ? "#5A6070" : "#bbb" }}>
       <div className="spinner" />
       <span style={{ fontSize: 11 }}>로딩 중...</span>
     </div>
@@ -54,7 +55,7 @@ function ChartLoading({ height = 110 }: { height?: number }) {
 }
 
 // ── 공통 소형 라인 차트 ───────────────────────────────────────
-function MiniAreaChart({ labels, datasets, height = 110, yFmt, selectedIdx, onClickPoint, showLegend = true }: {
+function MiniAreaChart({ labels, datasets, height = 110, yFmt, selectedIdx, onClickPoint, showLegend = true, isDark = false }: {
   labels: string[];
   datasets: { label: string; data: (number | null)[]; color: string; fill?: boolean }[];
   height?: number;
@@ -62,7 +63,15 @@ function MiniAreaChart({ labels, datasets, height = 110, yFmt, selectedIdx, onCl
   selectedIdx?: number | null;
   onClickPoint?: (idx: number | null) => void;
   showLegend?: boolean;
+  isDark?: boolean;
 }) {
+  const tickClr = isDark ? "#9198A8" : "#bbb";
+  const gridClr = isDark ? "#2E3039" : "#f5f5f5";
+  const lgdClr  = isDark ? "#9198A8" : "#888";
+  const tipBg   = isDark ? "#1C1F26" : "#fff";
+  const tipBdr  = isDark ? "#2E3039" : "#eee";
+  const tipTxt  = isDark ? "#E2E5EC" : "#333";
+
   return (
     <div style={{ height, cursor: onClickPoint ? "pointer" : "default" }}>
       <Line
@@ -115,8 +124,13 @@ function MiniAreaChart({ labels, datasets, height = 110, yFmt, selectedIdx, onCl
             onClickPoint(selectedIdx === idx ? null : idx);
           } : undefined,
           plugins: {
-            legend: { display: showLegend, position: "top", align: "end", labels: { color: "#888", font: { size: 10 }, boxWidth: 8, padding: 6 } },
+            legend: { display: showLegend, position: "top", align: "end", labels: { color: lgdClr, font: { size: 10 }, boxWidth: 8, padding: 6 } },
             tooltip: {
+              backgroundColor: tipBg,
+              borderColor: tipBdr,
+              borderWidth: 1,
+              titleColor: tipTxt,
+              bodyColor: tipTxt,
               callbacks: {
                 label: ctx => {
                   const v = ctx.parsed.y as number;
@@ -126,8 +140,8 @@ function MiniAreaChart({ labels, datasets, height = 110, yFmt, selectedIdx, onCl
             },
           },
           scales: {
-            x: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 8 }, grid: { display: false } },
-            y: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: "#f5f5f5" } },
+            x: { ticks: { color: tickClr, font: { size: 9 }, maxTicksLimit: 8 }, grid: { display: false } },
+            y: { ticks: { color: tickClr, font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: gridClr } },
           },
         }}
       />
@@ -136,22 +150,35 @@ function MiniAreaChart({ labels, datasets, height = 110, yFmt, selectedIdx, onCl
 }
 
 // ── 비율 추이 차트 (ECharts, max/min markPoint) ───────────────
-function RatioChart({ labels, series, height = 160, yFmt, showLegend = true }: {
+function RatioChart({ labels, series, height = 160, yFmt, showLegend = true, isDark = false }: {
   labels: string[];
   series: { name: string; data: number[]; color: string }[];
   height?: number;
   yFmt?: (v: number) => string;
   showLegend?: boolean;
+  isDark?: boolean;
 }) {
+  const gridClr    = isDark ? "#2E3039" : "#f5f5f5";
+  const axisLblClr = isDark ? "#9198A8" : "#bbb";
+  const axisLnClr  = isDark ? "#2E3039" : "#eee";
+  const lgdClr     = isDark ? "#9198A8" : "#888";
+  const tipBg      = isDark ? "#1C1F26" : "#fff";
+  const tipBdr     = isDark ? "#2E3039" : "#eee";
+  const tipTxt     = isDark ? "#E2E5EC" : "#333";
+
   const option = {
+    backgroundColor: "transparent",
     animation: false,
     grid: { top: showLegend ? 50 : 40, bottom: 48, left: 8, right: 16, containLabel: true },
-    legend: { show: showLegend, top: 4, right: 8, textStyle: { fontSize: 10, color: "#888" }, itemWidth: 8, itemHeight: 8 },
+    legend: { show: showLegend, top: 4, right: 8, textStyle: { fontSize: 10, color: lgdClr }, itemWidth: 8, itemHeight: 8 },
     tooltip: {
       trigger: "axis",
+      backgroundColor: tipBg,
+      borderColor: tipBdr,
+      textStyle: { color: tipTxt, fontSize: 11 },
       formatter: (params: { seriesName: string; value: number; axisValueLabel: string }[]) => {
         const label = params[0]?.axisValueLabel ?? "";
-        return `<span style="font-size:10px;color:#999">${label}</span><br/>` +
+        return `<span style="font-size:10px;color:${axisLblClr}">${label}</span><br/>` +
           params.map(p => `${p.seriesName}: ${yFmt ? yFmt(p.value) : p.value}`).join("<br/>");
       },
     },
@@ -159,17 +186,16 @@ function RatioChart({ labels, series, height = 160, yFmt, showLegend = true }: {
       type: "category",
       data: labels,
       boundaryGap: false,
-      axisLabel: { fontSize: 9, color: "#bbb" },
-      axisLine: { lineStyle: { color: "#eee" } },
+      axisLabel: { fontSize: 9, color: axisLblClr },
+      axisLine: { lineStyle: { color: axisLnClr } },
       splitLine: { show: false },
     },
     yAxis: {
       type: "value",
-      axisLabel: { fontSize: 9, color: "#bbb", formatter: yFmt ?? ((v: number) => String(v)) },
-      splitLine: { lineStyle: { color: "#f5f5f5" } },
+      axisLabel: { fontSize: 9, color: axisLblClr, formatter: yFmt ?? ((v: number) => String(v)) },
+      splitLine: { lineStyle: { color: gridClr } },
     },
     series: series.map(s => {
-      // 겹치는 경우 높은 값만 핀 표시
       const maxIdx = s.data.indexOf(Math.max(...s.data));
       const minIdx = s.data.indexOf(Math.min(...s.data));
       const other = series.find(o => o !== s);
@@ -180,7 +206,7 @@ function RatioChart({ labels, series, height = 160, yFmt, showLegend = true }: {
           ? other.data.indexOf(Math.max(...other.data))
           : other.data.indexOf(Math.min(...other.data));
         if (otherIdx !== idx) return true;
-        return s.data[idx] >= other.data[idx]; // 높은 값만 핀 표시
+        return s.data[idx] >= other.data[idx];
       };
 
       const markData = [
@@ -189,55 +215,54 @@ function RatioChart({ labels, series, height = 160, yFmt, showLegend = true }: {
       ].filter(Boolean);
 
       return {
-      name: s.name,
-      type: "line",
-      data: s.data,
-      smooth: true,
-      symbol: "circle",
-      symbolSize: 4,
-      lineStyle: { color: s.color, width: 1.8 },
-      itemStyle: { color: s.color },
-      emphasis: { focus: "none" },
-      blur: {
-        lineStyle: { opacity: 1 },
-        itemStyle: { opacity: 1 },
-      },
-      markPoint: {
-        symbol: "pin",
-        symbolSize: (val: number) => {
-          const len = String(Math.round(val)).length;
-          return len <= 3 ? 46 : len <= 5 ? 58 : 70;
-        },
-        label: { fontSize: 11, color: "#fff", fontWeight: 700 },
-        emphasis: {
+        name: s.name,
+        type: "line",
+        data: s.data,
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 4,
+        lineStyle: { color: s.color, width: 1.8 },
+        itemStyle: { color: s.color },
+        emphasis: { focus: "none" },
+        blur: { lineStyle: { opacity: 1 }, itemStyle: { opacity: 1 } },
+        markPoint: {
+          symbol: "pin",
           symbolSize: (val: number) => {
             const len = String(Math.round(val)).length;
-            return (len <= 3 ? 46 : len <= 5 ? 58 : 70) * 1.25;
+            return len <= 3 ? 46 : len <= 5 ? 58 : 70;
           },
+          label: { fontSize: 11, color: "#fff", fontWeight: 700 },
+          emphasis: {
+            symbolSize: (val: number) => {
+              const len = String(Math.round(val)).length;
+              return (len <= 3 ? 46 : len <= 5 ? 58 : 70) * 1.25;
+            },
+          },
+          blur: { itemStyle: { opacity: 1 }, label: { opacity: 1 } },
+          data: markData,
         },
-        blur: {
-          itemStyle: { opacity: 1 },
-          label: { opacity: 1 },
-        },
-        data: markData,
-      },
-    }; }),
+      };
+    }),
   };
   return <ReactECharts option={option} style={{ height, width: "100%" }} notMerge />;
 }
 
 // ── BS KPI 카드 ───────────────────────────────────────────────
-function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
+function BSKpiCard({ cat, data, selectedLabel, current, noncurrent, isDark = false }: {
   cat: string; data: KPICat; selectedLabel?: string | null;
-  current?: number; noncurrent?: number;
+  current?: number; noncurrent?: number; isDark?: boolean;
 }) {
   const color = CAT_COLOR[cat] ?? "#E87722";
   const prefix = cat === "자산" ? "자산" : cat === "부채" ? "부채" : null;
+  const labelClr = isDark ? "#9198A8" : "#999";
+  const valClr   = isDark ? "#C8CCDA" : "#444";
+  const divClr   = isDark ? "#2E3039" : "#F0F0F0";
+
   return (
     <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", boxSizing: "border-box" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#999" }}>{cat}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: labelClr }}>{cat}</div>
           {selectedLabel && (
             <span style={{ fontSize: 10, color, background: color + "30", padding: "1px 6px", borderRadius: 6, fontWeight: 600 }}>{selectedLabel}</span>
           )}
@@ -246,23 +271,23 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
           {fmtB(data.ending)}<span style={{ fontSize: 14, color, fontWeight: 700, marginLeft: 4 }}>백만</span>
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: "#999" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: labelClr }}>
         {prefix && current !== undefined && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>유동{prefix}</span>
-            <span style={{ color: "#444" }}>{fmtB(current)}백만</span>
+            <span style={{ color: valClr }}>{fmtB(current)}백만</span>
           </div>
         )}
         {prefix && noncurrent !== undefined && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>비유동{prefix}</span>
-            <span style={{ color: "#444" }}>{fmtB(noncurrent)}백만</span>
+            <span style={{ color: valClr }}>{fmtB(noncurrent)}백만</span>
           </div>
         )}
-        <div style={{ borderTop: "1px solid #F0F0F0", margin: "2px 0" }} />
+        <div style={{ borderTop: `1px solid ${divClr}`, margin: "2px 0" }} />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>당기기초 금액</span>
-          <span style={{ color: "#444" }}>
+          <span style={{ color: valClr }}>
             {fmtB(data.yr_start)}백만&nbsp;
             <span className={data.yr_chg_pct >= 0 ? "up-t" : "dn-t"} style={{ fontSize: 10 }}>
               {fmtPct(data.yr_chg_pct)}
@@ -271,7 +296,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>당월 기초 금액</span>
-          <span style={{ color: "#444" }}>
+          <span style={{ color: valClr }}>
             {fmtB(data.mo_start)}백만&nbsp;
             <span className={data.mo_chg_pct >= 0 ? "up-t" : "dn-t"} style={{ fontSize: 10 }}>
               {fmtPct(data.mo_chg_pct)}
@@ -285,6 +310,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent }: {
 
 // ── 메인 ─────────────────────────────────────────────────────
 export default function BSSummary() {
+  const isDark = useDarkMode();
   const filter = useFilter();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
@@ -326,9 +352,12 @@ export default function BSSummary() {
     return `${y.slice(2)}/${parseInt(m)}월`;
   });
 
-  // KPI 카드용 스켈레톤
+  const labelClr = isDark ? "#9198A8" : "#999";
+  const valClr   = isDark ? "#C8CCDA" : "#444";
+  const divClr   = isDark ? "#2E3039" : "#F0F0F0";
+
   const KpiSkeleton = () => (
-    <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 130, color: "#bbb" }}>
+    <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 130, color: isDark ? "#5A6070" : "#bbb" }}>
       <div className="spinner" />
       <span style={{ fontSize: 11 }}>로딩 중...</span>
     </div>
@@ -345,16 +374,16 @@ export default function BSSummary() {
           cat: "자산" as const,
           title: "자산추이",
           datasets: [
-            { label: "유동", data: trend.map(r => Math.round(r.유동자산   / 1_000_000)), color: ORANGE, fill: true  },
-            { label: "비유동", data: trend.map(r => Math.round(r.비유동자산 / 1_000_000)), color: BLUE,   fill: true  },
+            { label: "유동",   data: trend.map(r => Math.round(r.유동자산   / 1_000_000)), color: ORANGE, fill: true },
+            { label: "비유동", data: trend.map(r => Math.round(r.비유동자산 / 1_000_000)), color: BLUE,   fill: true },
           ],
         },
         {
           cat: "부채" as const,
           title: "부채추이",
           datasets: [
-            { label: "유동", data: trend.map(r => Math.round(r.유동부채   / 1_000_000)), color: RED,    fill: true  },
-            { label: "비유동", data: trend.map(r => Math.round(r.비유동부채 / 1_000_000)), color: GRAY,   fill: true  },
+            { label: "유동",   data: trend.map(r => Math.round(r.유동부채   / 1_000_000)), color: RED,  fill: true },
+            { label: "비유동", data: trend.map(r => Math.round(r.비유동부채 / 1_000_000)), color: GRAY, fill: true },
           ],
         },
         {
@@ -368,7 +397,6 @@ export default function BSSummary() {
         const idx = selIdx[cat];
         const selectedLabel = idx !== null ? labels[idx] : null;
 
-        // 선택된 시점의 KPI 계산 (trend 기반)
         const trendRow = (idx !== null && trend[idx]) ? trend[idx] : (trend.length ? trend[trend.length - 1] : null);
         const kpiForIdx = (idx !== null && trend[idx]) ? (() => {
           const r = trend[idx];
@@ -384,26 +412,33 @@ export default function BSSummary() {
           return { ...kpi![cat], ending, mo_start: prevEnding, mo_chg_pct };
         })() : (kpi ? kpi[cat] : null);
 
-        const currentVal  = trendRow ? (cat === "자산" ? trendRow.유동자산   : cat === "부채" ? trendRow.유동부채   : undefined) : undefined;
+        const currentVal    = trendRow ? (cat === "자산" ? trendRow.유동자산   : cat === "부채" ? trendRow.유동부채   : undefined) : undefined;
         const noncurrentVal = trendRow ? (cat === "자산" ? trendRow.비유동자산 : cat === "부채" ? trendRow.비유동부채 : undefined) : undefined;
 
         return (
-        <div key={cat} style={{ display: "grid", gridTemplateColumns: "min(420px, 40%) 1fr", gap: 14, alignItems: "stretch", minWidth: 0 }}>
-          {kpiLoading || !kpiForIdx ? <KpiSkeleton /> : <div style={{ cursor: "pointer", position: "relative", display: "flex", flexDirection: "column", ...lift(cat) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: cat, value: `${fmtB(kpiForIdx.ending)}백만`, sub: selectedLabel ? `선택 월: ${selectedLabel}` : undefined }, { top: r.top, right: r.right }); }}>{ck.has(commentKey("BS 요약", cat)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", cat))!} />}<BSKpiCard cat={cat} data={kpiForIdx} selectedLabel={selectedLabel} current={currentVal} noncurrent={noncurrentVal} /></div>}
-          <div className="card" style={{ minWidth: 0 }}>
-            <div className="card-title">{title}</div>
-            {trendLoading
-              ? <ChartLoading height={120} />
-              : <MiniAreaChart
-                  labels={labels} height={120} datasets={datasets}
-                  yFmt={v => `${v.toLocaleString("ko-KR")}백만`}
-                  selectedIdx={idx}
-                  onClickPoint={i => setSelIdx(prev => ({ ...prev, [cat]: i }))}
-                  showLegend={datasets.length > 1}
-                />
-            }
+          <div key={cat} style={{ display: "grid", gridTemplateColumns: "min(420px, 40%) 1fr", gap: 14, alignItems: "stretch", minWidth: 0 }}>
+            {kpiLoading || !kpiForIdx ? <KpiSkeleton /> : (
+              <div style={{ cursor: "pointer", position: "relative", display: "flex", flexDirection: "column", ...lift(cat) }}
+                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: cat, value: `${fmtB(kpiForIdx.ending)}백만`, sub: selectedLabel ? `선택 월: ${selectedLabel}` : undefined }, { top: r.top, right: r.right }); }}>
+                {ck.has(commentKey("BS 요약", cat)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", cat))!} />}
+                <BSKpiCard cat={cat} data={kpiForIdx} selectedLabel={selectedLabel} current={currentVal} noncurrent={noncurrentVal} isDark={isDark} />
+              </div>
+            )}
+            <div className="card" style={{ minWidth: 0 }}>
+              <div className="card-title">{title}</div>
+              {trendLoading
+                ? <ChartLoading height={120} isDark={isDark} />
+                : <MiniAreaChart
+                    labels={labels} height={120} datasets={datasets}
+                    yFmt={v => `${v.toLocaleString("ko-KR")}백만`}
+                    selectedIdx={idx}
+                    onClickPoint={i => setSelIdx(prev => ({ ...prev, [cat]: i }))}
+                    showLegend={datasets.length > 1}
+                    isDark={isDark}
+                  />
+              }
+            </div>
           </div>
-        </div>
         );
       })}
 
@@ -414,8 +449,8 @@ export default function BSSummary() {
           <div className="card">
             <div className="card-title">당좌비율, 유동비율 추이</div>
             {ratioLoading
-              ? <ChartLoading height={160} />
-              : <RatioChart labels={rLabels} height={160} series={[
+              ? <ChartLoading height={160} isDark={isDark} />
+              : <RatioChart labels={rLabels} height={160} isDark={isDark} series={[
                   { name: "당좌비율", data: ratios.map(r => r.당좌비율), color: ORANGE },
                   { name: "유동비율", data: ratios.map(r => r.유동비율), color: BLUE },
                 ]} yFmt={v => `${v.toFixed(1)}%`} />
@@ -424,8 +459,8 @@ export default function BSSummary() {
           <div className="card">
             <div className="card-title">부채비율 추이</div>
             {ratioLoading
-              ? <ChartLoading height={160} />
-              : <RatioChart labels={rLabels} height={160} showLegend={false} series={[
+              ? <ChartLoading height={160} isDark={isDark} />
+              : <RatioChart labels={rLabels} height={160} showLegend={false} isDark={isDark} series={[
                   { name: "부채비율", data: ratios.map(r => r.부채비율), color: RED },
                 ]} yFmt={v => `${v.toFixed(1)}%`} />
             }
@@ -438,11 +473,11 @@ export default function BSSummary() {
         <div className="sec-hd"><span className="sec-hd-txt">활동성 지표</span><div className="sec-hd-line" /></div>
         {actLoading ? (
           <div style={{ display: "grid", gridTemplateColumns: "min(420px, 40%) 1fr", gap: 14, marginBottom: 14 }}>
-            <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 130, color: "#bbb" }}>
+            <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 130, color: isDark ? "#5A6070" : "#bbb" }}>
               <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid #E87722", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
               <span style={{ fontSize: 11 }}>로딩 중...</span>
             </div>
-            <div className="card"><div className="card-title">매출채권 회전일수 추이</div><ChartLoading height={130} /></div>
+            <div className="card"><div className="card-title">매출채권 회전일수 추이</div><ChartLoading height={130} isDark={isDark} /></div>
           </div>
         ) : cur && [
           {
@@ -468,47 +503,49 @@ export default function BSSummary() {
           const val2 = item.label === "매출채권회전일수" ? trendRow.daily_rev : trendRow.daily_cogs;
 
           return (
-          <div key={item.label} style={{ display: "grid", gridTemplateColumns: "min(420px, 40%) 1fr", gap: 14, alignItems: "stretch", minWidth: 0, marginBottom: 14 }}>
-            {/* 왼쪽 카드 */}
-            <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", cursor: "pointer", position: "relative", ...lift(item.label) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: item.label, value: `${days.toFixed(1)}일`, sub: selectedLabel ? `선택 월: ${selectedLabel}` : undefined }, { top: r.top, right: r.right }); }}>
-              {ck.has(commentKey("BS 요약", item.label)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", item.label))!} />}
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#999" }}>{item.label}</div>
-                  {selectedLabel && (
-                    <span style={{ fontSize: 10, color: item.color, background: item.color + "30", padding: "1px 6px", borderRadius: 6, fontWeight: 600 }}>{selectedLabel}</span>
-                  )}
+            <div key={item.label} style={{ display: "grid", gridTemplateColumns: "min(420px, 40%) 1fr", gap: 14, alignItems: "stretch", minWidth: 0, marginBottom: 14 }}>
+              {/* 왼쪽 카드 */}
+              <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", cursor: "pointer", position: "relative", ...lift(item.label) }}
+                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: item.label, value: `${days.toFixed(1)}일`, sub: selectedLabel ? `선택 월: ${selectedLabel}` : undefined }, { top: r.top, right: r.right }); }}>
+                {ck.has(commentKey("BS 요약", item.label)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", item.label))!} />}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: labelClr }}>{item.label}</div>
+                    {selectedLabel && (
+                      <span style={{ fontSize: 10, color: item.color, background: item.color + "30", padding: "1px 6px", borderRadius: 6, fontWeight: 600 }}>{selectedLabel}</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: item.color, lineHeight: 1, letterSpacing: "-0.5px" }}>
+                    {days.toFixed(1)}<span style={{ fontSize: 14, color: item.color, fontWeight: 700, marginLeft: 4 }}>일</span>
+                  </div>
                 </div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: item.color, lineHeight: 1, letterSpacing: "-0.5px" }}>
-                  {days.toFixed(1)}<span style={{ fontSize: 14, color: item.color, fontWeight: 700, marginLeft: 4 }}>일</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: labelClr }}>
+                  <div style={{ borderTop: `1px solid ${divClr}`, margin: "2px 0" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>{item.sub1}</span>
+                    <span style={{ color: valClr }}>{val1.toLocaleString("ko-KR")}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>{item.sub2}</span>
+                    <span style={{ color: valClr }}>{val2.toLocaleString("ko-KR")}</span>
+                  </div>
                 </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: "#999" }}>
-                <div style={{ borderTop: "1px solid #F0F0F0", margin: "2px 0" }} />
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>{item.sub1}</span>
-                  <span style={{ color: "#444" }}>{val1.toLocaleString("ko-KR")}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>{item.sub2}</span>
-                  <span style={{ color: "#444" }}>{val2.toLocaleString("ko-KR")}</span>
-                </div>
+              {/* 오른쪽 차트 */}
+              <div className="card" style={{ minWidth: 0 }}>
+                <div className="card-title">{item.chartTitle}</div>
+                <MiniAreaChart
+                  labels={aLabels}
+                  height={130}
+                  datasets={[{ label: item.label, data: item.chartData, color: item.color, fill: true }]}
+                  yFmt={v => `${v.toFixed(1)}일`}
+                  showLegend={false}
+                  selectedIdx={idx}
+                  onClickPoint={i => setSelActIdx(prev => ({ ...prev, [item.label]: i }))}
+                  isDark={isDark}
+                />
               </div>
             </div>
-            {/* 오른쪽 차트 */}
-            <div className="card" style={{ minWidth: 0 }}>
-              <div className="card-title">{item.chartTitle}</div>
-              <MiniAreaChart
-                labels={aLabels}
-                height={130}
-                datasets={[{ label: item.label, data: item.chartData, color: item.color, fill: true }]}
-                yFmt={v => `${v.toFixed(1)}일`}
-                showLegend={false}
-                selectedIdx={idx}
-                onClickPoint={i => setSelActIdx(prev => ({ ...prev, [item.label]: i }))}
-              />
-            </div>
-          </div>
           );
         })}
       </div>
