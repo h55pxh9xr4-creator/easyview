@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import { useComment } from "@/hooks/useComment";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 type View = "list" | "detail" | "write" | "edit";
 const ADMIN_ID = "admin";
@@ -35,6 +36,8 @@ function parseCommentTarget(content: string) {
 }
 
 export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string, keepComment?: boolean) => void }) {
+  const isDark = useDarkMode();
+
   const [view,       setView]      = useState<View>("list");
   const [list,       setList]      = useState<InquiryItem[]>([]);
   const [detail,     setDetail]    = useState<InquiryDetail | null>(null);
@@ -53,6 +56,33 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
   const { triggerComment, openPanel } = useComment();
   const pendingId    = usePendingInquiry(state => state.pendingId);
   const clearPending = usePendingInquiry(state => state.setPendingId);
+
+  // ── 다크모드 색상 ─────────────────────────────────────────
+  const bg2     = isDark ? "#1C1F26" : "#fff";
+  const bg3     = isDark ? "#252830" : "#FAFAFA";
+  const bdr     = isDark ? "#2E3039" : "#E0E0E0";
+  const bdr2    = isDark ? "#2E3039" : "#F0F0F0";
+  const txtP    = isDark ? "#E2E5EC" : "#2C2C2C";
+  const txtS    = isDark ? "#9198A8" : "#666";
+  const txtD    = isDark ? "#5A6070" : "#aaa";
+  const txtDim  = isDark ? "#5A6070" : "#999";
+  const emptyClr = isDark ? "#5A6070" : "#ccc";
+
+  // ── 동적 스타일 상수 ──────────────────────────────────────
+  const th: React.CSSProperties = { padding: "10px 12px", fontWeight: 600, fontSize: 12, color: isDark ? "#9198A8" : "#555", textAlign: "center" as const, whiteSpace: "nowrap", background: bg3 };
+  const td: React.CSSProperties = { padding: "11px 12px", whiteSpace: "nowrap" };
+  const cardS: React.CSSProperties = { background: bg2, borderRadius: 10, padding: "24px 28px", boxShadow: isDark ? "0 1px 4px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.2)" : "0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)" };
+  const lbl: React.CSSProperties = { display: "block", fontSize: 11, fontWeight: 600, color: txtDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.4px" };
+  const inp: React.CSSProperties = { width: "100%", border: `1px solid ${bdr}`, borderRadius: 6, padding: "8px 12px", fontSize: 13, fontFamily: "inherit", color: txtP, background: bg2, outline: "none", boxSizing: "border-box" };
+  const backBtn: React.CSSProperties = { padding: "5px 14px", border: `1px solid ${bdr}`, borderRadius: 6, background: bg2, color: isDark ? "#9198A8" : "#888", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
+  const cancelBtn: React.CSSProperties = { padding: "7px 18px", background: bg2, color: isDark ? "#9198A8" : "#888", border: `1px solid ${bdr}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
+  const submitBtn: React.CSSProperties = { padding: "7px 22px", background: "#E87722", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
+  const pgBtn = (active: boolean): React.CSSProperties => ({
+    width: 32, height: 32, border: active ? "none" : `1px solid ${bdr2}`, borderRadius: 6,
+    background: active ? "#E87722" : bg2, color: active ? "#fff" : (isDark ? "#9198A8" : "#555"),
+    fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer", fontFamily: "inherit",
+    display: "flex", alignItems: "center", justifyContent: "center",
+  });
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -108,7 +138,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     if (!detail || !form.title.trim() || !form.content.trim()) return;
     setSubmitting(true);
     try {
-      await updateInquiry(detail.id, { category: form.category, title: form.title, content: form.content, is_secret: form.is_secret });
+      await updateInquiry(detail.id, { category: form.category, title: detail.title, content: form.content, is_secret: form.is_secret });
       openDetail(detail.id);
       showToast("수정되었습니다.");
     } catch { showToast("수정 중 오류가 발생했습니다.", "err"); }
@@ -167,7 +197,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
       {/* 툴바 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#bbb" }}
+          <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: isDark ? "#5A6070" : "#bbb" }}
             width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
@@ -175,13 +205,13 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
             value={searchText}
             onChange={e => { setSearchText(e.target.value); setPage(1); }}
             placeholder="검색어를 입력해주세요..."
-            style={{ border: "1px solid #E0E0E0", borderRadius: 6, padding: "7px 12px 7px 30px", fontSize: 12, fontFamily: "inherit", width: 200, outline: "none" }}
+            style={{ border: `1px solid ${bdr}`, borderRadius: 6, padding: "7px 12px 7px 30px", fontSize: 12, fontFamily: "inherit", width: 200, outline: "none", background: bg2, color: txtP }}
           />
         </div>
         <select
           value={filterCat}
           onChange={e => { setFilterCat(e.target.value); setPage(1); }}
-          style={{ border: "1px solid #E0E0E0", borderRadius: 6, padding: "7px 28px 7px 10px", fontSize: 12, fontFamily: "inherit", color: filterCat ? "#333" : "#aaa", appearance: "none", background: "#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E\") no-repeat right 10px center" }}
+          style={{ border: `1px solid ${bdr}`, borderRadius: 6, padding: "7px 28px 7px 10px", fontSize: 12, fontFamily: "inherit", color: filterCat ? txtP : txtDim, appearance: "none", background: `${bg2} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23${isDark ? "5A6070" : "999"}'/%3E%3C/svg%3E") no-repeat right 10px center` }}
         >
           <option value="">* 카테고리를 선택해주세요.</option>
           {INQUIRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -190,7 +220,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
           <button
             onClick={() => { if (selected.size > 0) handleDelete([...selected]); }}
             disabled={selected.size === 0}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", border: "1px solid #E0E0E0", borderRadius: 6, background: "#fff", color: selected.size > 0 ? "#555" : "#bbb", fontSize: 12, fontWeight: 600, cursor: selected.size > 0 ? "pointer" : "default", fontFamily: "inherit" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", border: `1px solid ${bdr}`, borderRadius: 6, background: bg2, color: selected.size > 0 ? (isDark ? "#9198A8" : "#555") : (isDark ? "#3A3F4A" : "#bbb"), fontSize: 12, fontWeight: 600, cursor: selected.size > 0 ? "pointer" : "default", fontFamily: "inherit" }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
@@ -213,7 +243,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid #E8E8E8", background: "#FAFAFA" }}>
+            <tr style={{ borderBottom: `1px solid ${bdr2}`, background: bg3 }}>
               <th style={{ ...th, width: 40 }}>
                 <input type="checkbox"
                   checked={paged.length > 0 && paged.every(i => selected.has(i.id))}
@@ -230,33 +260,33 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} style={{ textAlign: "center", padding: "52px", color: "#ccc" }}>불러오는 중...</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: "center", padding: "52px", color: emptyClr }}>불러오는 중...</td></tr>
             )}
             {!loading && paged.length === 0 && (
-              <tr><td colSpan={7} style={{ textAlign: "center", padding: "52px", color: "#ccc" }}>등록된 문의가 없습니다.</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: "center", padding: "52px", color: emptyClr }}>등록된 문의가 없습니다.</td></tr>
             )}
             {paged.map(item => (
               <tr
                 key={item.id}
-                style={{ borderBottom: "1px solid #F0F0F0", cursor: "pointer", transition: "background .1s" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#FAFAFA")}
+                style={{ borderBottom: `1px solid ${bdr2}`, cursor: "pointer", transition: "background .1s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = bg3)}
                 onMouseLeave={e => (e.currentTarget.style.background = "")}
               >
                 <td style={{ ...td, textAlign: "center" }} onClick={e => e.stopPropagation()}>
                   <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleOne(item.id)} />
                 </td>
-                <td style={{ ...td, textAlign: "center", color: "#999" }} onClick={() => openDetail(item.id)}>{item.id}</td>
+                <td style={{ ...td, textAlign: "center", color: txtDim }} onClick={() => openDetail(item.id)}>{item.id}</td>
                 <td style={{ ...td, textAlign: "center" }} onClick={() => openDetail(item.id)}>
-                  <span style={{ ...badge, ...catColor(item.category) }}>{item.category}</span>
+                  <span style={{ ...badge, ...catColor(item.category, isDark) }}>{item.category}</span>
                 </td>
-                <td style={{ ...td, color: "#2C2C2C", fontWeight: 500, textAlign: "left" }} onClick={() => openDetail(item.id)}>
+                <td style={{ ...td, color: txtP, fontWeight: 500, textAlign: "left" }} onClick={() => openDetail(item.id)}>
                   {item.is_secret && !isAdmin && item.author !== currentUser
-                    ? <span style={{ color: "#bbb" }}>🔒 비밀글입니다.</span>
+                    ? <span style={{ color: emptyClr }}>🔒 비밀글입니다.</span>
                     : item.title}
                 </td>
-                <td style={{ ...td, textAlign: "center", color: "#666" }} onClick={() => openDetail(item.id)}>{item.author}</td>
-                <td style={{ ...td, textAlign: "center", color: "#999", fontSize: 12 }} onClick={() => openDetail(item.id)}>{item.created_at}</td>
-                <td style={{ ...td, textAlign: "center", color: item.status === "답변완료" ? "#888" : "#BBB", fontSize: 12 }} onClick={() => openDetail(item.id)}>
+                <td style={{ ...td, textAlign: "center", color: txtS }} onClick={() => openDetail(item.id)}>{item.author}</td>
+                <td style={{ ...td, textAlign: "center", color: txtDim, fontSize: 12 }} onClick={() => openDetail(item.id)}>{item.created_at}</td>
+                <td style={{ ...td, textAlign: "center", color: item.status === "답변완료" ? txtS : emptyClr, fontSize: 12 }} onClick={() => openDetail(item.id)}>
                   {item.status}
                 </td>
               </tr>
@@ -283,8 +313,8 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     <div className="wrap">
       <Toast />
       <div className="card">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, paddingBottom: 14, borderBottom: "1px solid #EBEBEB" }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#2C2C2C" }}>게시글 작성</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid ${bdr2}` }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: txtP }}>게시글 작성</span>
           <button onClick={() => setView("list")} style={backBtn}>← 목록으로</button>
         </div>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -302,11 +332,11 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
             <label style={lbl}>내용</label>
             <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} placeholder="문의 내용을 상세히 입력해주세요." required rows={9} style={{ ...inp, resize: "vertical", lineHeight: 1.7 }} />
           </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#666", cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: txtS, cursor: "pointer" }}>
             <input type="checkbox" checked={form.is_secret} onChange={e => setForm(p => ({ ...p, is_secret: e.target.checked }))} />
             비밀글로 등록
           </label>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 8, borderTop: "1px solid #F0F0F0" }}>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 8, borderTop: `1px solid ${bdr2}` }}>
             <button type="button" onClick={() => setView("list")} style={cancelBtn}>취소</button>
             <button type="submit" disabled={submitting} style={{ ...submitBtn, opacity: submitting ? 0.7 : 1 }}>{submitting ? "등록 중..." : "등록"}</button>
           </div>
@@ -321,16 +351,16 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
       <div className="wrap">
         <Toast />
         <div className="card">
-          <div style={{ borderBottom: "1px solid #EBEBEB", paddingBottom: 14, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#2C2C2C" }}>문의 수정</span>
+          <div style={{ borderBottom: `1px solid ${bdr2}`, paddingBottom: 14, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: txtP }}>문의 수정</span>
             <button onClick={() => setView("detail")} style={backBtn}>← 취소</button>
           </div>
           <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", gap: 10 }}>
-              <select className="fsel" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={{ fontSize: 13, padding: "6px 28px 6px 10px" }}>
+              <select className="fsel" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={{ fontSize: 13, padding: "6px 28px 6px 10px", background: bg2, color: txtP, border: `1px solid ${bdr}`, borderRadius: 6, fontFamily: "inherit" }}>
                 {INQUIRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#666", cursor: "pointer" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: txtS, cursor: "pointer" }}>
                 <input type="checkbox" checked={form.is_secret} onChange={e => setForm(p => ({ ...p, is_secret: e.target.checked }))} />
                 비밀글
               </label>
@@ -355,15 +385,15 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
       <div className="wrap">
         <Toast />
         <div className="card">
-          <div style={{ borderBottom: "1px solid #EBEBEB", paddingBottom: 14, marginBottom: 20 }}>
+          <div style={{ borderBottom: `1px solid ${bdr2}`, paddingBottom: 14, marginBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: "#2C2C2C", lineHeight: 1.4 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: txtP, lineHeight: 1.4 }}>
                   {detail.is_secret && <span style={{ fontSize: 13, marginRight: 5 }}>🔒</span>}
                   {detail.title}
                 </span>
-                <span style={{ ...badge, ...catColor(detail.category) }}>{detail.category}</span>
-                <span style={{ ...badge, background: "#EFEFEF", color: "#444" }}>{detail.status}</span>
+                <span style={{ ...badge, ...catColor(detail.category, isDark) }}>{detail.category}</span>
+                <span style={{ ...badge, background: isDark ? "#252830" : "#EFEFEF", color: isDark ? "#9198A8" : "#444" }}>{detail.status}</span>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {(() => {
@@ -372,7 +402,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                   if (!nav || !onNavigate) return null;
                   return (
                     <button
-                      style={{ ...cancelBtn, background: "#FFF8F3", color: "#E87722", borderColor: "#F5C8A0" }}
+                      style={{ ...cancelBtn, background: isDark ? "#1E1812" : "#FFF8F3", color: "#E87722", borderColor: isDark ? "#5C3A1A" : "#F5C8A0" }}
                       onClick={() => {
                         triggerComment({
                           page: parsed.page!, label: parsed.label ?? "", value: parsed.value, sub: parsed.sub,
@@ -389,17 +419,17 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                 })()}
                 <button onClick={() => setView("list")} style={backBtn}>목록으로</button>
                 {canEdit && <button onClick={() => { setForm({ category: detail.category, title: detail.title, content: detail.content, is_secret: detail.is_secret }); setView("edit"); }} style={cancelBtn}>수정</button>}
-                {canEdit && <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: "#FCCAC7" }}>삭제</button>}
+                {canEdit && <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: isDark ? "#7F1D1D" : "#FCCAC7" }}>삭제</button>}
               </div>
             </div>
-            <div style={{ fontSize: 12, color: "#aaa", display: "flex", gap: 20 }}>
-              <span>작성자: <strong style={{ color: "#666" }}>{detail.author}</strong></span>
+            <div style={{ fontSize: 12, color: txtD, display: "flex", gap: 20 }}>
+              <span>작성자: <strong style={{ color: txtS }}>{detail.author}</strong></span>
               <span>작성일: {detail.created_at}</span>
             </div>
           </div>
           {!canView
-            ? <p style={{ color: "#ccc", textAlign: "center", padding: "40px 0" }}>비밀글입니다.</p>
-            : <p style={{ fontSize: 13, color: "#333", lineHeight: 1.9, whiteSpace: "pre-wrap", minHeight: 120 }}>{detail.content}</p>
+            ? <p style={{ color: emptyClr, textAlign: "center", padding: "40px 0" }}>비밀글입니다.</p>
+            : <p style={{ fontSize: 13, color: isDark ? "#C4C9D4" : "#333", lineHeight: 1.9, whiteSpace: "pre-wrap", minHeight: 120 }}>{detail.content}</p>
           }
         </div>
         {canView && (
@@ -407,13 +437,13 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
             <p style={{ fontSize: 13, fontWeight: 700, color: "#E87722", marginBottom: 14 }}>관리자 답변</p>
             {detail.reply
               ? <>
-                  <p style={{ fontSize: 13, color: "#333", lineHeight: 1.9, whiteSpace: "pre-wrap" }}>{detail.reply}</p>
-                  <p style={{ fontSize: 11, color: "#bbb", marginTop: 10, textAlign: "right" }}>답변일: {detail.reply_at}</p>
+                  <p style={{ fontSize: 13, color: isDark ? "#C4C9D4" : "#333", lineHeight: 1.9, whiteSpace: "pre-wrap" }}>{detail.reply}</p>
+                  <p style={{ fontSize: 11, color: txtD, marginTop: 10, textAlign: "right" }}>답변일: {detail.reply_at}</p>
                 </>
-              : <p style={{ fontSize: 12, color: "#ccc" }}>아직 답변이 등록되지 않았습니다.</p>
+              : <p style={{ fontSize: 12, color: emptyClr }}>아직 답변이 등록되지 않았습니다.</p>
             }
             {isAdmin && (
-              <div style={{ marginTop: 16, borderTop: "1px solid #F0F0F0", paddingTop: 16 }}>
+              <div style={{ marginTop: 16, borderTop: `1px solid ${bdr2}`, paddingTop: 16 }}>
                 <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="답변 내용을 입력하세요" rows={4} style={{ ...inp, resize: "vertical", marginBottom: 10 }} />
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={handleReply} disabled={submitting} style={{ ...submitBtn, opacity: submitting ? 0.7 : 1 }}>{submitting ? "등록 중..." : "답변 등록"}</button>
@@ -431,23 +461,9 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
 
 // ── 스타일 상수 ───────────────────────────────────────────────
 const badge: React.CSSProperties = { display: "inline-block", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" };
-const catColor = (cat: string): React.CSSProperties => {
-  if (cat === "Comment")    return { background: "rgba(232,119,34,0.12)", color: "#E87722" };
-  if (cat === "조회 오류")  return { background: "#FDECEA", color: "#EF4444" };
-  if (cat === "데이터 오류") return { background: "#F3EEFF", color: "#8B5CF6" };
-  return { background: "#F5F5F5", color: "#888" };
+const catColor = (cat: string, isDark: boolean): React.CSSProperties => {
+  if (cat === "Comment")    return { background: isDark ? "rgba(232,119,34,0.15)" : "rgba(232,119,34,0.12)", color: "#E87722" };
+  if (cat === "조회 오류")  return { background: isDark ? "rgba(239,68,68,0.15)" : "#FDECEA", color: "#EF4444" };
+  if (cat === "데이터 오류") return { background: isDark ? "rgba(139,92,246,0.15)" : "#F3EEFF", color: "#8B5CF6" };
+  return { background: isDark ? "#252830" : "#F5F5F5", color: isDark ? "#9198A8" : "#888" };
 };
-const th: React.CSSProperties = { padding: "10px 12px", fontWeight: 600, fontSize: 12, color: "#555", textAlign: "center" as const, whiteSpace: "nowrap", background: "#FAFAFA" };
-const td: React.CSSProperties = { padding: "11px 12px", whiteSpace: "nowrap" };
-const cardS: React.CSSProperties = { background: "#fff", borderRadius: 10, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)" };
-const lbl: React.CSSProperties = { display: "block", fontSize: 11, fontWeight: 600, color: "#999", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.4px" };
-const inp: React.CSSProperties = { width: "100%", border: "1px solid #E0E0E0", borderRadius: 6, padding: "8px 12px", fontSize: 13, fontFamily: "inherit", color: "#2C2C2C", outline: "none", boxSizing: "border-box" };
-const backBtn: React.CSSProperties = { padding: "5px 14px", border: "1px solid #E0E0E0", borderRadius: 6, background: "#fff", color: "#888", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
-const cancelBtn: React.CSSProperties = { padding: "7px 18px", background: "#fff", color: "#888", border: "1px solid #E0E0E0", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
-const submitBtn: React.CSSProperties = { padding: "7px 22px", background: "#E87722", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
-const pgBtn = (active: boolean): React.CSSProperties => ({
-  width: 32, height: 32, border: active ? "none" : "1px solid #E8E8E8", borderRadius: 6,
-  background: active ? "#E87722" : "#fff", color: active ? "#fff" : "#555",
-  fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer", fontFamily: "inherit",
-  display: "flex", alignItems: "center", justifyContent: "center",
-});
