@@ -210,13 +210,18 @@ export default function ChatBot() {
       )}
 
       {/* ── 플로팅 버튼 ── */}
-      <button
-        className="chatbot-fab"
-        onClick={() => setOpen(p => !p)}
-        title="AI 어시스턴트"
-      >
-        <AccountantPixel />
-      </button>
+      <div className="chatbot-fab-wrap">
+        <div className="chatbot-speech">
+          안녕하세요?<br/>삼일회계법인 김삼일입니다.
+        </div>
+        <button
+          className="chatbot-fab"
+          onClick={() => setOpen(p => !p)}
+          title="AI 어시스턴트"
+        >
+          <AccountantPixel />
+        </button>
+      </div>
     </>
   );
 }
