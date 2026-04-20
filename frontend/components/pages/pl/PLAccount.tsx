@@ -32,7 +32,14 @@ const DONUT_COLORS = [
 ];
 
 // ── 상위 거래처 당기 비중 (ECharts 도넛) ────────────────────────
-function TopCounterpartyPie({ data, isDark = false }: { data: Detail["counterparty"]; isDark?: boolean }) {
+function TopCounterpartyPie({
+  data, isDark = false, selectedCp = null, onCpClick,
+}: {
+  data: Detail["counterparty"];
+  isDark?: boolean;
+  selectedCp?: string | null;
+  onCpClick?: (name: string | null) => void;
+}) {
   const fmtB = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
   const tooltipBg  = isDark ? "#1C1F26" : "#fff";
   const tooltipBdr = isDark ? "#2E3039" : "#eee";
@@ -59,6 +66,7 @@ function TopCounterpartyPie({ data, isDark = false }: { data: Detail["counterpar
     series: [{
       name: "당기 비중",
       type: "pie",
+      selectedMode: "single",
       radius: ["38%", "68%"],
       center: ["50%", "55%"],
       avoidLabelOverlap: false,
@@ -73,19 +81,32 @@ function TopCounterpartyPie({ data, isDark = false }: { data: Detail["counterpar
           formatter: (p: { name: string; percent: number }) =>
             `${p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name}\n${p.percent.toFixed(1)}%`,
         },
-        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.18)" },
+        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.28)" },
       },
       labelLine: { show: false },
       data: data.map((d, i) => ({
         value: Math.abs(d.cur),
         name: d.name,
-        itemStyle: { color: DONUT_COLORS[i % DONUT_COLORS.length] },
+        selected: d.name === selectedCp,
+        itemStyle: {
+          color: DONUT_COLORS[i % DONUT_COLORS.length],
+          opacity: selectedCp && d.name !== selectedCp ? 0.35 : 1,
+        },
       })),
     }],
   };
 
   return (
-    <ReactECharts option={option} style={{ width: "100%", height: 380 }} notMerge />
+    <ReactECharts
+      option={option}
+      style={{ width: "100%", height: 380 }}
+      notMerge
+      onEvents={{
+        click: (params: { name: string }) => {
+          onCpClick?.(params.name === selectedCp ? null : params.name);
+        },
+      }}
+    />
   );
 }
 
@@ -139,12 +160,13 @@ export default function PLAccount() {
   const filter  = useFilter();
   const { triggerComment } = useComment();
   const ck = useCommentedItems(state => state.ck);
-  const [rows,     setRows]     = useState<AcctRow[] | null>(null);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [selected, setSelected] = useState<string | null>(null);
-  const [detail,   setDetail]   = useState<Detail | null>(null);
-  const [loadingD, setLoadingD] = useState(false);
-  const [leftH,    setLeftH]    = useState<number | undefined>(undefined);
+  const [rows,       setRows]       = useState<AcctRow[] | null>(null);
+  const [expanded,   setExpanded]   = useState<Record<string, boolean>>({});
+  const [selected,   setSelected]   = useState<string | null>(null);
+  const [detail,     setDetail]     = useState<Detail | null>(null);
+  const [loadingD,   setLoadingD]   = useState(false);
+  const [leftH,      setLeftH]      = useState<number | undefined>(undefined);
+  const [selectedCp, setSelectedCp] = useState<string | null>(null);
   const leftRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -161,6 +183,7 @@ export default function PLAccount() {
   }, [filter.baseYm, filter.periodType]);
 
   useEffect(() => {
+    setSelectedCp(null);
     if (!selected) { setDetail(null); return; }
     setLoadingD(true);
     fetchPLAccountDetail(filter, selected)
@@ -319,18 +342,37 @@ export default function PLAccount() {
               <>
                 {/* 요약카드 */}
                 <div className="card">
-                  <div className="card-title" style={{ marginBottom: 12 }}>
-                    {detail.mgmt_acct}
-                    <span style={{ fontSize: 11, fontWeight: 400, color: isDark ? "#9198A8" : "#aaa", marginLeft: 6 }}>{periodLabel}</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div>
+                      <span className="card-title" style={{ marginBottom: 0 }}>
+                        {selectedCp ? selectedCp : detail.mgmt_acct}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 400, color: isDark ? "#9198A8" : "#aaa", marginLeft: 6 }}>{periodLabel}</span>
+                      {selectedCp && (
+                        <span style={{ marginLeft: 8, fontSize: 10, color: "#E87722", background: "rgba(232,119,34,0.1)", padding: "2px 8px", borderRadius: 10 }}>
+                          거래처 선택됨
+                        </span>
+                      )}
+                    </div>
+                    {selectedCp && (
+                      <button
+                        onClick={() => setSelectedCp(null)}
+                        style={{ fontSize: 10, color: btnClr, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}
+                      >선택 해제</button>
+                    )}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
                     {(() => {
-                      const selChgPct = selPri !== 0 ? selChg / Math.abs(selPri) * 100 : 0;
+                      const cpData = selectedCp ? detail.counterparty.find(c => c.name === selectedCp) : null;
+                      const kCur = cpData ? cpData.cur : selCur;
+                      const kPri = cpData ? cpData.pri : selPri;
+                      const kChg = kCur - kPri;
+                      const kChgPct = kPri !== 0 ? kChg / Math.abs(kPri) * 100 : 0;
                       return [
-                        { label: "당기금액", display: `${Math.abs(Math.round(selCur)).toLocaleString("ko-KR")}`, color: kpiValClr },
-                        { label: "전기금액", display: `${Math.abs(Math.round(selPri)).toLocaleString("ko-KR")}`, color: kpiValClr },
-                        { label: "증감액",   display: `${selChg < 0 ? "-" : ""}${Math.abs(Math.round(selChg)).toLocaleString("ko-KR")}`, color: selChg >= 0 ? "#EF4444" : "#2563EB" },
-                        { label: "증감률",   display: `${selChgPct >= 0 ? "▲" : "▼"}${Math.abs(selChgPct).toFixed(1)}%`, color: selChgPct >= 0 ? "#EF4444" : "#2563EB" },
+                        { label: "당기금액", display: `${Math.abs(Math.round(kCur)).toLocaleString("ko-KR")}`, color: kpiValClr },
+                        { label: "전기금액", display: `${Math.abs(Math.round(kPri)).toLocaleString("ko-KR")}`, color: kpiValClr },
+                        { label: "증감액",   display: `${kChg < 0 ? "-" : ""}${Math.abs(Math.round(kChg)).toLocaleString("ko-KR")}`, color: kChg >= 0 ? "#EF4444" : "#2563EB" },
+                        { label: "증감률",   display: `${kChgPct >= 0 ? "▲" : "▼"}${Math.abs(kChgPct).toFixed(1)}%`, color: kChgPct >= 0 ? "#EF4444" : "#2563EB" },
                       ].map(({ label, display, color }) => (
                         <div key={label} style={{ background: kpiCardBg, borderRadius: 6, padding: "10px 14px", textAlign: "center" }}>
                           <div style={{ fontSize: 10, color: kpiLabelClr, marginBottom: 4 }}>{label}</div>
@@ -349,7 +391,12 @@ export default function PLAccount() {
                     <div className="card-title">상위 거래처 당기 비중</div>
                     {detail.counterparty.length === 0
                       ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 120, color: isDark ? "#9198A8" : "#bbb", fontSize: 13 }}>거래처 없음</div>
-                      : <TopCounterpartyPie data={detail.counterparty} isDark={isDark} />}
+                      : <TopCounterpartyPie
+                          data={detail.counterparty}
+                          isDark={isDark}
+                          selectedCp={selectedCp}
+                          onCpClick={setSelectedCp}
+                        />}
                   </div>
                   <div className="card">
                     <div className="card-title">거래처별 당기/전기</div>
@@ -363,7 +410,12 @@ export default function PLAccount() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, minHeight: 0 }}>
                   {/* 당기 전표 내역 */}
                   <div className="card" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                    <div className="card-title">당기 전표 내역</div>
+                    <div className="card-title" style={{ marginBottom: 8 }}>
+                      당기 전표 내역
+                      {selectedCp && (
+                        <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: "#E87722" }}>— {selectedCp}</span>
+                      )}
+                    </div>
                     <div className="tbl-wrap" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
                       <table>
                         <thead>
@@ -375,43 +427,51 @@ export default function PLAccount() {
                             <th style={{ textAlign: "center" }}>금액</th>
                           </tr>
                         </thead>
-                        <tbody>
-                          {detail.cur_vouchers.length === 0 && (
-                            <tr><td colSpan={5} style={{ textAlign: "center", color: isDark ? "#5A6070" : "#bbb", padding: 16 }}>내역 없음</td></tr>
-                          )}
-                          {detail.cur_vouchers.map((v, i) => (
-                            <tr
-                              key={i}
-                              style={{ cursor: "pointer" }}
-                              onClick={(e) => {
-                                const r = e.currentTarget.getBoundingClientRect();
-                                triggerComment(
-                                  {
-                                    page: "PL 계정분석",
-                                    label: v.counterparty ?? v.description ?? "-",
-                                    value: `일자: ${v.date} | 전표번호: ${v.voucher_no} | 거래처: ${v.counterparty ?? "-"} | 적요: ${v.description ?? "-"} | 금액: ${fmt(v.amount)}`,
-                                    sub: detail.mgmt_acct,
-                                  },
-                                  { top: r.top, right: r.right }
-                                );
-                              }}
-                            >
-                              <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
-                              <td style={{ textAlign: "center" }}>{v.voucher_no}</td>
-                              <td style={{ textAlign: "left" }}>{v.counterparty ?? "-"}</td>
-                              <td style={{ textAlign: "left", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
-                              <td>{fmt(v.amount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        {detail.cur_vouchers.length > 0 && (
-                          <tfoot>
-                            <tr className="tr-sum">
-                              <td colSpan={4}>합계</td>
-                              <td>{fmt(detail.cur_vouchers.reduce((s, v) => s + v.amount, 0))}</td>
-                            </tr>
-                          </tfoot>
-                        )}
+                        {(() => {
+                          const vouchers = selectedCp
+                            ? detail.cur_vouchers.filter(v => v.counterparty === selectedCp)
+                            : detail.cur_vouchers;
+                          return (
+                            <>
+                              <tbody>
+                                {vouchers.length === 0
+                                  ? <tr><td colSpan={5} style={{ textAlign: "center", color: isDark ? "#5A6070" : "#bbb", padding: 16 }}>내역 없음</td></tr>
+                                  : vouchers.map((v, i) => (
+                                    <tr
+                                      key={i}
+                                      style={{ cursor: "pointer" }}
+                                      onClick={(e) => {
+                                        const r = e.currentTarget.getBoundingClientRect();
+                                        triggerComment(
+                                          {
+                                            page: "PL 계정분석",
+                                            label: v.counterparty ?? v.description ?? "-",
+                                            value: `일자: ${v.date} | 전표번호: ${v.voucher_no} | 거래처: ${v.counterparty ?? "-"} | 적요: ${v.description ?? "-"} | 금액: ${fmt(v.amount)}`,
+                                            sub: detail.mgmt_acct,
+                                          },
+                                          { top: r.top, right: r.right }
+                                        );
+                                      }}
+                                    >
+                                      <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
+                                      <td style={{ textAlign: "center" }}>{v.voucher_no}</td>
+                                      <td style={{ textAlign: "left" }}>{v.counterparty ?? "-"}</td>
+                                      <td style={{ textAlign: "left", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.description ?? "-"}</td>
+                                      <td>{fmt(v.amount)}</td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                              {vouchers.length > 0 && (
+                                <tfoot>
+                                  <tr className="tr-sum">
+                                    <td colSpan={4}>합계</td>
+                                    <td>{fmt(vouchers.reduce((s, v) => s + v.amount, 0))}</td>
+                                  </tr>
+                                </tfoot>
+                              )}
+                            </>
+                          );
+                        })()}
                       </table>
                     </div>
                   </div>
