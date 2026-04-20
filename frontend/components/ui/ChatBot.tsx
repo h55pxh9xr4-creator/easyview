@@ -216,7 +216,7 @@ export default function ChatBot() {
           onClick={() => setOpen(p => !p)}
           title="AI 어시스턴트"
         >
-          <img src="/samilkim_nobg.png" alt="김삼일" style={{ width: 64, height: 64, objectFit: "contain" }} />
+          <img src="/samilkim_nobg.svg" alt="김삼일" style={{ width: 64, height: 64, objectFit: "contain" }} />
         </button>
       </div>
     </>
