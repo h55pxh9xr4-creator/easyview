@@ -10,6 +10,7 @@ import CommentPanel from "@/components/layout/CommentPanel";
 import ChatBot from "@/components/ui/ChatBot";
 import LoginPage from "@/components/layout/LoginPage";
 import Inquiry from "@/components/pages/Inquiry";
+import Settings, { applyTheme } from "@/components/pages/Settings";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
@@ -35,6 +36,7 @@ const SC6          = dynamic(() => import("@/components/pages/sc/SC6"),         
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PAGE_MAP: Record<string, React.ComponentType<any>> = {
   summary:        Summary,
+  settings:       Settings,
   inquiry:        Inquiry,
   "pl-sum":       PLSummary,
   "pl-trend":     PLTrend,
@@ -86,6 +88,10 @@ function PageInner() {
     setUser(sessionStorage.getItem("ev_user") ?? "");
 
     if (ok) loadCommentedItems();
+
+    // 저장된 테마 복원
+    const savedTheme = localStorage.getItem("ev_theme") as "light" | "dark" | null;
+    if (savedTheme) applyTheme(savedTheme);
 
     if (ok && tab && sub && label) {
       setActiveTab(tab);
@@ -139,7 +145,7 @@ function PageInner() {
 
   return (
     <>
-      <Header user={user} onLogout={handleLogout} />
+      <Header user={user} onLogout={handleLogout} onSettings={() => handleNavigate("settings", "settings", "설정")} />
       <div className="app-body">
         <Sidebar
           activeTab={activeTab}
