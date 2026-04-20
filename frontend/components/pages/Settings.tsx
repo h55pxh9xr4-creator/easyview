@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 type Tab = "profile" | "theme";
 
@@ -10,12 +11,25 @@ export function applyTheme(t: "light" | "dark") {
 }
 
 export default function Settings() {
+  const isDark = useDarkMode();
+
   const [tab, setTab]           = useState<Tab>("profile");
   const [nickname, setNickname] = useState("");
   const [avatar, setAvatar]     = useState<string | null>(null);
   const [theme, setTheme]       = useState<"light" | "dark">("light");
   const [saved, setSaved]       = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // ── 다크모드 색상 ──────────────────────────────────────────
+  const bg2    = isDark ? "#1C1F26" : "#fff";
+  const bdr    = isDark ? "#2E3039" : "#EDEDED";
+  const bdr2   = isDark ? "#2E3039" : "#F0F0F0";
+  const txtP   = isDark ? "#E2E5EC" : "#2C2C2C";
+  const txtS   = isDark ? "#9198A8" : "#666";
+  const txtD   = isDark ? "#5A6070" : "#aaa";
+  const inputBg = isDark ? "#252830" : "#fff";
+  const avatarBg = isDark ? "#252830" : "#F5F5F5";
+  const tabActiveBg = isDark ? "#2A1F14" : "#FFF5EE";
 
   useEffect(() => {
     setNickname(localStorage.getItem("ev_nickname") || sessionStorage.getItem("ev_user") || "");
@@ -51,7 +65,7 @@ export default function Settings() {
 
   return (
     <div style={{ padding: "32px 28px", maxWidth: 820, margin: "0 auto" }}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary, #2C2C2C)", marginBottom: 24, letterSpacing: "-0.3px" }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: txtP, marginBottom: 24, letterSpacing: "-0.3px" }}>
         설정
       </h2>
 
@@ -60,8 +74,8 @@ export default function Settings() {
         {/* ── 사이드 탭 ── */}
         <div style={{
           width: 160, flexShrink: 0,
-          background: "var(--card-bg, #fff)",
-          border: "1px solid var(--border, #EDEDED)",
+          background: bg2,
+          border: `1px solid ${bdr}`,
           borderRadius: 10, padding: 8, gap: 2, display: "flex", flexDirection: "column",
         }}>
           {TABS.map(({ key, label, icon }) => (
@@ -69,8 +83,8 @@ export default function Settings() {
               display: "flex", alignItems: "center", gap: 10,
               width: "100%", textAlign: "left",
               padding: "10px 14px", border: "none", borderRadius: 7,
-              background: tab === key ? "#FFF5EE" : "transparent",
-              color: tab === key ? "#E87722" : "var(--text-secondary, #666)",
+              background: tab === key ? tabActiveBg : "transparent",
+              color: tab === key ? "#E87722" : txtS,
               fontWeight: tab === key ? 700 : 400, fontSize: 13,
               cursor: "pointer", fontFamily: "inherit", transition: "all .12s",
             }}>
@@ -83,33 +97,33 @@ export default function Settings() {
         {/* ── 콘텐츠 영역 ── */}
         <div style={{
           flex: 1,
-          background: "var(--card-bg, #fff)",
-          border: "1px solid var(--border, #EDEDED)",
+          background: bg2,
+          border: `1px solid ${bdr}`,
           borderRadius: 12, padding: 28,
         }}>
 
           {/* ──────── 정보변경 탭 ──────── */}
           {tab === "profile" && (
             <>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary, #2C2C2C)", marginBottom: 24 }}>정보변경</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: txtP, marginBottom: 24 }}>정보변경</p>
 
               {/* 프로필 사진 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 28, paddingBottom: 24, borderBottom: "1px solid var(--border, #F0F0F0)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 28, paddingBottom: 24, borderBottom: `1px solid ${bdr2}` }}>
                 <div style={{
                   width: 80, height: 80, borderRadius: "50%",
-                  background: "var(--input-bg, #F5F5F5)", border: "2px solid var(--border, #E0E0E0)",
+                  background: avatarBg, border: `2px solid ${bdr}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   overflow: "hidden", flexShrink: 0, position: "relative",
                 }}>
                   {avatar
                     ? <img src={avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    : <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={isDark ? "#3A3F4A" : "#ccc"} strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   }
                 </div>
                 <div>
                   <button onClick={() => fileRef.current?.click()} style={{
-                    padding: "7px 16px", border: "1px solid var(--border, #E0E0E0)", borderRadius: 6,
-                    background: "var(--card-bg, #fff)", color: "var(--text-primary, #444)",
+                    padding: "7px 16px", border: `1px solid ${bdr}`, borderRadius: 6,
+                    background: bg2, color: txtP,
                     fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                     display: "block", marginBottom: 6,
                   }}>
@@ -117,22 +131,22 @@ export default function Settings() {
                   </button>
                   {avatar && (
                     <button onClick={() => setAvatar(null)} style={{
-                      padding: "5px 12px", border: "1px solid #FCCAC7", borderRadius: 6,
-                      background: "#FFF5F5", color: "#EF4444",
+                      padding: "5px 12px", border: `1px solid ${isDark ? "#7F1D1D" : "#FCCAC7"}`, borderRadius: 6,
+                      background: isDark ? "rgba(239,68,68,0.1)" : "#FFF5F5", color: "#EF4444",
                       fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                       display: "block", marginBottom: 6,
                     }}>
                       사진 삭제
                     </button>
                   )}
-                  <p style={{ fontSize: 11, color: "#aaa" }}>JPG, PNG · 최대 2MB</p>
+                  <p style={{ fontSize: 11, color: txtD }}>JPG, PNG · 최대 2MB</p>
                   <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatar} />
                 </div>
               </div>
 
               {/* 닉네임 */}
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#999", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: txtD, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.4px" }}>
                   닉네임
                 </label>
                 <input
@@ -140,15 +154,15 @@ export default function Settings() {
                   onChange={e => setNickname(e.target.value)}
                   placeholder="닉네임을 입력하세요"
                   style={{
-                    width: "100%", border: "1px solid var(--border, #E0E0E0)", borderRadius: 6,
+                    width: "100%", border: `1px solid ${bdr}`, borderRadius: 6,
                     padding: "9px 12px", fontSize: 13, fontFamily: "inherit",
-                    color: "var(--text-primary, #2C2C2C)", outline: "none",
-                    boxSizing: "border-box", background: "var(--input-bg, #fff)",
+                    color: txtP, outline: "none",
+                    boxSizing: "border-box", background: inputBg,
                   }}
                   onFocus={e => e.target.style.borderColor = "#E87722"}
-                  onBlur={e => e.target.style.borderColor = "var(--border, #E0E0E0)"}
+                  onBlur={e => e.target.style.borderColor = bdr}
                 />
-                <p style={{ fontSize: 11, color: "#aaa", marginTop: 5 }}>헤더에 표시되는 이름입니다.</p>
+                <p style={{ fontSize: 11, color: txtD, marginTop: 5 }}>헤더에 표시되는 이름입니다.</p>
               </div>
 
               <button onClick={saveProfile} style={{
@@ -165,13 +179,13 @@ export default function Settings() {
           {/* ──────── 테마변경 탭 ──────── */}
           {tab === "theme" && (
             <>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary, #2C2C2C)", marginBottom: 8 }}>테마변경</p>
-              <p style={{ fontSize: 12, color: "#aaa", marginBottom: 24 }}>선택한 테마는 즉시 적용됩니다.</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: txtP, marginBottom: 8 }}>테마변경</p>
+              <p style={{ fontSize: 12, color: txtD, marginBottom: 24 }}>선택한 테마는 즉시 적용됩니다.</p>
 
               <div style={{ display: "flex", gap: 16 }}>
                 {/* 밝은 테마 */}
                 <button onClick={() => handleTheme("light")} style={{
-                  flex: 1, border: `2px solid ${theme === "light" ? "#E87722" : "#E0E0E0"}`,
+                  flex: 1, border: `2px solid ${theme === "light" ? "#E87722" : bdr}`,
                   borderRadius: 12, padding: 20, cursor: "pointer", background: "#F8F8F8",
                   textAlign: "left", fontFamily: "inherit", transition: "border-color .15s",
                 }}>
@@ -192,7 +206,7 @@ export default function Settings() {
 
                 {/* 어두운 테마 */}
                 <button onClick={() => handleTheme("dark")} style={{
-                  flex: 1, border: `2px solid ${theme === "dark" ? "#E87722" : "#444"}`,
+                  flex: 1, border: `2px solid ${theme === "dark" ? "#E87722" : (isDark ? "#3A3F4A" : "#444")}`,
                   borderRadius: 12, padding: 20, cursor: "pointer", background: "#1A1A2E",
                   textAlign: "left", fontFamily: "inherit", transition: "border-color .15s",
                 }}>

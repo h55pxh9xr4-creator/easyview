@@ -10,7 +10,7 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
   const [months, setMonths] = useState<string[]>([]);
 
   const SC_PAGES = ["sc-dup","sc-cash","sc-wknd","sc-big","sc-sc5","sc-sc6"];
-  const noFilters = SC_PAGES.includes(activeSub) || activeSub === "vch-search" || activeSub === "inquiry";
+  const noFilters = SC_PAGES.includes(activeSub) || activeSub === "vch-search" || activeSub === "inquiry" || activeSub === "settings";
   const showPeriod = !noFilters && !["bs-sum","bs-trend","bs-acct"].includes(activeSub);
   const showCompare = ["summary","pl-sum"].includes(activeSub);
   const showBsBase = ["summary","bs-acct"].includes(activeSub);
