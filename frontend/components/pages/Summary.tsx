@@ -315,7 +315,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">손익항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead style={{ background: theadBg }}><tr style={{ borderBottom: "2px solid #E87722" }}><th style={{ background: theadBg }}>공시용계정</th><th style={{ background: theadBg }}>당기</th><th style={{ background: theadBg }}>전기</th><th style={{ background: theadBg }}>증감률</th></tr></thead>
+              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>공시용계정</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>당기</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>전기</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {plTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
@@ -349,7 +349,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">재무항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead style={{ background: theadBg }}><tr style={{ borderBottom: "2px solid #E87722" }}><th style={{ background: theadBg }}>재무항목</th><th style={{ background: theadBg }}>기말</th><th style={{ background: theadBg }}>기초</th><th style={{ background: theadBg }}>증감률</th></tr></thead>
+              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>재무항목</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기말</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기초</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {bsTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
