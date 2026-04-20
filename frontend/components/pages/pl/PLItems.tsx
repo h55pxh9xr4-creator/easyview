@@ -192,12 +192,10 @@ export default function PLItems() {
                   return (
                     <tr key={ri} style={{
                       borderBottom: isSubtotal ? `1px solid rgba(232,119,34,0.2)` : `1px solid ${bdrRow}`,
-                      background: isHighlighted(row.label) ? "rgba(232,119,34,0.08)" : rowBg,
-                      outline: isHighlighted(row.label) ? "2px solid rgba(232,119,34,0.4)" : "none",
-                      transition: "background 0.25s, outline 0.25s",
-                      cursor: "pointer",
-                    }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "손익항목", label: row.label, value: fmt(row.values[row.values.length - 1]) }, { top: r.top, right: r.right }); }}>
-                      {/* 계정명 셀 */}
+                      background: rowBg,
+                      transition: "background 0.25s",
+                    }}>
+                      {/* 계정명 셀 — 클릭 없음 */}
                       <td style={{
                         padding: isMgmt ? "5px 16px 5px 32px" : isSubtotal ? "8px 16px" : "6px 16px",
                         position: "sticky", left: 0, zIndex: 1,
@@ -209,30 +207,45 @@ export default function PLItems() {
                       }}>
                         {isMgmt && <span style={{ color: arrowClr, marginRight: 6, fontSize: 10 }}>└</span>}
                         {row.label}
-                        {ck.has(commentKey("손익항목", row.label)) && (
-                          <CommentDot inquiryId={ck.get(commentKey("손익항목", row.label))!} inline />
-                        )}
                       </td>
 
-                      {/* 값 셀 */}
+                      {/* 값 셀 — 각 셀 개별 클릭 → comment */}
                       {row.values.map((v, ci) => {
+                        const colLabel = data.columns[ci] ?? "";
+                        const cellKey  = commentKey("손익항목", `${row.label} (${colLabel})`);
+                        const hasCmt   = ck.has(cellKey);
                         const valColor = isSubtotal
                           ? ORANGE
                           : isDisclosure
                             ? discClr
                             : v < 0 ? negClr : v === 0 ? zeroClr : posClr;
                         return (
-                          <td key={ci} style={{
-                            textAlign: "right",
-                            fontSize: 12,
-                            padding: "5px 12px",
-                            color: valColor,
-                            fontWeight: isSubtotal ? 700 : isDisclosure ? 600 : 400,
-                            borderRight: isLastInGroup(ci) ? `1px solid ${bdrStrong}` : `1px solid ${bdrSoft}`,
-                            background: rowBg,
-                            whiteSpace: "nowrap",
-                          }}>
+                          <td
+                            key={ci}
+                            style={{
+                              textAlign: "right",
+                              fontSize: 12,
+                              padding: "5px 12px",
+                              color: valColor,
+                              fontWeight: isSubtotal ? 700 : isDisclosure ? 600 : 400,
+                              borderRight: isLastInGroup(ci) ? `1px solid ${bdrStrong}` : `1px solid ${bdrSoft}`,
+                              background: hasCmt ? (isDark ? "rgba(232,119,34,0.12)" : "rgba(232,119,34,0.06)") : rowBg,
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              position: "relative",
+                            }}
+                            onClick={(e) => {
+                              const r = e.currentTarget.getBoundingClientRect();
+                              triggerComment(
+                                { page: "손익항목", label: `${row.label} (${colLabel})`, value: fmt(v) },
+                                { top: r.top, right: r.right }
+                              );
+                            }}
+                          >
                             {fmt(v)}
+                            {hasCmt && (
+                              <CommentDot inquiryId={ck.get(cellKey)!} inline />
+                            )}
                           </td>
                         );
                       })}
