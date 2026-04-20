@@ -8,18 +8,7 @@ import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
 import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
-
-function useDarkMode() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const check = () => setDark(document.documentElement.getAttribute("data-theme") === "dark");
-    check();
-    const obs = new MutationObserver(check);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => obs.disconnect();
-  }, []);
-  return dark;
-}
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 const fmtM  = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmt   = (n: number) => Math.round(n).toLocaleString("ko-KR");
