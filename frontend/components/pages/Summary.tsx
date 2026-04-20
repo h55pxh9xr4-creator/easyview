@@ -6,6 +6,7 @@ import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
+import { useDarkMode } from "@/hooks/useDarkMode";
 import {
   fetchKPI, fetchTop3, fetchIndicators,
   fetchPLTable, fetchBSTable, fetchScenarioCount, fetchPLTrend, fetchBSTrend,
@@ -95,9 +96,11 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
 }
 
 export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
+  const isDark = useDarkMode();
   const filter = useFilter();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const theadBg = isDark ? "#1C1F26" : "#FFF8F3";
   const lift = (label: string): React.CSSProperties => {
     const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "Summary" && cmtTarget.label === label;
     return on
@@ -312,7 +315,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">손익항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead><tr><th>공시용계정</th><th>당기</th><th>전기</th><th>증감률</th></tr></thead>
+              <thead style={{ background: theadBg }}><tr><th style={{ background: theadBg }}>공시용계정</th><th style={{ background: theadBg }}>당기</th><th style={{ background: theadBg }}>전기</th><th style={{ background: theadBg }}>증감률</th></tr></thead>
               <tbody>
                 {plTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
@@ -346,7 +349,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">재무항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead><tr><th>재무항목</th><th>기말</th><th>기초</th><th>증감률</th></tr></thead>
+              <thead style={{ background: theadBg }}><tr><th style={{ background: theadBg }}>재무항목</th><th style={{ background: theadBg }}>기말</th><th style={{ background: theadBg }}>기초</th><th style={{ background: theadBg }}>증감률</th></tr></thead>
               <tbody>
                 {bsTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
