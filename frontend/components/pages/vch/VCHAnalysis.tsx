@@ -3,6 +3,7 @@
 import Loading from "@/components/ui/Loading";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
+import { useDarkMode } from "@/hooks/useDarkMode";
 import {
   fetchVCHDisclosureAccts, fetchVCHKpi, fetchVCHDaily,
   fetchVCHAccountBar, fetchVCHTopCounterparty, fetchVCHVouchers,
@@ -42,18 +43,17 @@ interface Cp      { name: string; cnt: number; pct: number }
 const PAGE = "전표분석내역";
 
 export default function VCHAnalysis() {
+  const isDark = useDarkMode();
   const filter = useFilter();
   const { triggerComment } = useComment();
   const ck = useCommentedItems(state => state.ck);
 
-  // ── 계정 필터 ─────────────────────────────────────────────────
   const [acctList,   setAcctList]   = useState<string[]>([]);
   const [selected,   setSelected]   = useState<Set<string>>(new Set());
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef   = useRef<HTMLDivElement>(null);
   const vchTableRef = useRef<HTMLDivElement>(null);
 
-  // ── 선택 상태 (cross-filter) ──────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedAcct, setSelectedAcct] = useState<string | null>(null);
   const [selectedCp,   setSelectedCp]   = useState<string | null>(null);
@@ -64,11 +64,9 @@ export default function VCHAnalysis() {
     if (row) row.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selectedCp]);
 
-  // ── 슬라이더 범위 ────────────────────────────────────────────
   const [rangeStart, setRangeStart] = useState(0);
   const [rangeEnd,   setRangeEnd]   = useState(0);
 
-  // ── 데이터 상태 ────────────────────────────────────────────────
   const [kpi,     setKpi]     = useState<Kpi | null>(null);
   const [daily,   setDaily]   = useState<Daily[] | null>(null);
   const [acctBar, setAcctBar] = useState<AcctBar[] | null>(null);
@@ -76,7 +74,6 @@ export default function VCHAnalysis() {
   const [topN,    setTopN]    = useState(10);
   const [vouchers, setVouchers] = useState<{ total: number; items: VCHVoucherItem[] } | null>(null);
 
-  // ── 필터 패널 외부 클릭 닫기 ──────────────────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node))
@@ -86,7 +83,6 @@ export default function VCHAnalysis() {
     return () => document.removeEventListener("mousedown", handler);
   }, [filterOpen]);
 
-  // ── 계정 목록 로드 ────────────────────────────────────────────
   useEffect(() => {
     setSelectedDate(null); setSelectedAcct(null);
     fetchVCHDisclosureAccts(filter).then(list => {
@@ -95,17 +91,12 @@ export default function VCHAnalysis() {
     }).catch(console.error);
   }, [filter.baseYm, filter.periodType]);
 
-  // ── base disc_accts 파라미터 ──────────────────────────────────
   const discParam = selected.size === acctList.length || selected.size === 0
-    ? undefined
-    : Array.from(selected).join(",");
+    ? undefined : Array.from(selected).join(",");
 
-  // ── cross-filter 적용 파라미터 ────────────────────────────────
-  // selectedAcct가 있으면 daily/topCp/vouchers는 해당 계정으로 좁힘
   const effectiveDisc = selectedAcct ?? discParam;
   const effectiveDate = selectedDate ?? undefined;
 
-  // ── 인터랙티브 데이터 로드 ────────────────────────────────────
   useEffect(() => {
     if (acctList.length === 0) return;
     setKpi(null); setDaily(null); setAcctBar(null); setTopCp(null); setVouchers(null);
@@ -128,8 +119,6 @@ export default function VCHAnalysis() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter.baseYm, filter.periodType, discParam, topN, selectedDate, selectedAcct, acctList.length]);
 
-
-  // ── 계정 체크박스 ─────────────────────────────────────────────
   const toggleAcct = (acct: string) => {
     setSelected(prev => { const n = new Set(prev); n.has(acct) ? n.delete(acct) : n.add(acct); return n; });
     setSelectedDate(null); setSelectedAcct(null);
@@ -139,7 +128,6 @@ export default function VCHAnalysis() {
     setSelectedDate(null); setSelectedAcct(null);
   };
 
-  // ── 차트 클릭 핸들러 ──────────────────────────────────────────
   const handleDailyClick = (_evt: unknown, elements: { index: number }[]) => {
     if (!elements.length || !daily) { setSelectedDate(null); return; }
     const date = daily[rangeStart + elements[0].index]?.date;
@@ -153,11 +141,9 @@ export default function VCHAnalysis() {
     setSelectedAcct(prev => prev === acct ? null : acct);
   };
 
-  // ── 슬라이스된 daily ──────────────────────────────────────────
-  const visibleDaily = (daily ?? []).slice(rangeStart, rangeEnd + 1);
+  const visibleDaily  = (daily ?? []).slice(rangeStart, rangeEnd + 1);
   const totalDailyLen = (daily ?? []).length;
 
-  // ── 차트 색상 (선택 하이라이트) ───────────────────────────────
   const dailyColors = visibleDaily.map(d =>
     selectedDate && d.date !== selectedDate ? ORANGE_DIM : ORANGE
   );
@@ -165,13 +151,10 @@ export default function VCHAnalysis() {
     selectedAcct && a.disclosure_acct !== selectedAcct ? ORANGE_DIM : ORANGE
   );
 
-  // ── 도넛 데이터 ───────────────────────────────────────────────
   const treemapData = (topCp ?? [])
     .filter(c => c.name !== "기타")
     .map((c, i) => ({
-      name: c.name,
-      value: c.cnt,
-      pct: c.pct,
+      name: c.name, value: c.cnt, pct: c.pct,
       itemStyle: { color: TREEMAP_COLORS[i % TREEMAP_COLORS.length] },
     }));
 
@@ -184,6 +167,37 @@ export default function VCHAnalysis() {
     return result;
   }, [vouchers]);
 
+  // 다크모드 색상
+  const tickClr      = isDark ? "#9198A8" : "#bbb";
+  const gridClr      = isDark ? "#2E3039" : "#f5f5f5";
+  const acctTickClr  = isDark ? "#C8CCDA" : "#444";
+  const tipBg        = isDark ? "#1C1F26" : "#fff";
+  const tipBdr       = isDark ? "#2E3039" : "#eee";
+  const tipTxt       = isDark ? "#E2E5EC" : "#333";
+  const subTxt       = isDark ? "#9198A8" : "#999";
+  const dimTxt       = isDark ? "#5A6070" : "#aaa";
+  const zeroClr      = isDark ? "#3A3F4A" : "#DDD";
+  const valTxt       = isDark ? "#C8CCDA" : "#666";
+  const kpiCardBg    = isDark ? "#252830" : "#FAFAFA";
+  const kpiValClr    = isDark ? "#E2E5EC" : "#2C2C2C";
+  const sliderTrack  = isDark ? "#2E3039" : "#EEE";
+  const dropBg       = isDark ? "#1C1F26" : "#FFF";
+  const dropBdr      = isDark ? "#2E3039" : "#E0E0E0";
+  const dropHdrBg    = isDark ? "#252830" : "#FAFAFA";
+  const dropRowBg    = isDark ? "#1C1F26" : "#FFF";
+  const dropRowSel   = isDark ? "rgba(232,119,34,0.10)" : "#FFF8F3";
+  const dropDivClr   = isDark ? "#252830" : "#F8F8F8";
+  const theadBg      = isDark ? "#1C1F26" : "#FFF";
+  const tfootBg      = isDark ? "rgba(232,119,34,0.10)" : "#FFF7F0";
+  const btnBdr       = isDark ? "#2E3039" : "#E0E0E0";
+  const handleBg     = isDark ? "#252830" : "#fff";
+  const treemapBdr   = isDark ? "#1C1F26" : "#fff";
+
+  const barTooltipOpts = {
+    backgroundColor: tipBg, borderColor: tipBdr, borderWidth: 1,
+    titleColor: tipTxt, bodyColor: tipTxt,
+  };
+
   return (
     <div className="wrap">
 
@@ -191,15 +205,15 @@ export default function VCHAnalysis() {
       <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 14, marginBottom: 14 }}>
         <div className="card">
           <div className="card-title">전표내역 요약</div>
-          {kpi === null ? <KpiLoading /> : (
+          {kpi === null ? <KpiLoading isDark={isDark} /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { label: "전표수",   value: fmtN(kpi.total_cnt), unit: "건",  color: "#2C2C2C" },
+                { label: "전표수",   value: fmtN(kpi.total_cnt), unit: "건",  color: kpiValClr },
                 { label: "차변합계", value: fmtB(kpi.dr_sum),    unit: "백만", color: BLUE },
                 { label: "대변합계", value: fmtB(kpi.cr_sum),    unit: "백만", color: RED },
               ].map(({ label, value, unit, color }) => (
-                <div key={label} style={{ background: "#FAFAFA", borderRadius: 8, padding: "10px 16px", textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: "#999", marginBottom: 4 }}>{label}</div>
+                <div key={label} style={{ background: kpiCardBg, borderRadius: 8, padding: "10px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: subTxt, marginBottom: 4 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 800, color }}>
                     {value}<span style={{ fontSize: 11, color, marginLeft: 3 }}>{unit}</span>
                   </div>
@@ -212,22 +226,21 @@ export default function VCHAnalysis() {
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 6 }}>
             <div className="card-title" style={{ margin: 0 }}>일자별 전표수</div>
-            {selectedAcct && <span style={{ fontSize: 10, color: "#999" }}>— {selectedAcct}</span>}
-            {/* 선택 배지 */}
+            {selectedAcct && <span style={{ fontSize: 10, color: subTxt }}>— {selectedAcct}</span>}
             {selectedDate && (
-              <span style={{ fontSize: 11, background: "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "2px 8px", fontWeight: 600 }}>
+              <span style={{ fontSize: 11, background: isDark ? "rgba(232,119,34,0.15)" : "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "2px 8px", fontWeight: 600 }}>
                 {selectedDate}
                 <button onClick={() => setSelectedDate(null)} style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", color: ORANGE, fontWeight: 700, fontSize: 11 }}>✕</button>
               </span>
             )}
             {selectedAcct && (
-              <span style={{ fontSize: 11, background: "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "2px 8px", fontWeight: 600 }}>
+              <span style={{ fontSize: 11, background: isDark ? "rgba(232,119,34,0.15)" : "#FFF4EC", color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 12, padding: "2px 8px", fontWeight: 600 }}>
                 {selectedAcct}
                 <button onClick={() => setSelectedAcct(null)} style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", color: ORANGE, fontWeight: 700, fontSize: 11 }}>✕</button>
               </span>
             )}
             <div style={{ flex: 1 }} />
-            {!selectedDate && <span style={{ fontSize: 10, color: "#bbb" }}>막대 클릭 → 날짜 필터</span>}
+            {!selectedDate && <span style={{ fontSize: 10, color: dimTxt }}>막대 클릭 → 날짜 필터</span>}
             {/* 계정 필터 버튼 */}
             <div ref={filterRef} style={{ position: "relative" }}>
               <button
@@ -235,14 +248,14 @@ export default function VCHAnalysis() {
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "4px 10px", fontSize: 11, fontWeight: 600,
-                  background: filterOpen ? ORANGE : "#FFF",
+                  background: filterOpen ? ORANGE : (isDark ? "#1C1F26" : "#FFF"),
                   color: filterOpen ? "#FFF" : ORANGE,
                   border: `1.5px solid ${ORANGE}`, borderRadius: 6, cursor: "pointer",
                 }}
               >
                 ☰ 계정 필터
                 {selected.size < acctList.length && (
-                  <span style={{ background: filterOpen ? "rgba(255,255,255,0.3)" : "#FFF4EC", color: ORANGE, borderRadius: 10, padding: "1px 6px", fontSize: 10 }}>
+                  <span style={{ background: filterOpen ? "rgba(255,255,255,0.3)" : (isDark ? "rgba(232,119,34,0.2)" : "#FFF4EC"), color: ORANGE, borderRadius: 10, padding: "1px 6px", fontSize: 10 }}>
                     {selected.size}/{acctList.length}
                   </span>
                 )}
@@ -250,19 +263,19 @@ export default function VCHAnalysis() {
               {filterOpen && (
                 <div style={{
                   position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100,
-                  background: "#FFF", border: "1px solid #E0E0E0", borderRadius: 8,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                  background: dropBg, border: `1px solid ${dropBdr}`, borderRadius: 8,
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.24)",
                   minWidth: 220, maxHeight: 360, display: "flex", flexDirection: "column",
                 }}>
-                  <div onClick={toggleAll} style={{ padding: "9px 14px", borderBottom: "1px solid #F0F0F0", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: "#FAFAFA", borderRadius: "8px 8px 0 0" }}>
-                    <Checkbox checked={selected.size === acctList.length} />
+                  <div onClick={toggleAll} style={{ padding: "9px 14px", borderBottom: `1px solid ${dropBdr}`, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: dropHdrBg, borderRadius: "8px 8px 0 0", color: tipTxt }}>
+                    <Checkbox checked={selected.size === acctList.length} isDark={isDark} />
                     모두 선택
                   </div>
                   <div style={{ overflowY: "auto", flex: 1 }}>
                     {acctList.map(acct => (
-                      <div key={acct} onClick={() => toggleAcct(acct)} style={{ padding: "8px 14px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: selected.has(acct) ? "#FFF8F3" : "#FFF", borderBottom: "1px solid #F8F8F8" }}>
-                        <Checkbox checked={selected.has(acct)} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#333" }}>{acct}</span>
+                      <div key={acct} onClick={() => toggleAcct(acct)} style={{ padding: "8px 14px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: selected.has(acct) ? dropRowSel : dropRowBg, borderBottom: `1px solid ${dropDivClr}` }}>
+                        <Checkbox checked={selected.has(acct)} isDark={isDark} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: tipTxt }}>{acct}</span>
                       </div>
                     ))}
                   </div>
@@ -271,7 +284,7 @@ export default function VCHAnalysis() {
             </div>
           </div>
           <div style={{ height: 160 }}>
-            {daily === null ? <ChartLoading /> : (
+            {daily === null ? <ChartLoading isDark={isDark} /> : (
               <Bar
                 data={{
                   labels: visibleDaily.map(d => {
@@ -287,11 +300,11 @@ export default function VCHAnalysis() {
                   responsive: true, maintainAspectRatio: false,
                   plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { title: ctx => visibleDaily[ctx[0].dataIndex]?.date ?? "", label: ctx => ` ${fmtN(ctx.parsed.y as number)}건` } },
+                    tooltip: { ...barTooltipOpts, callbacks: { title: ctx => visibleDaily[ctx[0].dataIndex]?.date ?? "", label: ctx => ` ${fmtN(ctx.parsed.y as number)}건` } },
                   },
                   scales: {
-                    x: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 20 }, grid: { display: false } },
-                    y: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: "#f5f5f5" } },
+                    x: { ticks: { color: tickClr, font: { size: 9 }, maxTicksLimit: 20 }, grid: { display: false } },
+                    y: { ticks: { color: tickClr, font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: gridClr } },
                   },
                   onClick: (_evt, elements) => handleDailyClick(_evt, elements as { index: number }[]),
                   cursor: "pointer",
@@ -303,11 +316,7 @@ export default function VCHAnalysis() {
           {daily !== null && totalDailyLen > 1 && (
             <div style={{ marginTop: 10, paddingBottom: 2 }}>
               <div style={{ position: "relative", height: 20 }}>
-                {/* 선택 범위 트랙 */}
-                <div style={{
-                  position: "absolute", top: "50%", transform: "translateY(-50%)",
-                  left: 0, right: 0, height: 4, background: "#EEE", borderRadius: 2,
-                }} />
+                <div style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", left: 0, right: 0, height: 4, background: sliderTrack, borderRadius: 2 }} />
                 <div style={{
                   position: "absolute", top: "50%", transform: "translateY(-50%)",
                   left: `${rangeStart / (totalDailyLen - 1) * 100}%`,
@@ -322,21 +331,10 @@ export default function VCHAnalysis() {
                   onChange={e => { const v = +e.target.value; if (v > rangeStart) setRangeEnd(v); }}
                   style={{ position: "absolute", width: "100%", height: "100%", margin: 0, opacity: 0, cursor: "pointer", zIndex: 4 }}
                 />
-                {/* 핸들 표시 */}
-                <div style={{
-                  position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
-                  left: `${rangeStart / (totalDailyLen - 1) * 100}%`,
-                  width: 12, height: 12, borderRadius: "50%",
-                  background: "#fff", border: `2px solid ${ORANGE}`, pointerEvents: "none",
-                }} />
-                <div style={{
-                  position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
-                  left: `${rangeEnd / (totalDailyLen - 1) * 100}%`,
-                  width: 12, height: 12, borderRadius: "50%",
-                  background: "#fff", border: `2px solid ${ORANGE}`, pointerEvents: "none",
-                }} />
+                <div style={{ position: "absolute", top: "50%", transform: "translate(-50%, -50%)", left: `${rangeStart / (totalDailyLen - 1) * 100}%`, width: 12, height: 12, borderRadius: "50%", background: handleBg, border: `2px solid ${ORANGE}`, pointerEvents: "none" }} />
+                <div style={{ position: "absolute", top: "50%", transform: "translate(-50%, -50%)", left: `${rangeEnd / (totalDailyLen - 1) * 100}%`, width: 12, height: 12, borderRadius: "50%", background: handleBg, border: `2px solid ${ORANGE}`, pointerEvents: "none" }} />
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb", marginTop: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: tickClr, marginTop: 4 }}>
                 <span>{daily[rangeStart]?.date}</span>
                 <span>{daily[rangeEnd]?.date}</span>
               </div>
@@ -350,12 +348,12 @@ export default function VCHAnalysis() {
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 6 }}>
             <div className="card-title" style={{ margin: 0 }}>계정과목별 전표수</div>
-            {selectedDate && <span style={{ fontSize: 10, color: "#999" }}>— {selectedDate}</span>}
+            {selectedDate && <span style={{ fontSize: 10, color: subTxt }}>— {selectedDate}</span>}
             {selectedAcct && <span style={{ fontSize: 10, color: ORANGE, marginLeft: "auto" }}>클릭하여 계정 변경</span>}
-            {!selectedAcct && <span style={{ fontSize: 10, color: "#bbb", marginLeft: "auto" }}>막대 클릭 → 계정 필터</span>}
+            {!selectedAcct && <span style={{ fontSize: 10, color: dimTxt, marginLeft: "auto" }}>막대 클릭 → 계정 필터</span>}
           </div>
           <div style={{ height: 240 }}>
-            {acctBar === null ? <ChartLoading /> : (
+            {acctBar === null ? <ChartLoading isDark={isDark} /> : (
               <Bar
                 data={{
                   labels: acctBar.map(a => a.disclosure_acct),
@@ -369,11 +367,11 @@ export default function VCHAnalysis() {
                   responsive: true, maintainAspectRatio: false,
                   plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => ` ${fmtN(ctx.parsed.x as number)}건` } },
+                    tooltip: { ...barTooltipOpts, callbacks: { label: ctx => ` ${fmtN(ctx.parsed.x as number)}건` } },
                   },
                   scales: {
-                    x: { ticks: { color: "#bbb", font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: "#f5f5f5" } },
-                    y: { ticks: { color: "#444", font: { size: 10 } }, grid: { display: false }, afterFit: (axis: { width: number }) => { axis.width = 130; } },
+                    x: { ticks: { color: tickClr, font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: gridClr } },
+                    y: { ticks: { color: acctTickClr, font: { size: 10 } }, grid: { display: false }, afterFit: (axis: { width: number }) => { axis.width = 130; } },
                   },
                   onClick: (_evt, elements) => handleAcctClick(_evt, elements as { index: number }[]),
                 } as Parameters<typeof Bar>[0]["options"]}
@@ -387,12 +385,12 @@ export default function VCHAnalysis() {
             <div className="card-title" style={{ margin: 0, flex: 1 }}>
               전표수 기준 상위 거래처
               {(selectedDate || selectedAcct) && (
-                <span style={{ fontSize: 10, color: "#999", fontWeight: 400, marginLeft: 6 }}>
+                <span style={{ fontSize: 10, color: subTxt, fontWeight: 400, marginLeft: 6 }}>
                   {[selectedAcct, selectedDate].filter(Boolean).join(" · ")}
                 </span>
               )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#888" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: subTxt }}>
               상위 N
               <select value={topN} onChange={e => setTopN(Number(e.target.value))} className="fsel" style={{ width: 60, padding: "2px 4px" }}>
                 {[5, 10, 15, 20].map(n => <option key={n} value={n}>{n}</option>)}
@@ -400,7 +398,7 @@ export default function VCHAnalysis() {
             </div>
           </div>
           <div style={{ height: 260 }}>
-            {topCp === null ? <ChartLoading /> : (
+            {topCp === null ? <ChartLoading isDark={isDark} /> : (
               <ReactECharts
                 style={{ height: "100%", width: "100%" }}
                 onEvents={{
@@ -410,8 +408,12 @@ export default function VCHAnalysis() {
                   },
                 }}
                 option={{
+                  backgroundColor: "transparent",
                   animation: false,
                   tooltip: {
+                    backgroundColor: tipBg,
+                    borderColor: tipBdr,
+                    textStyle: { color: tipTxt, fontSize: 11 },
                     formatter: (p: { name: string; value: number; data?: { pct?: number } }) => {
                       if (!p.data?.pct) return "";
                       return `${p.name}<br/>${fmtN(p.value)}건 (${p.data.pct.toFixed(1)}%)`;
@@ -423,23 +425,17 @@ export default function VCHAnalysis() {
                     nodeClick: false,
                     breadcrumb: { show: false },
                     top: 0, left: 0, right: 0, bottom: 0,
-                    width: "100%",
-                    height: "100%",
+                    width: "100%", height: "100%",
                     label: {
                       show: true,
                       formatter: (p: { name: string; data?: { pct?: number } }) =>
                         p.data?.pct ? `${p.name}\n${p.data.pct.toFixed(1)}%` : p.name,
-                      fontSize: 11,
-                      color: "#fff",
-                      fontWeight: 600,
+                      fontSize: 11, color: "#fff", fontWeight: 600,
                     },
                     upperLabel: { show: false },
                     visibleMin: 300,
-                    itemStyle: { borderWidth: 2, borderColor: "#fff", gapWidth: 2 },
-                    data: [{
-                      name: "root",
-                      children: treemapData,
-                    }],
+                    itemStyle: { borderWidth: 2, borderColor: treemapBdr, gapWidth: 2 },
+                    data: [{ name: "root", children: treemapData }],
                   }],
                 }}
               />
@@ -453,12 +449,12 @@ export default function VCHAnalysis() {
         <div style={{ display: "flex", alignItems: "center", marginBottom: 10, gap: 10 }}>
           <div className="card-title" style={{ margin: 0 }}>기표 내역</div>
           {vouchers && (
-            <span style={{ fontSize: 12, color: "#aaa" }}>총 {fmtN(vouchers.total)}건</span>
+            <span style={{ fontSize: 12, color: dimTxt }}>총 {fmtN(vouchers.total)}건</span>
           )}
           {(selectedDate || selectedAcct) && (
             <button
               onClick={() => { setSelectedDate(null); setSelectedAcct(null); }}
-              style={{ marginLeft: "auto", fontSize: 11, color: "#aaa", background: "none", border: "1px solid #E0E0E0", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}
+              style={{ marginLeft: "auto", fontSize: 11, color: dimTxt, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}
             >
               필터 초기화
             </button>
@@ -470,7 +466,7 @@ export default function VCHAnalysis() {
             <Loading />
           ) : (
             <table>
-              <thead style={{ position: "sticky", top: 0, background: "#FFF", zIndex: 1 }}>
+              <thead style={{ position: "sticky", top: 0, background: theadBg, zIndex: 1 }}>
                 <tr>
                   <th style={{ textAlign: "left", whiteSpace: "nowrap" }}>일자</th>
                   <th style={{ textAlign: "left", whiteSpace: "nowrap" }}>전표번호</th>
@@ -493,27 +489,25 @@ export default function VCHAnalysis() {
                         const rect = e.currentTarget.getBoundingClientRect();
                         triggerComment(
                           {
-                            page: PAGE,
-                            label: v.voucher_no,
-                            value: `${fmtN(v.amount)}원`,
+                            page: PAGE, label: v.voucher_no, value: `${fmtN(v.amount)}원`,
                             bodyTemplate: `페이지: ${PAGE}\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtN(v.amount)}원\n\n문의내용:\n`,
                           },
                           { top: rect.top, right: rect.right }
                         );
                       }}
                       style={{ cursor: "pointer", ...(isHighlighted && cpColor ? { background: cpColor + "22" } : {}) }}>
-                      <td style={{ whiteSpace: "nowrap", color: "#888", fontSize: 11 }}>{v.date}</td>
-                      <td style={{ color: "#888", fontSize: 11, whiteSpace: "nowrap" }}>
+                      <td style={{ whiteSpace: "nowrap", color: subTxt, fontSize: 11 }}>{v.date}</td>
+                      <td style={{ color: subTxt, fontSize: 11, whiteSpace: "nowrap" }}>
                         {v.voucher_no}
                         {ck.has(commentKey(PAGE, v.voucher_no)) && <CommentDot inline inquiryId={ck.get(commentKey(PAGE, v.voucher_no))!} />}
                       </td>
                       <td style={{ whiteSpace: "nowrap" }}>{v.account_name}</td>
                       <td style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.counterparty}</td>
-                      <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#666" }}>{v.description}</td>
-                      <td style={{ textAlign: "right", color: v.dr_cr === "차변" ? BLUE : "#DDD", whiteSpace: "nowrap" }}>
+                      <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: valTxt }}>{v.description}</td>
+                      <td style={{ textAlign: "right", color: v.dr_cr === "차변" ? BLUE : zeroClr, whiteSpace: "nowrap" }}>
                         {v.dr_cr === "차변" ? fmtN(v.amount) : "-"}
                       </td>
-                      <td style={{ textAlign: "right", color: v.dr_cr === "대변" ? RED : "#DDD", whiteSpace: "nowrap" }}>
+                      <td style={{ textAlign: "right", color: v.dr_cr === "대변" ? RED : zeroClr, whiteSpace: "nowrap" }}>
                         {v.dr_cr === "대변" ? fmtN(v.amount) : "-"}
                       </td>
                     </tr>
@@ -521,7 +515,7 @@ export default function VCHAnalysis() {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ fontWeight: 700, background: "#FFF7F0" }}>
+                <tr style={{ fontWeight: 700, background: tfootBg }}>
                   <td colSpan={5}>합계</td>
                   <td style={{ textAlign: "right", color: BLUE, whiteSpace: "nowrap" }}>
                     {fmtN(vouchers.items.filter(v => v.dr_cr === "차변").reduce((s, v) => s + v.amount, 0))}
@@ -534,40 +528,41 @@ export default function VCHAnalysis() {
             </table>
           )}
         </div>
-
       </div>
     </div>
   );
 }
 
 // ── 체크박스 ────────────────────────────────────────────────────
-function Checkbox({ checked }: { checked: boolean }) {
+function Checkbox({ checked, isDark }: { checked: boolean; isDark: boolean }) {
   return (
     <span style={{
-      width: 14, height: 14, border: `1.5px solid ${checked ? ORANGE : "#CCC"}`,
+      width: 14, height: 14,
+      border: `1.5px solid ${checked ? ORANGE : (isDark ? "#3A3F4A" : "#CCC")}`,
       borderRadius: 3, display: "inline-flex", alignItems: "center", justifyContent: "center",
-      background: checked ? ORANGE : "#FFF", flexShrink: 0,
+      background: checked ? ORANGE : (isDark ? "#252830" : "#FFF"),
+      flexShrink: 0,
     }}>
       {checked && <span style={{ color: "#FFF", fontSize: 10, lineHeight: 1 }}>✓</span>}
     </span>
   );
 }
 
-function ChartLoading() {
+function ChartLoading({ isDark = false }: { isDark?: boolean }) {
   return (
-    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 12 }}>
+    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: isDark ? "#5A6070" : "#bbb", fontSize: 12 }}>
       <div className="spinner" style={{ width:14, height:14, marginRight: 8 }} />
       로딩 중...
-      
     </div>
   );
 }
 
-function KpiLoading() {
+function KpiLoading({ isDark = false }: { isDark?: boolean }) {
+  const bg = isDark ? "#252830" : "#F5F5F5";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {[1, 2, 3].map(i => (
-        <div key={i} style={{ background: "#F5F5F5", borderRadius: 8, height: 58, animation: "pulse 1.2s ease-in-out infinite" }} />
+        <div key={i} style={{ background: bg, borderRadius: 8, height: 58, animation: "pulse 1.2s ease-in-out infinite" }} />
       ))}
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
     </div>
