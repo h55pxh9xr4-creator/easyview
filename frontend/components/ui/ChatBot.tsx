@@ -20,9 +20,10 @@ export default function ChatBot() {
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
   const fabRef     = useRef<HTMLDivElement>(null);
-  const dragging   = useRef(false);
-  const didDrag    = useRef(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
+  const dragging    = useRef(false);
+  const didDrag     = useRef(false);
+  const dragOffset  = useRef({ x: 0, y: 0 });
+  const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -35,7 +36,7 @@ export default function ChatBot() {
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      if (e.buttons === 0) { dragging.current = false; setGrabbed(false); setSpeechText("휴..."); setSpeechForced(true); setTimeout(() => { setSpeechForced(false); setTimeout(() => setSpeechText(null), 250); }, 2000); return; }
+      if (e.buttons === 0) { dragging.current = false; setGrabbed(false); setSpeechText("휴..."); setSpeechForced(true); speechTimer.current = setTimeout(() => { setSpeechForced(false); setTimeout(() => setSpeechText(null), 250); }, 2000); return; }
       didDrag.current = true;
       const w = fabRef.current?.offsetWidth  ?? 88;
       const h = fabRef.current?.offsetHeight ?? 88;
@@ -46,7 +47,8 @@ export default function ChatBot() {
     };
     const onUp = () => {
       if (!dragging.current) return;
-      dragging.current = false; setGrabbed(false); setSpeechText("휴..."); setSpeechForced(true); setTimeout(() => { setSpeechForced(false); setTimeout(() => setSpeechText(null), 250); }, 2000);
+      dragging.current = false; setGrabbed(false); setSpeechText("휴..."); setSpeechForced(true);
+      speechTimer.current = setTimeout(() => { setSpeechForced(false); setTimeout(() => setSpeechText(null), 250); }, 2000);
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup",   onUp);
@@ -60,6 +62,7 @@ export default function ChatBot() {
     if (e.button !== 0) return;
     dragging.current = true;
     didDrag.current  = false;
+    if (speechTimer.current) { clearTimeout(speechTimer.current); speechTimer.current = null; }
     setGrabbed(true);
     setSpeechText("악 놔주세요!"); setSpeechForced(true);
     const rect = fabRef.current!.getBoundingClientRect();
