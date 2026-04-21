@@ -11,23 +11,23 @@ import {
 /* ── types ── */
 type SidebarPage = "requests" | "users" | "modules" | "access-groups" | "localisations" | "security" | "site-details";
 type UserTab = "pwc" | "client" | "thirdparty" | "all";
-type ReqStatus = "초안" | "요청됨" | "검토중" | "자료 수령" | "완료" | "반려";
+type ReqStatus = "Draft" | "Requested" | "검토중" | "Submitted" | "Accepted" | "Recall";
 type ReqPriority = "높음" | "보통" | "낮음";
 
 type Request = ApiRequest & { status: ReqStatus; priority: ReqPriority };
 
 /* ── 기본 데이터 (API 미연결 시 fallback) ── */
 const FALLBACK_REQUESTS: Request[] = [
-  { id: 1,  reqCode: "REQ-001", title: "재무제표 원본 제출",            entity: "SeAH Global Vina (SGV)",      assignee: "Chanwoo Lee",     requester: "Yerim Jeong",    status: "완료",    priority: "높음", dueDate: "2026-02-28", createdDate: "2026-01-10", description: "2025 회계연도 감사를 위한 베트남 법인 재무제표 원본 및 관련 주석 제출 요청" },
-  { id: 2,  reqCode: "REQ-002", title: "고정자산 목록 및 감가상각 일정표", entity: "SeAH Besteel Holdings",       assignee: "Hongkyu Ahn",     requester: "Minjoo Kang",   status: "자료 수령", priority: "높음", dueDate: "2026-03-15", createdDate: "2026-01-15", description: "2025년 말 기준 고정자산 목록, 취득/처분 내역, 감가상각 일정표 제출" },
-  { id: 3,  reqCode: "REQ-003", title: "매출채권 연령분석표",            entity: "SeAH Global Inc (SGI)",       assignee: "Soojin Moon",     requester: "Seojin Na",     status: "검토중",  priority: "보통", dueDate: "2026-03-20", createdDate: "2026-01-20", description: "2025.12.31 기준 매출채권 연령분석표(30/60/90/90일 초과 구분) 제출" },
-  { id: 4,  reqCode: "REQ-004", title: "재고자산 실사 결과 보고서",      entity: "SeAH CTC",                    assignee: "Kwangseok Chae",  requester: "Yubin Choi",    status: "요청됨",  priority: "높음", dueDate: "2026-03-10", createdDate: "2026-01-25", description: "2025년 말 재고실사 결과 보고서 및 감사인 입회 확인서 제출" },
-  { id: 5,  reqCode: "REQ-005", title: "은행잔액확인서",                 entity: "SeAH Global Japan (SGJ)",     assignee: "Naoko Ishikawa",  requester: "Sou-Jung Park", status: "요청됨",  priority: "보통", dueDate: "2026-03-05", createdDate: "2026-02-01", description: "2025.12.31 기준 전 금융기관 잔액확인서 (원본) 제출" },
-  { id: 6,  reqCode: "REQ-006", title: "임직원 명부 및 급여대장",        entity: "SeAH Global Thailand (SGT)",  assignee: "Juseung Jeong",   requester: "Sanghee Sim",   status: "검토중",  priority: "보통", dueDate: "2026-03-25", createdDate: "2026-02-05", description: "2025년 임직원 명부, 월별 급여대장, 퇴직금 충당부채 산출 근거 제출" },
-  { id: 7,  reqCode: "REQ-007", title: "법인세 신고 자료",               entity: "PT SeAH (인니)",               assignee: "Erli na",         requester: "Yeowon Han",    status: "초안",   priority: "낮음", dueDate: "2026-04-10", createdDate: "2026-02-10", description: "2025 회계연도 법인세 신고서 및 관련 세무조정 계산서 제출" },
-  { id: 8,  reqCode: "REQ-008", title: "차입금 및 사채 명세서",          entity: "SeAH Global India (SGIN)",    assignee: "Sathis Gopinath", requester: "HyungGeun Jung",status: "초안",   priority: "보통", dueDate: "2026-04-05", createdDate: "2026-02-12", description: "2025.12.31 기준 단기/장기 차입금, 사채 명세 및 이자비용 내역 제출" },
-  { id: 9,  reqCode: "REQ-009", title: "특수관계자 거래 명세",           entity: "SeAH Besteel Holdings",       assignee: "SeungCheol Kim",  requester: "Chaehyeon Song",status: "반려",   priority: "높음", dueDate: "2026-03-01", createdDate: "2026-01-28", description: "2025년 특수관계자 거래 명세(매출/매입/대여/차입 등) — 양식 불일치로 반려, 재제출 요망" },
-  { id: 10, reqCode: "REQ-010", title: "계약서 사본 (주요 거래처)",      entity: "SeAH Global Vina (SGV)",      assignee: "Chanwoo Lee",     requester: "Sumin Jung",    status: "자료 수령", priority: "낮음", dueDate: "2026-03-30", createdDate: "2026-02-15", description: "매출액 상위 5개 거래처 계약서 사본 및 거래조건 요약표 제출" },
+  { id: 1,  reqCode: "REQ-001", title: "재무제표 원본 제출",            entity: "SeAH Global Vina (SGV)",      assignee: "Chanwoo Lee",     requester: "Yerim Jeong",    status: "Accepted",  priority: "높음", dueDate: "2026-02-28", createdDate: "2026-01-10", description: "2025 회계연도 감사를 위한 베트남 법인 재무제표 원본 및 관련 주석 제출 요청" },
+  { id: 2,  reqCode: "REQ-002", title: "고정자산 목록 및 감가상각 일정표", entity: "SeAH Besteel Holdings",       assignee: "Hongkyu Ahn",     requester: "Minjoo Kang",   status: "Submitted", priority: "높음", dueDate: "2026-03-15", createdDate: "2026-01-15", description: "2025년 말 기준 고정자산 목록, 취득/처분 내역, 감가상각 일정표 제출" },
+  { id: 3,  reqCode: "REQ-003", title: "매출채권 연령분석표",            entity: "SeAH Global Inc (SGI)",       assignee: "Soojin Moon",     requester: "Seojin Na",     status: "검토중",    priority: "보통", dueDate: "2026-03-20", createdDate: "2026-01-20", description: "2025.12.31 기준 매출채권 연령분석표(30/60/90/90일 초과 구분) 제출" },
+  { id: 4,  reqCode: "REQ-004", title: "재고자산 실사 결과 보고서",      entity: "SeAH CTC",                    assignee: "Kwangseok Chae",  requester: "Yubin Choi",    status: "Requested", priority: "높음", dueDate: "2026-03-10", createdDate: "2026-01-25", description: "2025년 말 재고실사 결과 보고서 및 감사인 입회 확인서 제출" },
+  { id: 5,  reqCode: "REQ-005", title: "은행잔액확인서",                 entity: "SeAH Global Japan (SGJ)",     assignee: "Naoko Ishikawa",  requester: "Sou-Jung Park", status: "Requested", priority: "보통", dueDate: "2026-03-05", createdDate: "2026-02-01", description: "2025.12.31 기준 전 금융기관 잔액확인서 (원본) 제출" },
+  { id: 6,  reqCode: "REQ-006", title: "임직원 명부 및 급여대장",        entity: "SeAH Global Thailand (SGT)",  assignee: "Juseung Jeong",   requester: "Sanghee Sim",   status: "검토중",    priority: "보통", dueDate: "2026-03-25", createdDate: "2026-02-05", description: "2025년 임직원 명부, 월별 급여대장, 퇴직금 충당부채 산출 근거 제출" },
+  { id: 7,  reqCode: "REQ-007", title: "법인세 신고 자료",               entity: "PT SeAH (인니)",               assignee: "Erli na",         requester: "Yeowon Han",    status: "Draft",     priority: "낮음", dueDate: "2026-04-10", createdDate: "2026-02-10", description: "2025 회계연도 법인세 신고서 및 관련 세무조정 계산서 제출" },
+  { id: 8,  reqCode: "REQ-008", title: "차입금 및 사채 명세서",          entity: "SeAH Global India (SGIN)",    assignee: "Sathis Gopinath", requester: "HyungGeun Jung",status: "Draft",     priority: "보통", dueDate: "2026-04-05", createdDate: "2026-02-12", description: "2025.12.31 기준 단기/장기 차입금, 사채 명세 및 이자비용 내역 제출" },
+  { id: 9,  reqCode: "REQ-009", title: "특수관계자 거래 명세",           entity: "SeAH Besteel Holdings",       assignee: "SeungCheol Kim",  requester: "Chaehyeon Song",status: "Recall",    priority: "높음", dueDate: "2026-03-01", createdDate: "2026-01-28", description: "2025년 특수관계자 거래 명세(매출/매입/대여/차입 등) — 양식 불일치로 반려, 재제출 요망" },
+  { id: 10, reqCode: "REQ-010", title: "계약서 사본 (주요 거래처)",      entity: "SeAH Global Vina (SGV)",      assignee: "Chanwoo Lee",     requester: "Sumin Jung",    status: "Submitted", priority: "낮음", dueDate: "2026-03-30", createdDate: "2026-02-15", description: "매출액 상위 5개 거래처 계약서 사본 및 거래조건 요약표 제출" },
 ];
 
 /* ── theme ── */
@@ -102,12 +102,12 @@ const ENTITY_CLIENTS: Record<string, string[]> = {
 };
 
 const STATUS_CFG: Record<ReqStatus, { bg: string; color: string }> = {
-  "초안":     { bg: "#F0F0F0", color: "#666" },
-  "요청됨":   { bg: "#EBF0FD", color: "#1A56DB" },
-  "검토중":   { bg: "#FFF8E1", color: "#B45309" },
-  "자료 수령":{ bg: "#F3EEFF", color: "#7C3AED" },
-  "완료":     { bg: "#E8F5E9", color: "#1B5E20" },
-  "반려":     { bg: "#FEECEC", color: "#B91C1C" },
+  "Draft":     { bg: "#F0F0F0", color: "#666" },
+  "Requested": { bg: "#EBF0FD", color: "#1A56DB" },
+  "검토중":    { bg: "#FFF8E1", color: "#B45309" },
+  "Submitted": { bg: "#F3EEFF", color: "#7C3AED" },
+  "Accepted":  { bg: "#E8F5E9", color: "#1B5E20" },
+  "Recall":    { bg: "#FEECEC", color: "#B91C1C" },
 };
 const PRIORITY_CFG: Record<ReqPriority, { color: string }> = {
   "높음": { color: "#DC2626" },
@@ -522,15 +522,15 @@ export default function ResourceRoom() {
     }
     resetNewForm();
     closeModal();
-    showToast(status === "초안"
-      ? `초안 ${items.length}건이 저장되었습니다.`
+    showToast(status === "Draft"
+      ? `Draft ${items.length}건이 저장되었습니다.`
       : `자료 요청 ${items.length}건이 등록되었습니다.`
     );
   };
 
   const confirmModal = () => {
     if (modal === "add-request") {
-      submitRequest("요청됨");
+      submitRequest("Requested");
       return;
     } else {
       const msgs: Record<string, string> = {
@@ -615,8 +615,8 @@ export default function ResourceRoom() {
         <TD style={{ color: C.muted, fontSize: 11, textAlign: "center" }}>{req.reqCode}</TD>
         <TD style={{ textAlign: "left" }}>
           <span style={{ fontWeight: 600, color: C.text }}>{req.title}</span>
-          {req.status === "반려" && (
-            <span style={{ marginLeft: 6, fontSize: 10, background: "#FEECEC", color: "#B91C1C", padding: "1px 6px", borderRadius: 10, fontWeight: 600 }}>반려</span>
+          {req.status === "Recall" && (
+            <span style={{ marginLeft: 6, fontSize: 10, background: "#FEECEC", color: "#B91C1C", padding: "1px 6px", borderRadius: 10, fontWeight: 600 }}>Recall</span>
           )}
         </TD>
         {!hideEntity && (
@@ -670,7 +670,7 @@ export default function ResourceRoom() {
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           {/* Status filter tabs */}
           <div style={{ display: "flex", gap: 4 }}>
-            {(["전체", "초안", "요청됨", "검토중", "자료 수령", "완료", "반려"] as (ReqStatus | "전체")[]).map(s => {
+            {(["전체", "Draft", "Requested", "검토중", "Submitted", "Accepted", "Recall"] as (ReqStatus | "전체")[]).map(s => {
               const cfg = s === "전체" ? null : STATUS_CFG[s];
               const isActive = reqFilter === s;
               return (
@@ -1101,7 +1101,7 @@ export default function ResourceRoom() {
         };
         const repeatCounts: Record<string, number> = { "월별": 12, "분기별": 4, "반기별": 2, "연간": 1 };
         return (
-          <Modal title="신규 자료 요청" onClose={() => { closeModal(); resetNewForm(); }} onConfirm={confirmModal} confirmLabel="등록" onSecondary={() => submitRequest("초안")} secondaryLabel="초안 저장">
+          <Modal title="신규 자료 요청" onClose={() => { closeModal(); resetNewForm(); }} onConfirm={confirmModal} confirmLabel="등록" onSecondary={() => submitRequest("Draft")} secondaryLabel="Draft 저장">
             {/* 제목 */}
             <FGroup label="제목" required>
               <input type="text" placeholder="자료 요청 제목을 입력하세요" value={nTitle} onChange={e => setNTitle(e.target.value)}

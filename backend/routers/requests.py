@@ -20,7 +20,7 @@ class RequestCreate(BaseModel):
     entity:      str
     assignee:    str
     requester:   str
-    status:      str = "초안"
+    status:      str = "Draft"
     priority:    str = "보통"
     due_date:    str = ""
     description: str = ""
@@ -38,7 +38,7 @@ def _fmt(r: DataRequest):
         "entity":      r.entity   or "",
         "assignee":    r.assignee or "",
         "requester":   r.requester or "",
-        "status":      r.status   or "초안",
+        "status":      r.status   or "Draft",
         "priority":    r.priority or "보통",
         "dueDate":     r.due_date or "—",
         "createdDate": r.created_at.strftime("%Y-%m-%d") if r.created_at else "",
