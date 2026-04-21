@@ -658,8 +658,8 @@ export default function ResourceRoom() {
             {req.status}
           </span>
         </TD>
-        <TD style={{ fontSize: 12, color: req.dueDate === "—" ? C.muted : C.sub, textAlign: "center" }}>{req.dueDate}</TD>
         <TD style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>{req.createdDate}</TD>
+        <TD style={{ fontSize: 12, color: req.dueDate === "—" ? C.muted : C.sub, textAlign: "center" }}>{req.dueDate}</TD>
         <td style={{ padding: "11px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "center" }}>
           <button
             onClick={async e => {
@@ -681,8 +681,8 @@ export default function ResourceRoom() {
     );
   };
 
-  const COLS_FLAT    = ["번호", "제목", "법인", "담당자", "상태", "마감일", "등록일", ""];
-  const COLS_GROUPED = ["번호", "제목", "담당자", "상태", "마감일", "등록일", ""];
+  const COLS_FLAT    = ["번호", "제목", "법인", "담당자", "상태", "요청일", "마감일", ""];
+  const COLS_GROUPED = ["번호", "제목", "담당자", "상태", "요청일", "마감일", ""];
 
   const PageRequests = () => (
     <Card>
