@@ -1327,10 +1327,6 @@ export default function ResourceRoom() {
                   </div>
                 ))}
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 3 }}>우선순위</div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: pc.color }}>{detailReq.priority}</span>
-                </div>
-                <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 3 }}>상태</div>
                   <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>{detailReq.status}</span>
                 </div>
