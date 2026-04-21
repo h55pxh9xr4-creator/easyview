@@ -365,6 +365,7 @@ export default function ResourceRoom() {
   const [reqLoading, setReqLoading]         = useState(true);
   const [reqFilter, setReqFilter]           = useState<ReqStatus | "전체">("전체");
   const [detailReq, setDetailReq]           = useState<Request | null>(null);
+  const [isEditing, setIsEditing]           = useState(false);
   const [editDraft, setEditDraft]           = useState<{
     title: string; entity: string; assignees: string[];
     requester: string; dueDate: string; status: ReqStatus; description: string;
@@ -433,23 +434,26 @@ export default function ResourceRoom() {
 
   useEffect(() => { loadRequests(); }, [loadRequests]);
 
-  /* detailReq 변경 시 editDraft 초기화 */
+  /* detailReq 변경 시 편집 모드 초기화 */
   useEffect(() => {
-    if (!detailReq || detailReq.status === "Accepted") {
-      setEditDraft(null);
-      return;
-    }
-    setEditDraft({
-      title:      detailReq.title,
-      entity:     detailReq.entity,
-      assignees:  detailReq.assignee ? detailReq.assignee.split(", ").map(s => s.trim()).filter(Boolean) : [],
-      requester:  detailReq.requester,
-      dueDate:    detailReq.dueDate === "—" ? "" : detailReq.dueDate,
-      status:     detailReq.status,
-      description: detailReq.description,
-    });
+    setIsEditing(false);
+    setEditDraft(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailReq?.id]);
+
+  const startEditing = () => {
+    if (!detailReq) return;
+    setEditDraft({
+      title:       detailReq.title,
+      entity:      detailReq.entity,
+      assignees:   detailReq.assignee ? detailReq.assignee.split(", ").map(s => s.trim()).filter(Boolean) : [],
+      requester:   detailReq.requester,
+      dueDate:     detailReq.dueDate === "—" ? "" : detailReq.dueDate,
+      status:      detailReq.status,
+      description: detailReq.description,
+    });
+    setIsEditing(true);
+  };
 
   /* 상세 뷰 열릴 때 파일 목록 로드 */
   useEffect(() => {
@@ -503,6 +507,8 @@ export default function ResourceRoom() {
       saveCache(next);
       return next;
     });
+    setIsEditing(false);
+    setEditDraft(null);
     showToast("수정 사항이 저장되었습니다.");
   };
 
@@ -754,7 +760,7 @@ export default function ResourceRoom() {
   const PageRequests = () => {
     if (detailReq) {
       const sc       = STATUS_CFG[detailReq.status];
-      const editable = editDraft !== null; // status !== "Accepted"
+      const canEdit  = detailReq.status !== "Accepted";
 
       const fieldLabel: React.CSSProperties = {
         fontSize: 10, fontWeight: 700, color: C.muted,
@@ -835,13 +841,23 @@ export default function ResourceRoom() {
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.sub; }}
                 >← 목록으로</button>
                 <span style={{ fontSize: 12, color: C.muted }}>자료 요청 / {detailReq.reqCode}</span>
-                {editable && (
-                  <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "#FFF5EE", color: C.primary }}>편집 가능</span>
+                {canEdit && !isEditing && (
+                  <button
+                    onClick={startEditing}
+                    style={{ marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 13px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.primary}`, background: "#fff", color: C.primary, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.primaryBg; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#fff"; }}
+                  >
+                    ✏ 편집
+                  </button>
+                )}
+                {isEditing && (
+                  <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, background: "#FFF5EE", color: C.primary, border: `1px solid ${C.primary}` }}>편집 중</span>
                 )}
               </div>
 
               {/* ══════════ EDITABLE VIEW ══════════ */}
-              {editable && editDraft ? (
+              {isEditing && editDraft ? (
                 <>
                   {/* 제목 */}
                   <div style={{ marginBottom: 24 }}>
@@ -960,10 +976,10 @@ export default function ResourceRoom() {
                   {/* 첨부파일 */}
                   <FilesSection />
 
-                  {/* 저장/닫기 버튼 */}
+                  {/* 저장/취소 버튼 */}
                   <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
                     <OrangeBtn label="저장" onClick={handleSaveEdit} />
-                    <GrayBtn label="닫기" onClick={() => setDetailReq(null)} />
+                    <GrayBtn label="취소" onClick={() => { setIsEditing(false); setEditDraft(null); }} />
                   </div>
                 </>
               ) : (
