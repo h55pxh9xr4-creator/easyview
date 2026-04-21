@@ -548,7 +548,7 @@ export default function ResourceRoom() {
 
   /* ── Sidebar ── */
   const SidebarEl = () => (
-    <aside style={{ width: 210, flexShrink: 0, background: "#fff", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
+    <aside style={{ width: 250, flexShrink: 0, background: "#fff", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "14px 20px 10px", fontSize: 14, color: C.sub, fontWeight: 300, fontStyle: "italic", borderBottom: `1px solid ${C.border}` }}>
         Site Administration
       </div>
