@@ -841,18 +841,18 @@ export default function ResourceRoom() {
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.sub; }}
                 >← 목록으로</button>
                 <span style={{ fontSize: 12, color: C.muted }}>자료 요청 / {detailReq.reqCode}</span>
+                {isEditing && (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, background: "#FFF5EE", color: C.primary, border: `1px solid ${C.primary}` }}>편집 중</span>
+                )}
                 {canEdit && !isEditing && (
                   <button
                     onClick={startEditing}
-                    style={{ marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 13px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.primary}`, background: "#fff", color: C.primary, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+                    style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", padding: "5px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.primary}`, background: "#fff", color: C.primary, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.primaryBg; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#fff"; }}
                   >
-                    ✏ 편집
+                    편집
                   </button>
-                )}
-                {isEditing && (
-                  <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, background: "#FFF5EE", color: C.primary, border: `1px solid ${C.primary}` }}>편집 중</span>
                 )}
               </div>
 
