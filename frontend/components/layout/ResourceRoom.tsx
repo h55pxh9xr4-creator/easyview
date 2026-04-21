@@ -749,7 +749,7 @@ export default function ResourceRoom() {
             }} />
           </div>
           <span style={{ fontSize: 12, fontWeight: 600, color: myOnly ? C.primary : "#888" }}>
-            내 요청만
+            {myOnly ? "내 요청만" : "전체 요청"}
           </span>
         </label>
       </div>
