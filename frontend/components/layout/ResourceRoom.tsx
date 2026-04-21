@@ -1031,7 +1031,7 @@ export default function ResourceRoom() {
                   </div>
 
                   {/* 첨부파일 */}
-                  <FilesSection />
+                  {FilesSection()}
 
                   {/* 저장/취소 버튼 */}
                   <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
@@ -1080,7 +1080,7 @@ export default function ResourceRoom() {
                   )}
 
                   {/* 첨부파일 */}
-                  <FilesSection />
+                  {FilesSection()}
 
                   <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
                     <GrayBtn label="닫기" onClick={() => setDetailReq(null)} />
@@ -1465,7 +1465,7 @@ export default function ResourceRoom() {
           <span style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>Site Administration</span>
         </div>
 
-        {page === "requests"       && <PageRequests />}
+        {page === "requests"       && PageRequests()}
         {page === "users"         && <PageUsers />}
         {page === "modules"       && <PlaceholderPage icon="▪"  label="Modules"               desc="사이트에 활성화된 모듈을 관리합니다." />}
         {page === "access-groups" && <PlaceholderPage icon="🔒" label="Custom Access Groups"   desc="맞춤 접근 권한 그룹을 생성하고 관리합니다." />}
