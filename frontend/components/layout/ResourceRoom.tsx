@@ -611,9 +611,9 @@ export default function ResourceRoom() {
             key={item.key}
             onClick={() => setPage(item.key)}
             style={{
-              display: "flex", alignItems: "center", gap: 10,
+              display: "flex", alignItems: "center", gap: 12,
               padding: "10px 20px", width: "100%", textAlign: "left",
-              cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+              cursor: "pointer", fontSize: 14, fontFamily: "inherit",
               background: active ? C.primaryBg : "transparent",
               color:      active ? C.primary   : "#444",
               fontWeight: active ? 600 : 400,
@@ -625,8 +625,8 @@ export default function ResourceRoom() {
           >
             <img
               src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${item.icon}`}
-              width={18}
-              height={18}
+              width={22}
+              height={22}
               alt=""
               style={{ flexShrink: 0, opacity: active ? 1 : 0.45 }}
             />
