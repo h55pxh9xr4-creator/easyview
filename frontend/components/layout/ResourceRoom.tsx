@@ -125,14 +125,15 @@ const PRIORITY_CFG: Record<ReqPriority, { color: string }> = {
   "낮음": { color: "#6B7280" },
 };
 
-const SIDEBAR_ITEMS: { key: SidebarPage; icon: string; label: string }[] = [
-  { key: "requests",      icon: "/icons/icon-journal.svg",     label: "자료 요청" },
-  { key: "users",         icon: "/icons/icon-building.svg",    label: "Users" },
-  { key: "modules",       icon: "/icons/icon-dashboard.svg",   label: "Modules" },
-  { key: "access-groups", icon: "/icons/icon-trust.svg",       label: "Custom Access Groups" },
-  { key: "localisations", icon: "/icons/icon-globe.svg",       label: "Localisations" },
-  { key: "security",      icon: "/icons/icon-balance.svg",     label: "Security" },
-  { key: "site-details",  icon: "/icons/icon-pdf.svg",         label: "Site Details" },
+const SIDEBAR_ITEMS: { key: SidebarPage; icon: string; label: string; sub?: { key: SidebarPage; label: string }[] }[] = [
+  { key: "requests",     icon: "/icons/icon-journal.svg",  label: "자료 요청" },
+  { key: "users",        icon: "/icons/icon-building.svg", label: "Users" },
+  { key: "site-details", icon: "/icons/icon-pdf.svg",      label: "Site Details", sub: [
+    { key: "modules",       label: "Modules" },
+    { key: "access-groups", label: "Custom Access Groups" },
+    { key: "localisations", label: "Localisations" },
+    { key: "security",      label: "Security" },
+  ]},
 ];
 
 /* ── shared small components ── */
@@ -390,6 +391,7 @@ export default function ResourceRoom() {
   const [collapsed, setCollapsed]           = useState<Record<string, boolean>>({});
   const [entityFilter, setEntityFilter]     = useState<string>("전체");
   const [parentFilter, setParentFilter]     = useState<string>("전체");
+  const [siteDetailsOpen, setSiteDetailsOpen] = useState(false);
   const [myOnly, setMyOnly]                 = useState(true);
 
   /* new-request form state */
@@ -608,33 +610,69 @@ export default function ResourceRoom() {
   const SidebarEl = () => (
     <aside style={{ width: 250, flexShrink: 0, background: "#fff", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
       {SIDEBAR_ITEMS.map(item => {
-        const active = page === item.key;
+        const hasSub = !!item.sub;
+        const isParentActive = hasSub ? item.sub!.some(s => s.key === page) : page === item.key;
+        const isOpen = hasSub && (siteDetailsOpen || isParentActive);
+
         return (
-          <button
-            key={item.key}
-            onClick={() => setPage(item.key)}
-            style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "10px 20px", width: "100%", textAlign: "left",
-              cursor: "pointer", fontSize: 14, fontFamily: "inherit",
-              background: active ? C.primaryBg : "transparent",
-              color:      active ? C.primary   : "#444",
-              fontWeight: active ? 600 : 400,
-              border: "none",
-              transition: "all 0.12s",
-            }}
-            onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "#F7F7F7"; (e.currentTarget as HTMLElement).style.color = "#333"; } }}
-            onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#444"; } }}
-          >
-            <img
-              src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${item.icon}`}
-              width={22}
-              height={22}
-              alt=""
-              style={{ flexShrink: 0, opacity: 1 }}
-            />
-            {item.label}
-          </button>
+          <div key={item.key}>
+            <button
+              onClick={() => {
+                if (hasSub) {
+                  setSiteDetailsOpen(p => !p);
+                } else {
+                  setPage(item.key);
+                }
+              }}
+              style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "10px 20px", width: "100%", textAlign: "left",
+                cursor: "pointer", fontSize: 14, fontFamily: "inherit",
+                background: isParentActive ? C.primaryBg : "transparent",
+                color:      isParentActive ? C.primary   : "#444",
+                fontWeight: isParentActive ? 600 : 400,
+                border: "none", transition: "all 0.12s",
+              }}
+              onMouseEnter={e => { if (!isParentActive) { (e.currentTarget as HTMLElement).style.background = "#F7F7F7"; (e.currentTarget as HTMLElement).style.color = "#333"; } }}
+              onMouseLeave={e => { if (!isParentActive) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#444"; } }}
+            >
+              <img
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${item.icon}`}
+                width={22} height={22} alt=""
+                style={{ flexShrink: 0, opacity: 1 }}
+              />
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {hasSub && (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              )}
+            </button>
+
+            {hasSub && isOpen && item.sub!.map(sub => {
+              const subActive = page === sub.key;
+              return (
+                <button
+                  key={sub.key}
+                  onClick={() => setPage(sub.key)}
+                  style={{
+                    display: "flex", alignItems: "center",
+                    padding: "8px 20px 8px 54px", width: "100%", textAlign: "left",
+                    cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+                    background: subActive ? C.primaryBg : "transparent",
+                    color:      subActive ? C.primary   : "#666",
+                    fontWeight: subActive ? 600 : 400,
+                    border: "none", transition: "all 0.12s",
+                  }}
+                  onMouseEnter={e => { if (!subActive) { (e.currentTarget as HTMLElement).style.background = "#F7F7F7"; (e.currentTarget as HTMLElement).style.color = "#333"; } }}
+                  onMouseLeave={e => { if (!subActive) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#666"; } }}
+                >
+                  {sub.label}
+                </button>
+              );
+            })}
+          </div>
         );
       })}
     </aside>
