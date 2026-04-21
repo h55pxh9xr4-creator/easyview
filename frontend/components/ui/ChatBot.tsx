@@ -23,6 +23,7 @@ export default function ChatBot() {
   const dragging    = useRef(false);
   const didDrag     = useRef(false);
   const dragOffset  = useRef({ x: 0, y: 0 });
+  const pressTime   = useRef(0);
   const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -34,10 +35,17 @@ export default function ChatBot() {
   }, [messages]);
 
   useEffect(() => {
+    const showHyu = () => {
+      setSpeechText("휴..."); setSpeechForced(true);
+      speechTimer.current = setTimeout(() => { setSpeechForced(false); setTimeout(() => setSpeechText(null), 250); }, 2000);
+    };
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      if (e.buttons === 0) { dragging.current = false; setGrabbed(false); setSpeechText("휴..."); setSpeechForced(true); speechTimer.current = setTimeout(() => { setSpeechForced(false); setTimeout(() => setSpeechText(null), 250); }, 2000); return; }
-      didDrag.current = true;
+      if (e.buttons === 0) { dragging.current = false; setGrabbed(false); showHyu(); return; }
+      if (!didDrag.current) {
+        didDrag.current = true;
+        setSpeechText("악 놔주세요!"); setSpeechForced(true);
+      }
       const w = fabRef.current?.offsetWidth  ?? 88;
       const h = fabRef.current?.offsetHeight ?? 88;
       setPos({
@@ -47,8 +55,13 @@ export default function ChatBot() {
     };
     const onUp = () => {
       if (!dragging.current) return;
-      dragging.current = false; setGrabbed(false); setSpeechText("휴..."); setSpeechForced(true);
-      speechTimer.current = setTimeout(() => { setSpeechForced(false); setTimeout(() => setSpeechText(null), 250); }, 2000);
+      const isLongPress = Date.now() - pressTime.current > 300;
+      dragging.current = false; setGrabbed(false);
+      if (didDrag.current || isLongPress) {
+        showHyu();
+      } else {
+        setSpeechText(null); setSpeechForced(false);
+      }
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup",   onUp);
@@ -62,9 +75,10 @@ export default function ChatBot() {
     if (e.button !== 0) return;
     dragging.current = true;
     didDrag.current  = false;
+    pressTime.current = Date.now();
     if (speechTimer.current) { clearTimeout(speechTimer.current); speechTimer.current = null; }
     setGrabbed(true);
-    setSpeechText("악 놔주세요!"); setSpeechForced(true);
+    setSpeechText(null); setSpeechForced(false);
     const rect = fabRef.current!.getBoundingClientRect();
     dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     e.preventDefault();
