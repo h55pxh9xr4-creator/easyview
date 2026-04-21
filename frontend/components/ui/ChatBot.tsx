@@ -124,7 +124,7 @@ export default function ChatBot() {
         <div className="chatbot-panel" style={panelStyle}>
           <div className="chatbot-header">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" style={{ width: 20, height: 20, objectFit: "contain" }} />
+              <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" style={{ width: 24, height: 24, objectFit: "contain" }} />
               <span style={{ fontWeight: 700, fontSize: 14, color: "#2C2C2C" }}>AI 어시스턴트</span>
             </div>
             <button className="chatbot-close" onClick={() => setOpen(false)}>
