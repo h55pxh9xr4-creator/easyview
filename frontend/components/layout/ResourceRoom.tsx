@@ -684,8 +684,134 @@ export default function ResourceRoom() {
   const COLS_FLAT    = ["번호", "제목", "법인", "담당자", "상태", "요청일", "마감일", ""];
   const COLS_GROUPED = ["번호", "제목", "담당자", "상태", "요청일", "마감일", ""];
 
-  const PageRequests = () => (
-    <Card>
+  const fmtSize = (b: number) =>
+    b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
+
+  const fileIcon = (name: string) => {
+    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+    if (ext === "pdf") return "📄";
+    if (["xlsx", "xls"].includes(ext)) return "📊";
+    if (["docx", "doc"].includes(ext)) return "📝";
+    if (["zip", "7z", "rar"].includes(ext)) return "🗜";
+    if (["jpg", "jpeg", "png", "gif"].includes(ext)) return "🖼";
+    return "📎";
+  };
+
+  const PageRequests = () => {
+    if (detailReq) {
+      const sc = STATUS_CFG[detailReq.status];
+      return (
+        <>
+          <style>{`@keyframes _rdi{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}`}</style>
+          <Card>
+            <div style={{ animation: "_rdi 0.22s ease" }}>
+              {/* ── Back nav ── */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+                <button
+                  onClick={() => setDetailReq(null)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.border}`, background: "#fff", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.primary; (e.currentTarget as HTMLElement).style.color = C.primary; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.sub; }}
+                >
+                  ← 목록으로
+                </button>
+                <span style={{ fontSize: 12, color: C.muted }}>자료 요청 / {detailReq.reqCode}</span>
+              </div>
+
+              {/* ── Title ── */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 5 }}>{detailReq.reqCode}</div>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>{detailReq.title}</h2>
+              </div>
+
+              {/* ── Meta grid ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px 24px", marginBottom: 24, padding: "18px 20px", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                {([
+                  ["법인",  detailReq.entity],
+                  ["담당자", detailReq.assignee],
+                  ["요청자", detailReq.requester],
+                  ["요청일", detailReq.createdDate],
+                  ["마감일", detailReq.dueDate],
+                ] as [string, string][]).map(([k, v]) => (
+                  <div key={k}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>{k}</div>
+                    <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{v || "—"}</div>
+                  </div>
+                ))}
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>상태</div>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
+                    <StatusIcon status={detailReq.status} color={sc.color} />
+                    {detailReq.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* ── 설명 ── */}
+              {detailReq.description && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 8 }}>설명</div>
+                  <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.75, background: "#F9F9F9", padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.border}`, margin: 0 }}>{detailReq.description}</p>
+                </div>
+              )}
+
+              {/* ── 첨부파일 ── */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
+                  {!filesLoading && (
+                    <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
+                      {detailFiles.length}
+                    </span>
+                  )}
+                  <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600, transition: "background 0.15s" }}>
+                    <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
+                    {uploading ? "업로드 중..." : "+ 파일 첨부"}
+                  </label>
+                </div>
+                {filesLoading ? (
+                  <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
+                ) : detailFiles.length === 0 ? (
+                  <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center" }}>
+                    <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
+                    <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다</p>
+                    <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부해주세요</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {detailFiles.map(f => (
+                      <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
+                        <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                            onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
+                            onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
+                          >
+                            {f.originalName}
+                          </a>
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                            {fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteFile(f.id)} title="삭제"
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
+                          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
+                          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
+                        >🗑</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </>
+      );
+    }
+
+    return (
+      <Card>
       {/* Header – row 1 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <div>
@@ -857,6 +983,7 @@ export default function ResourceRoom() {
       )}
     </Card>
   );
+};
 
   /* ── Users ── */
   const allPwcSel    = pwcSelected    === PWC_USERS.length    && PWC_USERS.length > 0;
@@ -1279,148 +1406,6 @@ export default function ResourceRoom() {
           </div>
         </Modal>
       )}
-
-      {detailReq && (() => {
-        const sc = STATUS_CFG[detailReq.status];
-        const pc = PRIORITY_CFG[detailReq.priority];
-
-        const fmtSize = (b: number) =>
-          b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
-
-        const fileIcon = (name: string) => {
-          const ext = name.split(".").pop()?.toLowerCase() ?? "";
-          if (ext === "pdf") return "📄";
-          if (["xlsx","xls"].includes(ext)) return "📊";
-          if (["docx","doc"].includes(ext)) return "📝";
-          if (["zip","7z","rar"].includes(ext)) return "🗜";
-          if (["jpg","jpeg","png","gif"].includes(ext)) return "🖼";
-          return "📎";
-        };
-
-        return (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
-            onClick={() => setDetailReq(null)}>
-            <div style={{ background: "#fff", width: 580, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderRadius: 8 }}
-              onClick={e => e.stopPropagation()}>
-
-              {/* Header */}
-              <div style={{ padding: "22px 28px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
-                <div>
-                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{detailReq.reqCode}</div>
-                  <h3 style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{detailReq.title}</h3>
-                </div>
-                <button onClick={() => setDetailReq(null)} style={{ background: "none", border: "none", fontSize: 22, color: C.muted, cursor: "pointer", lineHeight: 1, marginLeft: 12 }}>×</button>
-              </div>
-
-              {/* Meta grid */}
-              <div style={{ padding: "20px 28px 4px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 24px" }}>
-                {([
-                  ["법인", detailReq.entity],
-                  ["담당자", detailReq.assignee],
-                  ["요청자", detailReq.requester],
-                  ["마감일", detailReq.dueDate],
-                  ["등록일", detailReq.createdDate],
-                ] as [string, string][]).map(([k, v]) => (
-                  <div key={k}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 3 }}>{k}</div>
-                    <div style={{ fontSize: 13, color: C.text }}>{v}</div>
-                  </div>
-                ))}
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 3 }}>상태</div>
-                  <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>{detailReq.status}</span>
-                </div>
-              </div>
-
-              {/* 설명 */}
-              {detailReq.description && (
-                <div style={{ padding: "16px 28px 4px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 6 }}>설명</div>
-                  <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.7, background: "#F9F9F9", padding: "12px 14px", borderRadius: 6 }}>{detailReq.description}</p>
-                </div>
-              )}
-
-              {/* ── 첨부파일 섹션 ── */}
-              <div style={{ padding: "20px 28px 24px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
-                  {!filesLoading && (
-                    <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
-                      {detailFiles.length}
-                    </span>
-                  )}
-                  {/* 업로드 버튼 */}
-                  <label style={{
-                    marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5,
-                    padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer",
-                    background: uploading ? "#eee" : C.primary, color: "#fff",
-                    fontSize: 12, fontWeight: 600, transition: "background 0.15s",
-                  }}>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      hidden
-                      disabled={uploading}
-                      onChange={e => handleFileUpload(e.target.files)}
-                    />
-                    {uploading ? "업로드 중..." : "+ 파일 첨부"}
-                  </label>
-                </div>
-
-                {/* 파일 목록 */}
-                {filesLoading ? (
-                  <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "12px 0" }}>불러오는 중...</p>
-                ) : detailFiles.length === 0 ? (
-                  <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "28px 0", textAlign: "center" }}>
-                    <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
-                    <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다</p>
-                    <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부해주세요</p>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {detailFiles.map(f => (
-                      <div key={f.id} style={{
-                        display: "flex", alignItems: "center", gap: 10,
-                        padding: "10px 14px", borderRadius: 8,
-                        border: `1px solid ${C.border}`, background: "#FAFAFA",
-                      }}>
-                        <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <a
-                            href={getFileUrl(f.url)}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                            onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
-                            onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
-                          >
-                            {f.originalName}
-                          </a>
-                          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                            {fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteFile(f.id)}
-                          title="삭제"
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
-                          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
-                          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
-                        >🗑</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 28px", background: "#fafafa", borderTop: `1px solid ${C.border}` }}>
-                <GrayBtn label="닫기" onClick={() => setDetailReq(null)} />
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       <Toast msg={toast} />
     </div>
