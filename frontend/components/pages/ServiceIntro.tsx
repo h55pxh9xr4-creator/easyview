@@ -768,22 +768,22 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                 {
                   title: "신뢰성",
                   desc: "대상 법인의 데이터를 직접 이용하여 경영실적과 지표를 확인 가능",
-                  iconSrc: "/icons/icon-trust.svg",
+                  iconSrc: "/easyview/icons/icon-trust.svg",
                 },
                 {
                   title: "접근성",
                   desc: "해외법인 자료가 번역된 보고서를 통해 언어장벽을 해소한 세부 정보에 접근 가능",
-                  iconSrc: "/icons/icon-globe.svg",
+                  iconSrc: "/easyview/icons/icon-globe.svg",
                 },
                 {
                   title: "편리성",
                   desc: "언제 어디서나 웹이나 모바일로 현지 경영정보에 접근 가능",
-                  iconSrc: "/icons/icon-convenience.svg",
+                  iconSrc: "/easyview/icons/icon-convenience.svg",
                 },
                 {
                   title: "경제성",
                   desc: "합리적인 금액대의 투자로 ERP 내 BIS/BI 구축과 동일한 효과를 확인할 수 있음",
-                  iconSrc: "/icons/icon-mobile.svg",
+                  iconSrc: "/easyview/icons/icon-mobile.svg",
                 },
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-4 bg-white rounded-xl border border-[#E0E5EA] p-5 hover:border-[#FD5108]/40 hover:shadow-md transition-all">
