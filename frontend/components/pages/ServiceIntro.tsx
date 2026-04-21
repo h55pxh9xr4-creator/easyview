@@ -1,13 +1,48 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import PwCLogo from "@/components/ui/PwCLogo";
 import DemoRequestModal from "@/components/ui/DemoRequestModal";
 
 interface Props { onNavigateToReport?: () => void; }
 
+function StatItem({ target, suffix, label, delay, started }: { target: number; suffix: string; label: string; delay: number; started: boolean }) {
+  const [go, setGo] = useState(false);
+  useEffect(() => {
+    if (!started) return;
+    const t = setTimeout(() => setGo(true), delay);
+    return () => clearTimeout(t);
+  }, [started, delay]);
+  const value = useCountUp(target, 1400, go);
+  return (
+    <div>
+      <div className="text-2xl md:text-3xl font-bold text-[#FD5108] mb-1">{value}{suffix}</div>
+      <div className="text-xs text-[#4B535E] font-medium">{label}</div>
+    </div>
+  );
+}
+
+function useCountUp(target: number, duration = 1400, started = false) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!started) return;
+    let start: number | null = null;
+    const step = (ts: number) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.floor(eased * target));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [started, target, duration]);
+  return value;
+}
+
 export default function ServiceIntro({ onNavigateToReport }: Props) {
   const [scrolled, setScrolled] = useState(false);
+  const [statsVisible, setStatsVisible] = useState(false);
+  const statsRef = useRef<HTMLDivElement>(null);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [ytHovered, setYtHovered] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
@@ -22,6 +57,16 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
     const onScroll = () => setScrolled(container.scrollTop > 50);
     container.addEventListener("scroll", onScroll);
     return () => container.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const el = statsRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setStatsVisible(true); observer.disconnect(); }
+    }, { threshold: 0.4 });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const scrollTo = (id: string) => {
@@ -76,10 +121,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
 
             {/* ── Left: copy ── */}
             <div style={{ animation: "fadeSlideUp 0.7s ease-out both" }}>
-              <div className="inline-flex items-center gap-2 bg-[#FD5108]/10 border border-[#FD5108]/30 rounded-full px-4 py-2 mb-8">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FD5108] animate-pulse" />
-                <span className="text-[11px] font-bold text-[#FD5108] uppercase tracking-wider">혁신적인 재무 분석 플랫폼</span>
-              </div>
+              <p className="text-lg text-[#FD5108] leading-relaxed mb-3">혁신적인 재무 분석 플랫폼</p>
               <h1 className="text-5xl md:text-6xl font-bold text-[#222C40] leading-tight mb-6">
                 데이터 기반의
                 <br />
@@ -101,18 +143,11 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-4 mt-12 pt-10 border-t border-[#DFE3E6]">
-                {[
-                  { num: "134K+", label: "전표 분석" },
-                  { num: "5", label: "대시보드" },
-                  { num: "6", label: "시나리오" },
-                  { num: "99%", label: "정확도" },
-                ].map((stat, i) => (
-                  <div key={stat.label} style={{ animation: `fadeSlideUp ${0.9 + i * 0.1}s ease-out both` }}>
-                    <div className="text-2xl md:text-3xl font-bold text-[#FD5108] mb-1">{stat.num}</div>
-                    <div className="text-xs text-[#4B535E] font-medium">{stat.label}</div>
-                  </div>
-                ))}
+              <div ref={statsRef} className="grid grid-cols-4 gap-4 mt-12 pt-10 border-t border-[#DFE3E6]">
+                <StatItem target={134} suffix="K+" label="전표 분석" delay={0} started={statsVisible} />
+                <StatItem target={5} suffix="" label="대시보드" delay={100} started={statsVisible} />
+                <StatItem target={6} suffix="" label="시나리오" delay={200} started={statsVisible} />
+                <StatItem target={99} suffix="%" label="정확도" delay={300} started={statsVisible} />
               </div>
             </div>
 
@@ -568,19 +603,20 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
       </section>
 
       {/* ===== 매뉴얼 & 가이드 ===== */}
-      <section id="manual" className="snap-start min-h-[calc(100vh-52px)] bg-white py-12 md:py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <div className="inline-block">
-              <div className="text-[12px] font-semibold text-[#FD5108] tracking-widest uppercase mb-3 block">참고 자료</div>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#222C40] mb-4 leading-tight">
-                Easy View를 
-                <br />
-                <span style={{ background: "linear-gradient(135deg, #FF9F00, #FD5108)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>더 잘 활용하기</span>
-              </h2>
-            </div>
-          </div>
+      <section id="manual" className="snap-start min-h-[calc(100vh-52px)] bg-white flex flex-col">
+        {/* 타이틀 — 상단 */}
+        <div className="text-center pt-12 pb-6 max-w-6xl mx-auto px-6 w-full">
+          <div className="text-[12px] font-semibold text-[#FD5108] tracking-widest uppercase mb-3">참고 자료</div>
+          <h2 className="text-3xl md:text-4xl font-bold text-[#222C40] leading-tight">
+            Easy View를
+            <br />
+            <span style={{ background: "linear-gradient(135deg, #FF9F00, #FD5108)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>더 잘 활용하기</span>
+          </h2>
+        </div>
 
+        {/* 카드 — 나머지 공간 중앙 */}
+        <div className="flex-1 flex items-center pb-32">
+          <div className="max-w-6xl mx-auto px-6 w-full">
           <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 동영상 매뉴얼 (국문) */}
             <div
@@ -704,6 +740,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
               </div>
             </div>
           )}
+          </div>
         </div>
       </section>
 

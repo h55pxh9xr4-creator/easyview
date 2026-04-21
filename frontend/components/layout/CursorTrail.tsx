@@ -29,7 +29,7 @@ export default function CursorTrail() {
 
     // trail 히스토리 (최근 60개 좌표)
     const trail: { x: number; y: number }[] = [];
-    const MAX = 60;
+    const MAX = 20;
 
     let raf: number;
 
