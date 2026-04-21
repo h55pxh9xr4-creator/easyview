@@ -374,6 +374,7 @@ export default function ResourceRoom() {
   const [reqFilter, setReqFilter]           = useState<ReqStatus | "전체">("전체");
   const [detailReq, setDetailReq]           = useState<Request | null>(null);
   const [showCreate, setShowCreate]         = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isEditing, setIsEditing]           = useState(false);
   const [editDraft, setEditDraft]           = useState<{
     title: string; entity: string; assignees: string[];
@@ -718,16 +719,7 @@ export default function ResourceRoom() {
         <TD style={{ fontSize: 12, color: req.dueDate === "—" ? C.muted : C.sub, textAlign: "center" }}>{req.dueDate}</TD>
         <td style={{ padding: "11px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "center" }}>
           <button
-            onClick={async e => {
-              e.stopPropagation();
-              try { await deleteRequest(req.id); } catch { /* fallback IDs or backend down — still remove locally */ }
-              setRequests(p => {
-                const next = p.filter(r => r.id !== req.id);
-                saveCache(next);
-                return next;
-              });
-              showToast("요청이 삭제되었습니다.");
-            }}
+            onClick={e => { e.stopPropagation(); setDeleteConfirmId(req.id); }}
             style={{ color: C.primary, opacity: 0.55, background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center" }}
             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "0.55")}
@@ -1554,6 +1546,38 @@ export default function ResourceRoom() {
             </button>
           </div>
         </Modal>
+      )}
+
+      {deleteConfirmId !== null && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setDeleteConfirmId(null)}>
+          <div style={{ background: "#fff", borderRadius: 10, padding: "28px 32px", width: 340, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", textAlign: "center" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
+            <p style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>정말 삭제하시겠습니까?</p>
+            <p style={{ fontSize: 13, color: C.muted, marginBottom: 24 }}>삭제 후 복구할 수 없습니다.</p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <button
+                onClick={async () => {
+                  const id = deleteConfirmId;
+                  setDeleteConfirmId(null);
+                  try { await deleteRequest(id); } catch { /* backend down */ }
+                  setRequests(p => {
+                    const next = p.filter(r => r.id !== id);
+                    saveCache(next);
+                    return next;
+                  });
+                  showToast("요청이 삭제되었습니다.");
+                }}
+                style={{ padding: "8px 24px", borderRadius: 6, border: "none", background: "#DC2626", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >삭제</button>
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                style={{ padding: "8px 24px", borderRadius: 6, border: `1px solid ${C.border}`, background: "#fff", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >취소</button>
+            </div>
+          </div>
+        </div>
       )}
 
       <Toast msg={toast} />
