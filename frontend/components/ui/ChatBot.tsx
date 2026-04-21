@@ -60,9 +60,8 @@ export default function ChatBot() {
     };
     const onUp = () => {
       if (!dragging.current) return;
-      const isLongPress = Date.now() - pressTime.current > 300;
       dragging.current = false; setGrabbed(false);
-      if (didDrag.current || isLongPress) {
+      if (didDrag.current) {
         showHyu();
       } else {
         setSpeechText(null); setSpeechForced(false);
