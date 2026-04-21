@@ -612,29 +612,29 @@ export default function ResourceRoom() {
         onMouseLeave={e => (e.currentTarget.style.background = "")}
         onClick={() => setDetailReq(req)}
       >
-        <TD style={{ color: C.muted, fontSize: 11 }}>{req.reqCode}</TD>
-        <TD>
+        <TD style={{ color: C.muted, fontSize: 11, textAlign: "center" }}>{req.reqCode}</TD>
+        <TD style={{ textAlign: "left" }}>
           <span style={{ fontWeight: 600, color: C.text }}>{req.title}</span>
           {req.status === "반려" && (
             <span style={{ marginLeft: 6, fontSize: 10, background: "#FEECEC", color: "#B91C1C", padding: "1px 6px", borderRadius: 10, fontWeight: 600 }}>반려</span>
           )}
         </TD>
         {!hideEntity && (
-          <TD style={{ fontSize: 12, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.entity}</TD>
+          <TD style={{ fontSize: 12, textAlign: "left", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.entity}</TD>
         )}
-        <TD style={{ fontSize: 12 }}>{req.assignee}</TD>
-        <TD>
+        <TD style={{ fontSize: 12, textAlign: "center" }}>{req.assignee}</TD>
+        <TD style={{ textAlign: "center" }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: pc.color }}>
             {req.priority === "높음" ? "● " : req.priority === "보통" ? "◐ " : "○ "}{req.priority}
           </span>
         </TD>
-        <TD>
+        <TD style={{ textAlign: "center" }}>
           <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
             {req.status}
           </span>
         </TD>
-        <TD style={{ fontSize: 12, color: req.dueDate === "—" ? C.muted : C.sub }}>{req.dueDate}</TD>
-        <TD style={{ fontSize: 12, color: C.muted }}>{req.createdDate}</TD>
+        <TD style={{ fontSize: 12, color: req.dueDate === "—" ? C.muted : C.sub, textAlign: "center" }}>{req.dueDate}</TD>
+        <TD style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>{req.createdDate}</TD>
         <td style={{ padding: "11px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "center" }}>
           <button
             onClick={async e => {
