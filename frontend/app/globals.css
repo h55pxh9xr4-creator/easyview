@@ -462,7 +462,9 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
 
 /* ── ChatBot ── */
 .chatbot-fab-wrap{position:fixed;bottom:16px;right:24px;z-index:600;display:flex;flex-direction:column;align-items:center}
-.chatbot-fab-wrap:hover .chatbot-speech{opacity:1;transform:translateY(0);pointer-events:auto}
+.chatbot-fab-wrap:not(.chatbot-fab-open):hover .chatbot-speech{opacity:1;transform:translateY(0);pointer-events:auto}
+.chatbot-fab-open .chatbot-speech{opacity:0!important;pointer-events:none!important}
+.chatbot-fab-open .chatbot-fab:hover{transform:none!important}
 .chatbot-speech{position:absolute;bottom:calc(100% + 10px);right:0;background:#fff;border:2px solid #E87722;border-radius:14px;padding:9px 13px;font-size:12px;font-weight:600;color:#2C2C2C;white-space:nowrap;line-height:1.6;box-shadow:0 4px 16px rgba(0,0,0,.15);opacity:0;transform:translateY(6px);transition:opacity .18s ease,transform .18s ease;pointer-events:none}
 .chatbot-speech::after{content:"";position:absolute;bottom:-9px;right:18px;border:5px solid transparent;border-top-color:#E87722}
 .chatbot-speech::before{content:"";position:absolute;bottom:-6px;right:19px;border:4px solid transparent;border-top-color:#fff;z-index:1}

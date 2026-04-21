@@ -172,11 +172,11 @@ export default function ChatBot() {
       {/* ── 플로팅 버튼 ── */}
       <div
         ref={fabRef}
-        className={`chatbot-fab-wrap${grabbed ? " chatbot-fab-grabbed" : ""}`}
+        className={`chatbot-fab-wrap${grabbed ? " chatbot-fab-grabbed" : ""}${open ? " chatbot-fab-open" : ""}`}
         style={{ ...fabStyle, cursor: grabbed ? "grabbing" : "grab" }}
         onMouseDown={handleFabMouseDown}
       >
-        <div className="chatbot-speech" style={speechForced ? { opacity: 1, transform: "translateY(0)", pointerEvents: "auto" } : undefined}>
+        <div className="chatbot-speech" style={speechForced && !open ? { opacity: 1, transform: "translateY(0)", pointerEvents: "auto" } : undefined}>
           {speechText ?? <>안녕하세요?<br/>삼일회계법인 김삼일입니다.</>}
         </div>
         <button className="chatbot-fab" onClick={handleFabClick}>
