@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   assetPrefix: "/easyview",  // 정적 파일 경로 prefix
   trailingSlash: true,
   images: { unoptimized: true },
+  env: {
+    NEXT_PUBLIC_BASE_PATH: "/easyview",
+  },
 };
 
 export default nextConfig;

@@ -624,11 +624,11 @@ export default function ResourceRoom() {
             onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#444"; } }}
           >
             <img
-              src={item.icon}
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${item.icon}`}
               width={18}
               height={18}
               alt=""
-              style={{ flexShrink: 0, opacity: active ? 1 : 0.45, filter: active ? "invert(48%) sepia(79%) saturate(1200%) hue-rotate(5deg) brightness(95%) contrast(90%)" : "none" }}
+              style={{ flexShrink: 0, opacity: active ? 1 : 0.45 }}
             />
             {item.label}
           </button>
