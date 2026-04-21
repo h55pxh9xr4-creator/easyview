@@ -706,6 +706,7 @@ export default function ResourceRoom() {
         {!hideEntity && (
           <TD style={{ fontSize: 12, textAlign: "left", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.entity}</TD>
         )}
+        <TD style={{ fontSize: 12, textAlign: "center" }}>{req.requester}</TD>
         <TD style={{ fontSize: 12, textAlign: "center" }}>{req.assignee}</TD>
         <TD style={{ textAlign: "center" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
@@ -736,8 +737,8 @@ export default function ResourceRoom() {
     );
   };
 
-  const COLS_FLAT    = ["번호", "제목", "법인", "법인담당자", "상태", "요청일", "마감일", ""];
-  const COLS_GROUPED = ["번호", "제목", "법인담당자", "상태", "요청일", "마감일", ""];
+  const COLS_FLAT    = ["번호", "제목", "법인", "자료요청자", "법인담당자", "상태", "요청일", "마감일", ""];
+  const COLS_GROUPED = ["번호", "제목", "자료요청자", "법인담당자", "상태", "요청일", "마감일", ""];
 
   const fmtSize = (b: number) =>
     b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
