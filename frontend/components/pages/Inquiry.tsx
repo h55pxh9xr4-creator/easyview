@@ -29,6 +29,7 @@ const PAGE_NAV: Record<string, { tab: string; sub: string; label: string }> = {
   "전표검색":    { tab: "vch",     sub: "vch-search",    label: "전표검색" },
 };
 
+// 내용에서 페이지/항목/값/참고 파싱
 function parseCommentTarget(content: string) {
   const get = (key: string) => content.match(new RegExp(`^${key}: (.+)$`, "m"))?.[1]?.trim();
   return { page: get("페이지"), label: get("항목"), value: get("값"), sub: get("선택 월") };
@@ -37,20 +38,18 @@ function parseCommentTarget(content: string) {
 export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string, keepComment?: boolean) => void }) {
   const isDark = useDarkMode();
 
-  const [view,        setView]       = useState<View>("list");
-  const [list,        setList]       = useState<InquiryItem[]>([]);
-  const [detail,      setDetail]     = useState<InquiryDetail | null>(null);
-  const [loading,     setLoading]    = useState(false);
-  const [submitting,  setSubmitting] = useState(false);
-  const [toast,       setToast]      = useState<{ msg: string; type: "ok" | "err" } | null>(null);
-  const [form,        setForm]       = useState({ category: "기타 문의", title: "", content: "", corporation: "", is_secret: false });
-  const [replyText,   setReplyText]  = useState("");
-  const [selected,    setSelected]   = useState<Set<number>>(new Set());
-  const [searchText,  setSearchText] = useState("");
-  const [filterCat,   setFilterCat]  = useState("");
-  const [filterCorp,  setFilterCorp] = useState("");
-  const [myOnly,      setMyOnly]     = useState(true);
-  const [page,        setPage]       = useState(1);
+  const [view,       setView]      = useState<View>("list");
+  const [list,       setList]      = useState<InquiryItem[]>([]);
+  const [detail,     setDetail]    = useState<InquiryDetail | null>(null);
+  const [loading,    setLoading]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [toast,      setToast]     = useState<{ msg: string; type: "ok" | "err" } | null>(null);
+  const [form,       setForm]      = useState({ category: "기타 문의", title: "", content: "", is_secret: false });
+  const [replyText,  setReplyText] = useState("");
+  const [selected,   setSelected]  = useState<Set<number>>(new Set());
+  const [searchText, setSearchText] = useState("");
+  const [filterCat,  setFilterCat]  = useState("");
+  const [page,       setPage]       = useState(1);
 
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
   const isAdmin = currentUser === ADMIN_ID;
@@ -84,12 +83,6 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer", fontFamily: "inherit",
     display: "flex", alignItems: "center", justifyContent: "center",
   });
-  const selStyle = (hasVal: boolean): React.CSSProperties => ({
-    border: `1px solid ${bdr}`, borderRadius: 6, padding: "7px 28px 7px 10px", fontSize: 12,
-    fontFamily: "inherit", color: hasVal ? txtP : txtDim, appearance: "none",
-    background: `${bg2} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23${isDark ? "5A6070" : "999"}'/%3E%3C/svg%3E") no-repeat right 10px center`,
-    cursor: "pointer",
-  });
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -103,6 +96,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
 
   useEffect(() => { loadList(); }, []);
 
+  // CommentDot 클릭으로 넘어왔을 때 해당 글 바로 열기
   useEffect(() => {
     if (pendingId !== null) {
       openDetail(pendingId);
@@ -121,7 +115,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     setSubmitting(true);
     try {
       await createInquiry({ ...form, author: currentUser });
-      setForm({ category: "기타 문의", title: "", content: "", corporation: "", is_secret: false });
+      setForm({ category: "기타 문의", title: "", content: "", is_secret: false });
       loadList(); setView("list");
       showToast("문의가 등록되었습니다.");
     } catch { showToast("등록 중 오류가 발생했습니다.", "err"); }
@@ -144,7 +138,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     if (!detail || !form.title.trim() || !form.content.trim()) return;
     setSubmitting(true);
     try {
-      await updateInquiry(detail.id, { category: form.category, title: detail.title, content: form.content, corporation: form.corporation, is_secret: form.is_secret });
+      await updateInquiry(detail.id, { category: form.category, title: detail.title, content: form.content, is_secret: form.is_secret });
       openDetail(detail.id);
       showToast("수정되었습니다.");
     } catch { showToast("수정 중 오류가 발생했습니다.", "err"); }
@@ -162,16 +156,11 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     } catch { showToast("삭제 중 오류가 발생했습니다.", "err"); }
   };
 
-  // ── 법인 목록 (등록된 법인 기준으로 동적 생성) ──────────────
-  const corpOptions = Array.from(new Set(list.map(i => i.corporation).filter(Boolean))).sort();
-
   // ── 필터링 + 페이지네이션 ─────────────────────────────────
   const filtered = list.filter(item => {
-    const matchMy   = !myOnly || isAdmin || item.author === currentUser;
     const matchCat  = !filterCat  || item.category === filterCat;
-    const matchCorp = !filterCorp || item.corporation === filterCorp;
     const matchText = !searchText || item.title.includes(searchText) || item.author.includes(searchText);
-    return matchMy && matchCat && matchCorp && matchText;
+    return matchCat && matchText;
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -186,8 +175,6 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
       return next;
     });
   };
-
-  const resetPage = () => setPage(1);
 
   // ── 공통 토스트 ────────────────────────────────────────────
   const Toast = () => toast ? (
@@ -208,8 +195,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
       <Toast />
 
       {/* 툴바 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        {/* 검색 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
           <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: isDark ? "#5A6070" : "#bbb" }}
             width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -217,45 +203,19 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
           </svg>
           <input
             value={searchText}
-            onChange={e => { setSearchText(e.target.value); resetPage(); }}
+            onChange={e => { setSearchText(e.target.value); setPage(1); }}
             placeholder="검색어를 입력해주세요..."
             style={{ border: `1px solid ${bdr}`, borderRadius: 6, padding: "7px 12px 7px 30px", fontSize: 12, fontFamily: "inherit", width: 200, outline: "none", background: bg2, color: txtP }}
           />
         </div>
-
-        {/* 카테고리 필터 */}
-        <select value={filterCat} onChange={e => { setFilterCat(e.target.value); resetPage(); }} style={selStyle(!!filterCat)}>
-          <option value="">전체 카테고리</option>
+        <select
+          value={filterCat}
+          onChange={e => { setFilterCat(e.target.value); setPage(1); }}
+          style={{ border: `1px solid ${bdr}`, borderRadius: 6, padding: "7px 28px 7px 10px", fontSize: 12, fontFamily: "inherit", color: filterCat ? txtP : txtDim, appearance: "none", background: `${bg2} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23${isDark ? "5A6070" : "999"}'/%3E%3C/svg%3E") no-repeat right 10px center` }}
+        >
+          <option value="">* 카테고리를 선택해주세요.</option>
           {INQUIRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-
-        {/* 법인 필터 */}
-        <select value={filterCorp} onChange={e => { setFilterCorp(e.target.value); resetPage(); }} style={selStyle(!!filterCorp)}>
-          <option value="">전체 법인</option>
-          {corpOptions.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-
-        {/* 내 요청만 보기 토글 */}
-        {!isAdmin && (
-          <button
-            onClick={() => { setMyOnly(p => !p); resetPage(); }}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "7px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-              cursor: "pointer", fontFamily: "inherit",
-              border: myOnly ? "none" : `1px solid ${bdr}`,
-              background: myOnly ? "#E87722" : bg2,
-              color: myOnly ? "#fff" : (isDark ? "#9198A8" : "#555"),
-              transition: "all .15s",
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-            {myOnly ? "내 요청만" : "전체 요청"}
-          </button>
-        )}
-
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <button
             onClick={() => { if (selected.size > 0) handleDelete([...selected]); }}
@@ -291,7 +251,6 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                 />
               </th>
               <th style={{ ...th, width: 60 }}>번호</th>
-              <th style={{ ...th, width: 110 }}>법인</th>
               <th style={{ ...th, width: 120 }}>구분</th>
               <th style={{ ...th }}>제목</th>
               <th style={{ ...th, width: 100 }}>작성자</th>
@@ -301,10 +260,10 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={8} style={{ textAlign: "center", padding: "52px", color: emptyClr }}>불러오는 중...</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: "center", padding: "52px", color: emptyClr }}>불러오는 중...</td></tr>
             )}
             {!loading && paged.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign: "center", padding: "52px", color: emptyClr }}>등록된 문의가 없습니다.</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: "center", padding: "52px", color: emptyClr }}>등록된 문의가 없습니다.</td></tr>
             )}
             {paged.map(item => (
               <tr
@@ -317,9 +276,6 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                   <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleOne(item.id)} />
                 </td>
                 <td style={{ ...td, textAlign: "center", color: txtDim }} onClick={() => openDetail(item.id)}>{item.id}</td>
-                <td style={{ ...td, textAlign: "center", color: txtS, fontSize: 12 }} onClick={() => openDetail(item.id)}>
-                  {item.corporation || <span style={{ color: emptyClr }}>-</span>}
-                </td>
                 <td style={{ ...td, textAlign: "center" }} onClick={() => openDetail(item.id)}>
                   <span style={{ ...badge, ...catColor(item.category, isDark) }}>{item.category}</span>
                 </td>
@@ -362,26 +318,11 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
           <button onClick={() => setView("list")} style={backBtn}>← 목록으로</button>
         </div>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={lbl}>카테고리</label>
-              <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={{ ...inp, cursor: "pointer" }}>
-                {INQUIRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={lbl}>법인</label>
-              <input
-                value={form.corporation}
-                onChange={e => setForm(p => ({ ...p, corporation: e.target.value }))}
-                placeholder="법인명을 입력하세요"
-                list="corp-list"
-                style={inp}
-              />
-              <datalist id="corp-list">
-                {corpOptions.map(c => <option key={c} value={c} />)}
-              </datalist>
-            </div>
+          <div>
+            <label style={lbl}>카테고리</label>
+            <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={{ ...inp, width: 200, cursor: "pointer" }}>
+              {INQUIRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
           <div>
             <label style={lbl}>제목</label>
@@ -419,16 +360,6 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
               <select className="fsel" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={{ fontSize: 13, padding: "6px 28px 6px 10px", background: bg2, color: txtP, border: `1px solid ${bdr}`, borderRadius: 6, fontFamily: "inherit" }}>
                 {INQUIRY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input
-                value={form.corporation}
-                onChange={e => setForm(p => ({ ...p, corporation: e.target.value }))}
-                placeholder="법인명"
-                list="corp-list-edit"
-                style={{ fontSize: 13, padding: "6px 12px", background: bg2, color: txtP, border: `1px solid ${bdr}`, borderRadius: 6, fontFamily: "inherit", outline: "none" }}
-              />
-              <datalist id="corp-list-edit">
-                {corpOptions.map(c => <option key={c} value={c} />)}
-              </datalist>
               <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: txtS, cursor: "pointer" }}>
                 <input type="checkbox" checked={form.is_secret} onChange={e => setForm(p => ({ ...p, is_secret: e.target.checked }))} />
                 비밀글
@@ -487,13 +418,12 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
                   );
                 })()}
                 <button onClick={() => setView("list")} style={backBtn}>목록으로</button>
-                {canEdit && <button onClick={() => { setForm({ category: detail.category, title: detail.title, content: detail.content, corporation: detail.corporation || "", is_secret: detail.is_secret }); setView("edit"); }} style={cancelBtn}>수정</button>}
+                {canEdit && <button onClick={() => { setForm({ category: detail.category, title: detail.title, content: detail.content, is_secret: detail.is_secret }); setView("edit"); }} style={cancelBtn}>수정</button>}
                 {canEdit && <button onClick={() => handleDelete([detail.id])} style={{ ...cancelBtn, color: "#EF4444", borderColor: isDark ? "#7F1D1D" : "#FCCAC7" }}>삭제</button>}
               </div>
             </div>
-            <div style={{ fontSize: 12, color: txtD, display: "flex", gap: 20, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12, color: txtD, display: "flex", gap: 20 }}>
               <span>작성자: <strong style={{ color: txtS }}>{detail.author}</strong></span>
-              {detail.corporation && <span>법인: <strong style={{ color: txtS }}>{detail.corporation}</strong></span>}
               <span>작성일: {detail.created_at}</span>
             </div>
           </div>

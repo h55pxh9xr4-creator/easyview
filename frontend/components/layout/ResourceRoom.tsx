@@ -661,8 +661,8 @@ export default function ResourceRoom() {
 
   const PageRequests = () => (
     <Card>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+      {/* Header – row 1 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <div>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>자료 요청</h2>
           <p style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>총 {requests.length}건 · 표시 {filteredReqs.length}건</p>
@@ -711,6 +711,41 @@ export default function ResourceRoom() {
             <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> 자료 요청
           </button>
         </div>
+      </div>
+
+      {/* Header – row 2: 법인 드롭다운 + 내 요청만 토글 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <select
+          value={entityFilter}
+          onChange={e => setEntityFilter(e.target.value)}
+          style={{
+            padding: "6px 28px 6px 10px", borderRadius: 6, fontSize: 12,
+            border: `1px solid ${entityFilter !== "전체" ? C.primary : "#ddd"}`,
+            background: `${entityFilter !== "전체" ? C.primaryBg : "#fff"} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`,
+            color: entityFilter !== "전체" ? C.primary : "#666",
+            appearance: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: entityFilter !== "전체" ? 600 : 400,
+          }}
+        >
+          <option value="전체">전체 법인</option>
+          {ENTITIES.map(e => <option key={e} value={e}>{e}</option>)}
+        </select>
+
+        <button
+          onClick={() => setMyOnly(p => !p)}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+            cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+            border: myOnly ? "none" : "1px solid #ddd",
+            background: myOnly ? C.primary : "#fff",
+            color: myOnly ? "#fff" : "#666",
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          {myOnly ? "내 요청만" : "전체 요청"}
+        </button>
       </div>
 
       {/* ── 목록 보기 ── */}

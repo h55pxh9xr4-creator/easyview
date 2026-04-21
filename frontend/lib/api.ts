@@ -316,14 +316,14 @@ export type InquiryCategory = typeof INQUIRY_CATEGORIES[number];
 
 export interface InquiryItem {
   id: number; category: string; title: string; author: string;
-  corporation: string; is_secret: boolean; status: string; created_at: string;
+  is_secret: boolean; status: string; created_at: string;
 }
 export interface InquiryDetail extends InquiryItem {
   content: string; reply: string | null; reply_at: string | null;
 }
 export const fetchInquiries = () => get<InquiryItem[]>("/api/inquiry");
 export const fetchInquiry   = (id: number) => get<InquiryDetail>(`/api/inquiry/${id}`);
-export const createInquiry  = (body: { category: string; title: string; content: string; author: string; corporation: string; is_secret: boolean }) =>
+export const createInquiry  = (body: { category: string; title: string; content: string; author: string; is_secret: boolean }) =>
   fetch(`${BASE}/api/inquiry`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
 export const replyInquiry   = (id: number, reply: string) =>
   fetch(`${BASE}/api/inquiry/${id}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply }) }).then(r => r.json());
