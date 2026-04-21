@@ -48,6 +48,7 @@ export default function ChatBot() {
         const dy = e.clientY - pressStart.current.y;
         if (Math.sqrt(dx * dx + dy * dy) < 8) return;
         didDrag.current = true;
+        setGrabbed(true);
         setSpeechText("악 놔주세요!"); setSpeechForced(true);
       }
       const w = fabRef.current?.offsetWidth  ?? 88;
@@ -82,7 +83,6 @@ export default function ChatBot() {
     pressTime.current = Date.now();
     pressStart.current = { x: e.clientX, y: e.clientY };
     if (speechTimer.current) { clearTimeout(speechTimer.current); speechTimer.current = null; }
-    setGrabbed(true);
     setSpeechText(null); setSpeechForced(false);
     const rect = fabRef.current!.getBoundingClientRect();
     dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
