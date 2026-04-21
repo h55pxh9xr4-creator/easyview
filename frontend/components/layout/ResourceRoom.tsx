@@ -1376,8 +1376,6 @@ export default function ResourceRoom() {
           boxShadow: "0 1px 3px rgba(0,0,0,.04)",
         }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>Site Administration</span>
-          <span style={{ color: C.border, fontSize: 16 }}>|</span>
-          <span style={{ fontSize: 12, color: C.muted }}>05239 세아베스틸지주 EASY VIEW</span>
         </div>
 
         {page === "requests"       && <PageRequests />}
