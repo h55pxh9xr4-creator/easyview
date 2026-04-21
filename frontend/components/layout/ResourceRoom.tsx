@@ -124,13 +124,13 @@ const PRIORITY_CFG: Record<ReqPriority, { color: string }> = {
 };
 
 const SIDEBAR_ITEMS: { key: SidebarPage; icon: string; label: string }[] = [
-  { key: "requests",      icon: "📋", label: "자료 요청" },
-  { key: "users",         icon: "👥", label: "Users" },
-  { key: "modules",       icon: "▪",  label: "Modules" },
-  { key: "access-groups", icon: "🔒", label: "Custom Access Groups" },
-  { key: "localisations", icon: "🌐", label: "Localisations" },
-  { key: "security",      icon: "🛡",  label: "Security" },
-  { key: "site-details",  icon: "📑", label: "Site Details" },
+  { key: "requests",      icon: "/icons/icon-journal.svg",     label: "자료 요청" },
+  { key: "users",         icon: "/icons/icon-building.svg",    label: "Users" },
+  { key: "modules",       icon: "/icons/icon-dashboard.svg",   label: "Modules" },
+  { key: "access-groups", icon: "/icons/icon-trust.svg",       label: "Custom Access Groups" },
+  { key: "localisations", icon: "/icons/icon-globe.svg",       label: "Localisations" },
+  { key: "security",      icon: "/icons/icon-balance.svg",     label: "Security" },
+  { key: "site-details",  icon: "/icons/icon-pdf.svg",         label: "Site Details" },
 ];
 
 /* ── shared small components ── */
@@ -623,9 +623,13 @@ export default function ResourceRoom() {
             onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "#F7F7F7"; (e.currentTarget as HTMLElement).style.color = "#333"; } }}
             onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#444"; } }}
           >
-            <span style={{ width: 18, textAlign: "center", fontSize: 14, color: active ? C.primary : "#999", flexShrink: 0 }}>
-              {item.icon}
-            </span>
+            <img
+              src={item.icon}
+              width={18}
+              height={18}
+              alt=""
+              style={{ flexShrink: 0, opacity: active ? 1 : 0.45, filter: active ? "invert(48%) sepia(79%) saturate(1200%) hue-rotate(5deg) brightness(95%) contrast(90%)" : "none" }}
+            />
             {item.label}
           </button>
         );
@@ -1442,7 +1446,7 @@ export default function ResourceRoom() {
   /* ── Render ── */
   return (
     <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text }}>
-      <SidebarEl />
+      {SidebarEl()}
 
       <main style={{ flex: 1, overflow: "auto", background: C.bg }}>
         {/* Page title bar */}
