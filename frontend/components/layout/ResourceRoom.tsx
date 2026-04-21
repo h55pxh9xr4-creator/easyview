@@ -193,7 +193,7 @@ function TH({ children }: { children: React.ReactNode }) {
       padding: "8px 12px", fontSize: 11, fontWeight: 700,
       color: C.primary, background: "#FFF8F3",
       borderBottom: `2px solid ${C.primary}`,
-      textAlign: "left", whiteSpace: "nowrap",
+      textAlign: "center", whiteSpace: "nowrap",
       textTransform: "uppercase", letterSpacing: "0.3px",
       position: "sticky", top: 0,
     }}>
@@ -670,18 +670,29 @@ export default function ResourceRoom() {
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           {/* Status filter tabs */}
           <div style={{ display: "flex", gap: 4 }}>
-            {(["전체", "초안", "요청됨", "검토중", "자료 수령", "완료", "반려"] as (ReqStatus | "전체")[]).map(s => (
-              <button key={s} onClick={() => setReqFilter(s)}
-                style={{
-                  padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-                  cursor: "pointer", border: "none", fontFamily: "inherit",
-                  background: reqFilter === s ? C.primary : "#F0F0F0",
-                  color: reqFilter === s ? "#fff" : "#666",
-                  transition: "all 0.15s",
-                }}>
-                {s}
-              </button>
-            ))}
+            {(["전체", "초안", "요청됨", "검토중", "자료 수령", "완료", "반려"] as (ReqStatus | "전체")[]).map(s => {
+              const cfg = s === "전체" ? null : STATUS_CFG[s];
+              const isActive = reqFilter === s;
+              return (
+                <button key={s} onClick={() => setReqFilter(s)}
+                  style={{
+                    padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                    background: s === "전체"
+                      ? (isActive ? C.primary : "#F0F0F0")
+                      : (cfg?.bg ?? "#F0F0F0"),
+                    color: s === "전체"
+                      ? (isActive ? "#fff" : "#666")
+                      : (cfg?.color ?? "#666"),
+                    border: isActive && s !== "전체"
+                      ? `2px solid ${cfg?.color ?? "#ccc"}`
+                      : "2px solid transparent",
+                    opacity: !isActive && s !== "전체" ? 0.6 : 1,
+                  }}>
+                  {s}
+                </button>
+              );
+            })}
           </div>
           {/* 그룹핑 토글 */}
           <button
