@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Float, String, Date, Boolean, Index, DateTime, Text
+from sqlalchemy import Column, Integer, Float, String, Date, Boolean, Index, DateTime, Text, ForeignKey
 from datetime import datetime
 from database import Base
 
@@ -57,6 +57,34 @@ class Inquiry(Base):
     reply      = Column(Text,    nullable=True)     # 관리자 답변
     reply_at   = Column(DateTime, nullable=True)    # 답변 일시
     created_at = Column(DateTime, default=datetime.now)
+
+
+class DataRequest(Base):
+    __tablename__ = "data_request"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    req_code    = Column(String,  nullable=False)          # REQ-001
+    title       = Column(String,  nullable=False)
+    entity      = Column(String)
+    assignee    = Column(String)                           # 쉼표 구분 이름
+    requester   = Column(String)
+    status      = Column(String,  default="초안")
+    priority    = Column(String,  default="보통")
+    due_date    = Column(String)
+    description = Column(Text)
+    created_at  = Column(DateTime, default=datetime.now)
+
+
+class RequestFile(Base):
+    __tablename__ = "request_file"
+
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    request_id    = Column(Integer, ForeignKey("data_request.id", ondelete="CASCADE"), nullable=False)
+    filename      = Column(String,  nullable=False)        # 저장 파일명 (uuid.ext)
+    original_name = Column(String,  nullable=False)        # 원본 파일명
+    uploader      = Column(String)
+    size          = Column(Integer)
+    uploaded_at   = Column(DateTime, default=datetime.now)
 
 
 # 인덱스 정의

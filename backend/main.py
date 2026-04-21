@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from database import engine, Base
-from routers import filters, summary, pl, bs, vch, scenario, inquiry
+from routers import filters, summary, pl, bs, vch, scenario, inquiry, requests as req_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,7 +23,8 @@ app.include_router(pl.router,       prefix="/api/pl",        tags=["pl"])
 app.include_router(bs.router,       prefix="/api/bs",        tags=["bs"])
 app.include_router(vch.router,      prefix="/api/vch",       tags=["vch"])
 app.include_router(scenario.router, prefix="/api/scenario",  tags=["scenario"])
-app.include_router(inquiry.router,  prefix="/api/inquiry",   tags=["inquiry"])
+app.include_router(inquiry.router,    prefix="/api/inquiry",   tags=["inquiry"])
+app.include_router(req_router.router, prefix="/api/requests",  tags=["requests"])
 
 # media 폴더를 /media 경로로 정적 서빙
 media_dir = Path(__file__).parent / "media"

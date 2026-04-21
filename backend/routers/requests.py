@@ -1,0 +1,169 @@
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from pydantic import BaseModel
+from typing import List
+from datetime import datetime
+from pathlib import Path
+import uuid, shutil
+from database import get_db
+from models import DataRequest, RequestFile
+
+router = APIRouter()
+
+MEDIA_DIR = Path(__file__).parent.parent / "media" / "requests"
+
+
+# ── Schemas ──────────────────────────────────────────────────
+class RequestCreate(BaseModel):
+    title:       str
+    entity:      str
+    assignee:    str
+    requester:   str
+    status:      str = "초안"
+    priority:    str = "보통"
+    due_date:    str = ""
+    description: str = ""
+
+class StatusUpdate(BaseModel):
+    status: str
+
+
+# ── Helpers ──────────────────────────────────────────────────
+def _fmt(r: DataRequest):
+    return {
+        "id":          r.id,
+        "reqCode":     r.req_code,
+        "title":       r.title,
+        "entity":      r.entity   or "",
+        "assignee":    r.assignee or "",
+        "requester":   r.requester or "",
+        "status":      r.status   or "초안",
+        "priority":    r.priority or "보통",
+        "dueDate":     r.due_date or "—",
+        "createdDate": r.created_at.strftime("%Y-%m-%d") if r.created_at else "",
+        "description": r.description or "",
+    }
+
+def _fmt_file(rf: RequestFile):
+    return {
+        "id":           rf.id,
+        "requestId":    rf.request_id,
+        "filename":     rf.filename,
+        "originalName": rf.original_name,
+        "uploader":     rf.uploader or "",
+        "size":         rf.size or 0,
+        "uploadedAt":   rf.uploaded_at.strftime("%Y-%m-%d %H:%M") if rf.uploaded_at else "",
+        "url":          f"/media/requests/{rf.request_id}/{rf.filename}",
+    }
+
+def _next_code(db: Session) -> str:
+    count = db.query(func.count(DataRequest.id)).scalar() or 0
+    return f"REQ-{str(count + 1).zfill(3)}"
+
+
+# ── Endpoints ────────────────────────────────────────────────
+@router.get("")
+def list_requests(db: Session = Depends(get_db)):
+    rows = db.query(DataRequest).order_by(DataRequest.id.desc()).all()
+    return [_fmt(r) for r in rows]
+
+
+@router.post("", status_code=201)
+def create_requests(items: List[RequestCreate], db: Session = Depends(get_db)):
+    created = []
+    for item in items:
+        code = _next_code(db)
+        row  = DataRequest(req_code=code, **item.model_dump())
+        db.add(row)
+        db.flush()
+        created.append(row.id)
+    db.commit()
+    return {"ids": created}
+
+
+@router.patch("/{req_id}/status")
+def update_status(req_id: int, body: StatusUpdate, db: Session = Depends(get_db)):
+    row = db.query(DataRequest).filter(DataRequest.id == req_id).first()
+    if not row:
+        raise HTTPException(404, "Not found")
+    row.status = body.status
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{req_id}")
+def delete_request(req_id: int, db: Session = Depends(get_db)):
+    row = db.query(DataRequest).filter(DataRequest.id == req_id).first()
+    if not row:
+        raise HTTPException(404, "Not found")
+    req_dir = MEDIA_DIR / str(req_id)
+    if req_dir.exists():
+        shutil.rmtree(req_dir, ignore_errors=True)
+    db.query(RequestFile).filter(RequestFile.request_id == req_id).delete()
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
+
+
+# ── Files ────────────────────────────────────────────────────
+@router.get("/{req_id}/files")
+def list_files(req_id: int, db: Session = Depends(get_db)):
+    files = (
+        db.query(RequestFile)
+        .filter(RequestFile.request_id == req_id)
+        .order_by(RequestFile.uploaded_at.desc())
+        .all()
+    )
+    return [_fmt_file(f) for f in files]
+
+
+@router.post("/{req_id}/files", status_code=201)
+async def upload_file(
+    req_id:   int,
+    uploader: str        = Form(""),
+    file:     UploadFile = File(...),
+    db:       Session    = Depends(get_db),
+):
+    row = db.query(DataRequest).filter(DataRequest.id == req_id).first()
+    if not row:
+        raise HTTPException(404, "Not found")
+
+    suffix  = Path(file.filename).suffix
+    stored  = f"{uuid.uuid4().hex}{suffix}"
+    dest_dir = MEDIA_DIR / str(req_id)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / stored
+
+    with dest.open("wb") as out:
+        shutil.copyfileobj(file.file, out)
+
+    rf = RequestFile(
+        request_id=req_id,
+        filename=stored,
+        original_name=file.filename,
+        uploader=uploader,
+        size=dest.stat().st_size,
+    )
+    db.add(rf)
+    db.commit()
+    db.refresh(rf)
+    return _fmt_file(rf)
+
+
+@router.delete("/{req_id}/files/{file_id}")
+def delete_file(req_id: int, file_id: int, db: Session = Depends(get_db)):
+    rf = (
+        db.query(RequestFile)
+        .filter(RequestFile.id == file_id, RequestFile.request_id == req_id)
+        .first()
+    )
+    if not rf:
+        raise HTTPException(404, "Not found")
+    try:
+        (MEDIA_DIR / str(req_id) / rf.filename).unlink(missing_ok=True)
+    except Exception:
+        pass
+    db.delete(rf)
+    db.commit()
+    return {"ok": True}

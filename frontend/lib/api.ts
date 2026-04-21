@@ -331,3 +331,78 @@ export const updateInquiry  = (id: number, body: { category?: string; title?: st
   fetch(`${BASE}/api/inquiry/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
 export const deleteInquiry  = (id: number) =>
   fetch(`${BASE}/api/inquiry/${id}`, { method: "DELETE" }).then(r => r.json());
+
+// ── Data Requests ─────────────────────────────────────────────
+export interface DataRequest {
+  id:          number;
+  reqCode:     string;
+  title:       string;
+  entity:      string;
+  assignee:    string;
+  requester:   string;
+  status:      string;
+  priority:    string;
+  dueDate:     string;
+  createdDate: string;
+  description: string;
+}
+
+export interface ReqFile {
+  id:           number;
+  requestId:    number;
+  filename:     string;
+  originalName: string;
+  uploader:     string;
+  size:         number;
+  uploadedAt:   string;
+  url:          string;
+}
+
+export interface RequestCreateBody {
+  title:       string;
+  entity:      string;
+  assignee:    string;
+  requester:   string;
+  status:      string;
+  priority:    string;
+  due_date:    string;
+  description: string;
+}
+
+export const fetchRequests = () =>
+  get<DataRequest[]>("/api/requests");
+
+async function mut<T>(url: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method,
+    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    body:    body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status} ${url}`);
+  return res.json();
+}
+
+export const createRequests = (items: RequestCreateBody[]) =>
+  mut<{ ids: number[] }>(`${BASE}/api/requests`, "POST", items);
+
+export const updateRequestStatus = (id: number, status: string) =>
+  mut<{ ok: boolean }>(`${BASE}/api/requests/${id}/status`, "PATCH", { status });
+
+export const deleteRequest = (id: number) =>
+  mut<{ ok: boolean }>(`${BASE}/api/requests/${id}`, "DELETE");
+
+export const fetchRequestFiles = (reqId: number) =>
+  get<ReqFile[]>(`/api/requests/${reqId}/files`);
+
+export const uploadRequestFile = (reqId: number, file: File, uploader: string) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("uploader", uploader);
+  return fetch(`${BASE}/api/requests/${reqId}/files`, { method: "POST", body: fd })
+    .then(r => r.json()) as Promise<ReqFile>;
+};
+
+export const deleteRequestFile = (reqId: number, fileId: number) =>
+  fetch(`${BASE}/api/requests/${reqId}/files/${fileId}`, { method: "DELETE" }).then(r => r.json());
+
+export const getFileUrl = (url: string) => `${BASE}${url}`;

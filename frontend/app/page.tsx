@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header, { type TopTab } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
-import BookShelf from "@/components/layout/BookShelf";
+import ResourceRoom from "@/components/layout/ResourceRoom";
 import ServiceIntro from "@/components/pages/ServiceIntro";
 import FilterBar from "@/components/layout/FilterBar";
 import CommentPanel from "@/components/layout/CommentPanel";
@@ -191,7 +191,7 @@ function PageInner() {
         {/* ── 자료실 ── */}
         {topTab === "자료실" && (
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <BookShelf onNavigate={(tab, sub, label) => { handleNavigate(tab, sub, label); setTopTab("리포트"); }} />
+            <ResourceRoom />
           </div>
         )}
 

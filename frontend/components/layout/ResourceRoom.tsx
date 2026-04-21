@@ -1,0 +1,1357 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  fetchRequests, createRequests, deleteRequest,
+  fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
+  type DataRequest as ApiRequest, type ReqFile,
+} from "@/lib/api";
+
+
+/* ── types ── */
+type SidebarPage = "requests" | "users" | "modules" | "access-groups" | "localisations" | "security" | "site-details";
+type UserTab = "pwc" | "client" | "thirdparty" | "all";
+type ReqStatus = "초안" | "요청됨" | "검토중" | "자료 수령" | "완료" | "반려";
+type ReqPriority = "높음" | "보통" | "낮음";
+
+type Request = ApiRequest & { status: ReqStatus; priority: ReqPriority };
+
+/* ── 기본 데이터 (API 미연결 시 fallback) ── */
+const FALLBACK_REQUESTS: Request[] = [
+  { id: 1,  reqCode: "REQ-001", title: "재무제표 원본 제출",            entity: "SeAH Global Vina (SGV)",      assignee: "Chanwoo Lee",     requester: "Yerim Jeong",    status: "완료",    priority: "높음", dueDate: "2026-02-28", createdDate: "2026-01-10", description: "2025 회계연도 감사를 위한 베트남 법인 재무제표 원본 및 관련 주석 제출 요청" },
+  { id: 2,  reqCode: "REQ-002", title: "고정자산 목록 및 감가상각 일정표", entity: "SeAH Besteel Holdings",       assignee: "Hongkyu Ahn",     requester: "Minjoo Kang",   status: "자료 수령", priority: "높음", dueDate: "2026-03-15", createdDate: "2026-01-15", description: "2025년 말 기준 고정자산 목록, 취득/처분 내역, 감가상각 일정표 제출" },
+  { id: 3,  reqCode: "REQ-003", title: "매출채권 연령분석표",            entity: "SeAH Global Inc (SGI)",       assignee: "Soojin Moon",     requester: "Seojin Na",     status: "검토중",  priority: "보통", dueDate: "2026-03-20", createdDate: "2026-01-20", description: "2025.12.31 기준 매출채권 연령분석표(30/60/90/90일 초과 구분) 제출" },
+  { id: 4,  reqCode: "REQ-004", title: "재고자산 실사 결과 보고서",      entity: "SeAH CTC",                    assignee: "Kwangseok Chae",  requester: "Yubin Choi",    status: "요청됨",  priority: "높음", dueDate: "2026-03-10", createdDate: "2026-01-25", description: "2025년 말 재고실사 결과 보고서 및 감사인 입회 확인서 제출" },
+  { id: 5,  reqCode: "REQ-005", title: "은행잔액확인서",                 entity: "SeAH Global Japan (SGJ)",     assignee: "Naoko Ishikawa",  requester: "Sou-Jung Park", status: "요청됨",  priority: "보통", dueDate: "2026-03-05", createdDate: "2026-02-01", description: "2025.12.31 기준 전 금융기관 잔액확인서 (원본) 제출" },
+  { id: 6,  reqCode: "REQ-006", title: "임직원 명부 및 급여대장",        entity: "SeAH Global Thailand (SGT)",  assignee: "Juseung Jeong",   requester: "Sanghee Sim",   status: "검토중",  priority: "보통", dueDate: "2026-03-25", createdDate: "2026-02-05", description: "2025년 임직원 명부, 월별 급여대장, 퇴직금 충당부채 산출 근거 제출" },
+  { id: 7,  reqCode: "REQ-007", title: "법인세 신고 자료",               entity: "PT SeAH (인니)",               assignee: "Erli na",         requester: "Yeowon Han",    status: "초안",   priority: "낮음", dueDate: "2026-04-10", createdDate: "2026-02-10", description: "2025 회계연도 법인세 신고서 및 관련 세무조정 계산서 제출" },
+  { id: 8,  reqCode: "REQ-008", title: "차입금 및 사채 명세서",          entity: "SeAH Global India (SGIN)",    assignee: "Sathis Gopinath", requester: "HyungGeun Jung",status: "초안",   priority: "보통", dueDate: "2026-04-05", createdDate: "2026-02-12", description: "2025.12.31 기준 단기/장기 차입금, 사채 명세 및 이자비용 내역 제출" },
+  { id: 9,  reqCode: "REQ-009", title: "특수관계자 거래 명세",           entity: "SeAH Besteel Holdings",       assignee: "SeungCheol Kim",  requester: "Chaehyeon Song",status: "반려",   priority: "높음", dueDate: "2026-03-01", createdDate: "2026-01-28", description: "2025년 특수관계자 거래 명세(매출/매입/대여/차입 등) — 양식 불일치로 반려, 재제출 요망" },
+  { id: 10, reqCode: "REQ-010", title: "계약서 사본 (주요 거래처)",      entity: "SeAH Global Vina (SGV)",      assignee: "Chanwoo Lee",     requester: "Sumin Jung",    status: "자료 수령", priority: "낮음", dueDate: "2026-03-30", createdDate: "2026-02-15", description: "매출액 상위 5개 거래처 계약서 사본 및 거래조건 요약표 제출" },
+];
+
+/* ── theme ── */
+const C = {
+  primary:   "#E87722",
+  primaryDk: "#D06010",
+  primaryBg: "#FFF5EE",
+  rowHover:  "#FFF8F3",
+  border:    "#EDEDED",
+  text:      "#2C2C2C",
+  sub:       "#555",
+  muted:     "#aaa",
+  bg:        "#F5F5F5",
+};
+
+const PWC_USERS = [
+  { name: "Yuna Cho",        email: "yuna.cho@pwc.com",             country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "13 Mar 2026" },
+  { name: "Yubin Choi",      email: "yubin.y.choi@pwc.com",         country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "15 Apr 2026" },
+  { name: "Seungyeon Han",   email: "seungyeon.s.han@pwc.com",      country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "10 Mar 2026" },
+  { name: "Yeowon Han",      email: "yeowon.han@pwc.com",           country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "14 Apr 2026" },
+  { name: "Yerim Jeong",     email: "yerim.jeong@pwc.com",          country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "16 Apr 2026" },
+  { name: "Yewon Jeong",     email: "yewon.jeong@pwc.com",          country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "14 Apr 2026" },
+  { name: "Yong-Wook Jun",   email: "yong-wook.jun@pwc.com",        country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "19 Dec 2023" },
+  { name: "HyungGeun Jung",  email: "hyung-geun.jung@pwc.com",      country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "08 Aug 2025" },
+  { name: "Sumin Jung",      email: "sumin.jung@pwc.com",           country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "14 Apr 2026" },
+  { name: "Minjoo Kang",     email: "minjoo.j.kang@pwc.com",        country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "26 Jan 2026" },
+  { name: "Hyeyeon Kim",     email: "hyeyeon.kim@pwc.com",          country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "10 Dec 2024" },
+  { name: "JaeDong Kim",     email: "jae-dong.kim@pwc.com",         country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "28 Nov 2025" },
+  { name: "Seojin Na",       email: "seojin.na@pwc.com",            country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "26 Nov 2025" },
+  { name: "Sou-Jung Park",   email: "sou-jung.park@pwc.com",        country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "16 Apr 2026" },
+  { name: "Sujung Ryu",      email: "sujung.ryu@pwc.com",           country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "13 Nov 2024" },
+  { name: "Sanghee Sim",     email: "sanghee.sim@pwc.com",          country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "14 Apr 2026" },
+  { name: "Chaehyeon Song",  email: "chaehyeon.song@pwc.com",       country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "22 Jan 2025" },
+  { name: "Dong-Yeon Yoo",   email: "dongyeon.yoo@pwc.com",         country: "Korea, Republic of", status: "Active", role: "PwC Administrator", last: "14 Jun 2024" },
+];
+
+const CLIENT_USERS = [
+  { name: "Hongkyu Ahn",      email: "ahnhk@seah.co.kr",            org: "SeAH Global Vina (SGV)",         country: "Korea, Republic of", status: "Active",   role: "Client - View Assignments Only",                          last: "23 Apr 2025" },
+  { name: "Kwangseok Chae",   email: "kwangseok.chae@seah.co.kr",   org: "世亚特材（浙江）有限公司",         country: "China",              status: "Active",   role: "Client - View Assignments Only",                          last: "16 Oct 2025" },
+  { name: "Inseon Choi",      email: "ssuni3333@seah.co.kr",         org: "SeAH Besteel Holdings",           country: "Korea, Republic of", status: "Active",   role: "Client - View Assignments Only",                          last: "12 Jul 2024" },
+  { name: "Sathis Gopinath",  email: "gopinath@seah.co.kr",          org: "SeAH Besteel Holdings",           country: "India",              status: "Active",   role: "Client - View Assignments Only",                          last: "12 Mar 2026" },
+  { name: "Jaesin Ha",        email: "stella.ha@seah.global",        org: "seah.global",                     country: "Korea, Republic of", status: "Active",   role: "Client - View Assignments Only",                          last: "23 Sep 2024" },
+  { name: "lian hong",        email: "lian.hong@seah.co.kr",         org: "pwc",                             country: "Korea, Republic of", status: "Active",   role: "Client - View All Unrestricted Requests",                 last: "31 Mar 2026" },
+  { name: "Naoko Ishikawa",   email: "n_ishikawa@seahglobal.co.jp",  org: "세아베스틸지주",                  country: "Japan",              status: "Active",   role: "Client - View Assignments Only",                          last: "20 Feb 2026" },
+  { name: "Juseung Jeong",    email: "jjs@seahctc.com",              org: "世亚特材（浙江）有限公司",         country: "China",              status: "Active",   role: "Client Request Manager - View Assignments Only",          last: "13 Apr 2026" },
+  { name: "SeungCheol Kim",   email: "kimsc@seah.co.kr",             org: "SeAH Besteel Holdings",           country: "Korea, Republic of", status: "Active",   role: "Client - View Assignments Only",                          last: "30 Sep 2024" },
+  { name: "Chanwoo Lee",      email: "chanwoo.lee@seahgv.com",       org: "SeAH Global Vina (SGV)",          country: "Korea, Republic of", status: "Active",   role: "Client - View Assignments Only",                          last: "18 Dec 2024" },
+  { name: "Ki-hyeon Lee",     email: "wetnose@seah.co.kr",           org: "SeAH Besteel Holdings",           country: "Korea, Republic of", status: "Disabled", role: "Client - View Assignments Only",                          last: "—" },
+  { name: "Soojin Moon",      email: "soojin.moon@seah.global",      org: "SeAH Global Inc",                 country: "Korea, Republic of", status: "Active",   role: "Client Request Manager - View Assignments Only",          last: "23 Mar 2026" },
+  { name: "Erli na",          email: "erlina@irongrey.co",           org: "irongrey.co",                     country: "Korea, Republic of", status: "Active",   role: "Client - View Assignments Only",                          last: "14 Apr 2026" },
+  { name: "younha nam",       email: "younha.nam@seah.co.kr",        org: "세아베스틸지주",                  country: "Korea, Republic of", status: "Active",   role: "Client - View Assignments Only",                          last: "12 Apr 2026" },
+  { name: "Hoang Dung Pham",  email: "hoangdung@seahgv.com",         org: "SeAH Besteel Holdings",           country: "Vietnam",            status: "Active",   role: "Client - View Assignments Only",                          last: "13 Apr 2026" },
+  { name: "obuchi Yositaka",  email: "y_obuchi@seah.co.kr",          org: "SeAH Global Japan",               country: "Japan",              status: "Active",   role: "Client - View Assignments Only",                          last: "09 Apr 2026" },
+];
+
+const ENTITIES = ["SeAH Global Vina (SGV)", "SeAH Global Inc (SGI)", "SeAH CTC", "SeAH Global Japan (SGJ)", "SeAH Global Thailand (SGT)", "PT SeAH (인니)", "SeAH Global India (SGIN)", "SeAH Besteel Holdings"];
+
+const ASSIGNEES = ["Hongkyu Ahn", "Kwangseok Chae", "Inseon Choi", "Sathis Gopinath", "Jaesin Ha", "Naoko Ishikawa", "Juseung Jeong", "SeungCheol Kim", "Chanwoo Lee", "Soojin Moon", "Erli na", "younha nam", "Hoang Dung Pham", "obuchi Yositaka"];
+const ASSIGNEE_EMAIL: Record<string, string> = Object.fromEntries(
+  CLIENT_USERS.map(u => [u.name, u.email])
+);
+/* 법인별 담당 가능 Client 목록 */
+const ENTITY_CLIENTS: Record<string, string[]> = {
+  "SeAH Global Vina (SGV)":     ["Chanwoo Lee", "Hongkyu Ahn", "Hoang Dung Pham"],
+  "SeAH Global Inc (SGI)":      ["Soojin Moon"],
+  "SeAH CTC":                   ["Kwangseok Chae", "Juseung Jeong"],
+  "SeAH Global Japan (SGJ)":    ["Naoko Ishikawa", "obuchi Yositaka"],
+  "SeAH Global Thailand (SGT)": ["Juseung Jeong"],
+  "PT SeAH (인니)":              ["Erli na"],
+  "SeAH Global India (SGIN)":   ["Sathis Gopinath"],
+  "SeAH Besteel Holdings":      ["Inseon Choi", "SeungCheol Kim", "younha nam", "Jaesin Ha", "Ki-hyeon Lee"],
+};
+
+const STATUS_CFG: Record<ReqStatus, { bg: string; color: string }> = {
+  "초안":     { bg: "#F0F0F0", color: "#666" },
+  "요청됨":   { bg: "#EBF0FD", color: "#1A56DB" },
+  "검토중":   { bg: "#FFF8E1", color: "#B45309" },
+  "자료 수령":{ bg: "#E8F5E9", color: "#2E7D32" },
+  "완료":     { bg: "#E8F5E9", color: "#1B5E20" },
+  "반려":     { bg: "#FEECEC", color: "#B91C1C" },
+};
+const PRIORITY_CFG: Record<ReqPriority, { color: string }> = {
+  "높음": { color: "#DC2626" },
+  "보통": { color: "#E87722" },
+  "낮음": { color: "#6B7280" },
+};
+
+const SIDEBAR_ITEMS: { key: SidebarPage; icon: string; label: string }[] = [
+  { key: "requests",      icon: "📋", label: "자료 요청" },
+  { key: "users",         icon: "👥", label: "Users" },
+  { key: "modules",       icon: "▪",  label: "Modules" },
+  { key: "access-groups", icon: "🔒", label: "Custom Access Groups" },
+  { key: "localisations", icon: "🌐", label: "Localisations" },
+  { key: "security",      icon: "🛡",  label: "Security" },
+  { key: "site-details",  icon: "📑", label: "Site Details" },
+];
+
+/* ── shared small components ── */
+function StatusDot({ status }: { status: string }) {
+  const ok = status === "Active";
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: ok ? C.text : C.muted }}>
+      <span style={{ width: 13, height: 13, borderRadius: "50%", background: ok ? "#4caf50" : "#ff9800", flexShrink: 0, display: "inline-block" }} />
+      {status}
+    </span>
+  );
+}
+
+function IconBtn({ title, children, onClick }: { title: string; children: React.ReactNode; onClick?: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: 32, height: 32,
+        border: `1px solid ${hov ? C.primary : "#ddd"}`,
+        background: "#fff", borderRadius: 6,
+        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 15, color: hov ? C.primary : "#666",
+        transition: "all 0.15s", flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function OrangeBtn({ label, onClick }: { label: string; onClick?: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "7px 18px", borderRadius: 6, border: "none",
+        background: hov ? C.primaryDk : C.primary, color: "#fff",
+        fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "background 0.15s",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function GrayBtn({ label, onClick }: { label: string; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ padding: "7px 18px", borderRadius: 6, border: "1px solid #ccc", background: "#fff", color: "#666", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function TH({ children }: { children: React.ReactNode }) {
+  return (
+    <th style={{
+      padding: "8px 12px", fontSize: 11, fontWeight: 700,
+      color: C.primary, background: "#FFF8F3",
+      borderBottom: `2px solid ${C.primary}`,
+      textAlign: "left", whiteSpace: "nowrap",
+      textTransform: "uppercase", letterSpacing: "0.3px",
+      position: "sticky", top: 0,
+    }}>
+      {children}
+    </th>
+  );
+}
+
+function TD({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <td style={{ padding: "11px 12px", fontSize: 13, borderBottom: "1px solid #f5f5f5", color: C.sub, verticalAlign: "middle", ...style }}>
+      {children}
+    </td>
+  );
+}
+
+function CheckTH({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <th style={{ padding: "8px 12px", width: 40, textAlign: "center", background: "#FFF8F3", borderBottom: `2px solid ${C.primary}`, position: "sticky", top: 0 }}>
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ accentColor: C.primary, width: 14, height: 14, cursor: "pointer" }} />
+    </th>
+  );
+}
+
+function CheckTD({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <td style={{ padding: "11px 12px", textAlign: "center", borderBottom: "1px solid #f5f5f5" }}>
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ accentColor: C.primary, width: 14, height: 14, cursor: "pointer" }} />
+    </td>
+  );
+}
+
+/* ── Card wrapper ── */
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ padding: "20px 24px" }}>
+      <div style={{ background: "#fff", borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)", padding: "20px 24px" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── Section title ── */
+function SectionTitle({ title, count, selected }: { title: string; count?: number; selected?: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, fontStyle: "italic", color: C.text, letterSpacing: "-0.3px" }}>
+        {count !== undefined ? `${count} ` : ""}{title}
+      </h2>
+      {selected !== undefined && (
+        <span style={{ fontSize: 13, color: C.muted }}>{selected} selected</span>
+      )}
+    </div>
+  );
+}
+
+/* ── Modal ── */
+function Modal({ title, onClose, onConfirm, confirmLabel, onSecondary, secondaryLabel, children }: {
+  title: string; onClose: () => void; onConfirm: () => void; confirmLabel: string;
+  onSecondary?: () => void; secondaryLabel?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: "#fff", width: 580, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderRadius: 8 }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ padding: "22px 28px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: C.primary }}>{title}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, color: C.muted, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ padding: "20px 28px" }}>{children}</div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 28px", background: "#fafafa", borderTop: `1px solid ${C.border}` }}>
+          <OrangeBtn label={confirmLabel} onClick={onConfirm} />
+          {onSecondary && secondaryLabel && <GrayBtn label={secondaryLabel} onClick={onSecondary} />}
+          <GrayBtn label="Cancel" onClick={onClose} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FRow({ children }: { children: React.ReactNode }) {
+  return <div style={{ display: "flex", gap: 16 }}>{children}</div>;
+}
+function FGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div style={{ flex: 1, marginBottom: 16 }}>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#444", marginBottom: 6 }}>
+        {label}{required && <span style={{ color: "#E53E3E", marginLeft: 2 }}>*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+function FInput({ placeholder }: { placeholder: string }) {
+  return (
+    <input type="text" placeholder={placeholder}
+      style={{ width: "100%", padding: "9px 12px", border: "1px solid #ddd", borderRadius: 6, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+      onFocus={e => (e.target.style.borderColor = C.primary)}
+      onBlur={e => (e.target.style.borderColor = "#ddd")}
+    />
+  );
+}
+function FSelect({ options, defaultIdx }: { options: string[]; defaultIdx?: number }) {
+  return (
+    <select defaultValue={options[defaultIdx ?? 0]} style={{
+      width: "100%", padding: "9px 32px 9px 12px", border: `1px solid ${C.primary}`, borderRadius: 6,
+      fontSize: 13, appearance: "none", background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 12px center`,
+      cursor: "pointer", boxSizing: "border-box",
+    }}>
+      {options.map(o => <option key={o}>{o}</option>)}
+    </select>
+  );
+}
+function FTextarea({ placeholder }: { placeholder: string }) {
+  const [rem, setRem] = useState(650);
+  return (
+    <>
+      <textarea placeholder={placeholder} maxLength={650} onChange={e => setRem(650 - e.target.value.length)}
+        style={{ width: "100%", minHeight: 90, resize: "vertical", padding: "9px 12px", border: "1px solid #ddd", borderRadius: 6, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }}
+        onFocus={e => (e.target.style.borderColor = C.primary)}
+        onBlur={e => (e.target.style.borderColor = "#ddd")}
+      />
+      <p style={{ textAlign: "right", fontSize: 11, color: C.muted, marginTop: 3 }}>{rem} characters remaining</p>
+    </>
+  );
+}
+function FCheck({ label, defaultChecked }: { label: string; defaultChecked?: boolean }) {
+  return (
+    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", marginBottom: 10 }}>
+      <input type="checkbox" defaultChecked={defaultChecked} style={{ accentColor: C.primary, width: 15, height: 15 }} />
+      {label}
+    </label>
+  );
+}
+
+/* ── Toast ── */
+function Toast({ msg }: { msg: string }) {
+  if (!msg) return null;
+  return (
+    <div style={{
+      position: "fixed", top: 60, right: 24,
+      background: C.primary, color: "#fff",
+      padding: "12px 22px", borderRadius: 8,
+      fontSize: 13, fontWeight: 600, zIndex: 400,
+      boxShadow: "0 4px 20px rgba(232,119,34,.35)",
+    }}>
+      {msg}
+    </div>
+  );
+}
+
+/* ═══════════════════ Main Component ═══════════════════ */
+export default function ResourceRoom() {
+  const [page, setPage]           = useState<SidebarPage>("requests");
+  const [userTab, setUserTab]     = useState<UserTab>("pwc");
+  const [modal, setModal]         = useState<"add-pwc" | "add-client" | "import" | "add-request" | null>(null);
+  const [toast, setToast]         = useState("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pwcSel, setPwcSel]       = useState<Record<number, boolean>>({});
+  const [clientSel, setClientSel] = useState<Record<number, boolean>>({});
+  const [requests, setRequests]             = useState<Request[]>([]);
+  const [reqLoading, setReqLoading]         = useState(true);
+  const [reqFilter, setReqFilter]           = useState<ReqStatus | "전체">("전체");
+  const [detailReq, setDetailReq]           = useState<Request | null>(null);
+  const [detailFiles, setDetailFiles]       = useState<ReqFile[]>([]);
+  const [filesLoading, setFilesLoading]     = useState(false);
+  const [uploading, setUploading]           = useState(false);
+  const fileInputRef                        = useRef<HTMLInputElement>(null);
+  const [groupByEntity, setGroupByEntity]   = useState(false);
+  const [collapsed, setCollapsed]           = useState<Record<string, boolean>>({});
+  const [entityFilter, setEntityFilter]     = useState<string>("전체");
+  const [myOnly, setMyOnly]                 = useState(true);
+
+  /* new-request form state */
+  const [nTitle, setNTitle]             = useState("");
+  const [nEntity, setNEntity]           = useState(ENTITIES[0]);
+  const [nAssignees, setNAssignees]     = useState<string[]>([]);
+  const [nPriority, setNPriority]       = useState<ReqPriority>("보통");
+  const [nDue, setNDue]                 = useState("");
+  const [nDesc, setNDesc]               = useState("");
+  const [nRequester, setNRequester]     = useState(() =>
+    typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : ""
+  );
+  const [nRepeatEnabled, setNRepeatEnabled] = useState(false);
+  const [nRepeat, setNRepeat]           = useState<"월별" | "분기별" | "반기별" | "연간">("월별");
+  const [nYear, setNYear]               = useState("2026");
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2500);
+  };
+
+  /* 요청 목록 로드 — API 실패 또는 빈 응답 시 fallback 데이터 사용 */
+  const LS_KEY = "ev_requests_cache";
+  const saveCache = (reqs: Request[]) => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(reqs)); } catch { /* ignore */ }
+  };
+  const loadCache = (): Request[] | null => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? (JSON.parse(raw) as Request[]) : null;
+    } catch { return null; }
+  };
+
+  const loadRequests = useCallback(async () => {
+    try {
+      setReqLoading(true);
+      const data = await fetchRequests();
+      if (data.length > 0) {
+        const reqs = data as Request[];
+        setRequests(reqs);
+        saveCache(reqs);
+      } else {
+        const cached = loadCache();
+        const reqs = cached ?? FALLBACK_REQUESTS;
+        setRequests(reqs);
+        if (!cached) saveCache(reqs);
+      }
+    } catch {
+      const cached = loadCache();
+      setRequests(cached ?? FALLBACK_REQUESTS);
+    } finally { setReqLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { loadRequests(); }, [loadRequests]);
+
+  /* 상세 모달 열릴 때 파일 목록 로드 */
+  useEffect(() => {
+    if (!detailReq) { setDetailFiles([]); return; }
+    setFilesLoading(true);
+    fetchRequestFiles(detailReq.id)
+      .then(f => setDetailFiles(f))
+      .catch(() => setDetailFiles([]))
+      .finally(() => setFilesLoading(false));
+  }, [detailReq?.id]);
+
+  /* 파일 업로드 핸들러 */
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || !detailReq) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const rf = await uploadRequestFile(detailReq.id, file, sessionStorage.getItem("ev_user") ?? "");
+        setDetailFiles(prev => [rf, ...prev]);
+      }
+      showToast(`${files.length}개 파일이 업로드되었습니다.`);
+    } catch { showToast("업로드 중 오류가 발생했습니다."); }
+    finally { setUploading(false); }
+  };
+
+  const handleDeleteFile = async (fileId: number) => {
+    if (!detailReq) return;
+    await deleteRequestFile(detailReq.id, fileId);
+    setDetailFiles(prev => prev.filter(f => f.id !== fileId));
+    showToast("파일이 삭제되었습니다.");
+  };
+
+  const resetNewForm = () => {
+    setNTitle(""); setNDesc(""); setNDue(""); setNAssignees([]);
+    setNEntity(ENTITIES[0]); setNPriority("보통");
+    setNRepeatEnabled(false); setNRepeat("월별"); setNYear("2026");
+    setNRequester(typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "");
+  };
+
+  const closeModal   = () => setModal(null);
+  const submitRequest = async (status: ReqStatus) => {
+    if (!nTitle.trim())          { showToast("제목을 입력해주세요."); return; }
+    if (!nDue)                   { showToast("마감일을 선택해주세요."); return; }
+    if (nAssignees.length === 0) { showToast("담당자를 1명 이상 선택해주세요."); return; }
+
+    const assigneeStr = nAssignees.join(", ");
+    const labels: Record<string, string[]> = {
+      "월별":   Array.from({ length: 12 }, (_, i) => `${i + 1}월`),
+      "분기별": ["Q1", "Q2", "Q3", "Q4"],
+      "반기별": ["상반기", "하반기"],
+      "연간":   ["연간"],
+    };
+    const titleList = nRepeatEnabled
+      ? labels[nRepeat].map(lbl => `${nTitle} (${nYear}년 ${lbl})`)
+      : [nTitle];
+
+    const items = titleList.map(t => ({
+      title:       t,
+      entity:      nEntity,
+      assignee:    assigneeStr,
+      requester:   nRequester,
+      status,
+      priority:    nPriority,
+      due_date:    nDue || "",
+      description: nDesc,
+    }));
+
+    /* API 성공 시 DB 저장, 실패 시 로컬 state에 즉시 반영 */
+    try {
+      await createRequests(items);
+      await loadRequests();
+    } catch {
+      const today = new Date().toISOString().slice(0, 10);
+      const newReqs: Request[] = items.map((item, i) => ({
+        id:          Date.now() + i,
+        reqCode:     `REQ-${String(requests.length + i + 1).padStart(3, "0")}`,
+        title:       item.title,
+        entity:      item.entity,
+        assignee:    item.assignee,
+        requester:   item.requester,
+        status:      item.status as ReqStatus,
+        priority:    item.priority as ReqPriority,
+        dueDate:     item.due_date || "—",
+        createdDate: today,
+        description: item.description,
+      }));
+      setRequests(prev => {
+        const next = [...newReqs, ...prev];
+        saveCache(next);
+        return next;
+      });
+    }
+    resetNewForm();
+    closeModal();
+    showToast(status === "초안"
+      ? `초안 ${items.length}건이 저장되었습니다.`
+      : `자료 요청 ${items.length}건이 등록되었습니다.`
+    );
+  };
+
+  const confirmModal = () => {
+    if (modal === "add-request") {
+      submitRequest("요청됨");
+      return;
+    } else {
+      const msgs: Record<string, string> = {
+        "add-pwc":   "PwC 사용자가 추가되었습니다.",
+        "add-client":"Client 사용자가 추가되었습니다.",
+        import:      "사용자 Import가 완료되었습니다.",
+      };
+      if (modal) showToast(msgs[modal] ?? "");
+    }
+    closeModal();
+  };
+
+  const pwcSelected    = Object.values(pwcSel).filter(Boolean).length;
+  const clientSelected = Object.values(clientSel).filter(Boolean).length;
+
+  /* ── Sidebar ── */
+  const SidebarEl = () => (
+    <aside style={{ width: 210, flexShrink: 0, background: "#fff", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "14px 20px 10px", fontSize: 14, color: C.sub, fontWeight: 300, fontStyle: "italic", borderBottom: `1px solid ${C.border}` }}>
+        Site Administration
+      </div>
+      <div style={{ padding: "10px 20px 4px", fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px" }}>
+        Menu
+      </div>
+      {SIDEBAR_ITEMS.map(item => {
+        const active = page === item.key;
+        return (
+          <button
+            key={item.key}
+            onClick={() => setPage(item.key)}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "10px 20px", width: "100%", textAlign: "left",
+              cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+              background: active ? C.primaryBg : "transparent",
+              color:      active ? C.primary   : "#444",
+              fontWeight: active ? 600 : 400,
+              border: "none",
+              transition: "all 0.12s",
+            }}
+            onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "#F7F7F7"; (e.currentTarget as HTMLElement).style.color = "#333"; } }}
+            onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#444"; } }}
+          >
+            <span style={{ width: 18, textAlign: "center", fontSize: 14, color: active ? C.primary : "#999", flexShrink: 0 }}>
+              {item.icon}
+            </span>
+            {item.label}
+          </button>
+        );
+      })}
+    </aside>
+  );
+
+  /* ── Requests ── */
+  const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
+  const filteredReqs = requests.filter(r => {
+    if (myOnly && currentUser && r.requester !== currentUser) return false;
+    if (reqFilter !== "전체" && r.status !== reqFilter) return false;
+    if (entityFilter !== "전체" && r.entity !== entityFilter) return false;
+    return true;
+  });
+
+  /* 법인별 그룹핑 */
+  const grouped: Record<string, Request[]> = {};
+  filteredReqs.forEach(r => { (grouped[r.entity] ??= []).push(r); });
+  const groupedEntities = ENTITIES.filter(e => grouped[e]);
+
+  const toggleCollapse = (entity: string) =>
+    setCollapsed(p => ({ ...p, [entity]: !p[entity] }));
+
+  /* 공통 행 렌더러 */
+  const ReqRow = ({ req, hideEntity }: { req: Request; hideEntity?: boolean }) => {
+    const sc = STATUS_CFG[req.status];
+    const pc = PRIORITY_CFG[req.priority];
+    return (
+      <tr
+        style={{ cursor: "pointer" }}
+        onMouseEnter={e => (e.currentTarget.style.background = C.rowHover)}
+        onMouseLeave={e => (e.currentTarget.style.background = "")}
+        onClick={() => setDetailReq(req)}
+      >
+        <TD style={{ color: C.muted, fontSize: 11 }}>{req.reqCode}</TD>
+        <TD>
+          <span style={{ fontWeight: 600, color: C.text }}>{req.title}</span>
+          {req.status === "반려" && (
+            <span style={{ marginLeft: 6, fontSize: 10, background: "#FEECEC", color: "#B91C1C", padding: "1px 6px", borderRadius: 10, fontWeight: 600 }}>반려</span>
+          )}
+        </TD>
+        {!hideEntity && (
+          <TD style={{ fontSize: 12, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.entity}</TD>
+        )}
+        <TD style={{ fontSize: 12 }}>{req.assignee}</TD>
+        <TD>
+          <span style={{ fontSize: 12, fontWeight: 700, color: pc.color }}>
+            {req.priority === "높음" ? "● " : req.priority === "보통" ? "◐ " : "○ "}{req.priority}
+          </span>
+        </TD>
+        <TD>
+          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
+            {req.status}
+          </span>
+        </TD>
+        <TD style={{ fontSize: 12, color: req.dueDate === "—" ? C.muted : C.sub }}>{req.dueDate}</TD>
+        <TD style={{ fontSize: 12, color: C.muted }}>{req.createdDate}</TD>
+        <td style={{ padding: "11px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "center" }}>
+          <button
+            onClick={async e => {
+              e.stopPropagation();
+              try { await deleteRequest(req.id); } catch { /* fallback IDs or backend down — still remove locally */ }
+              setRequests(p => {
+                const next = p.filter(r => r.id !== req.id);
+                saveCache(next);
+                return next;
+              });
+              showToast("요청이 삭제되었습니다.");
+            }}
+            style={{ color: C.primary, fontSize: 16, opacity: 0.55, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
+            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "0.55")}
+          >🗑</button>
+        </td>
+      </tr>
+    );
+  };
+
+  const COLS_FLAT    = ["번호", "제목", "법인", "담당자", "우선순위", "상태", "마감일", "등록일", ""];
+  const COLS_GROUPED = ["번호", "제목", "담당자", "우선순위", "상태", "마감일", "등록일", ""];
+
+  const PageRequests = () => (
+    <Card>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>자료 요청</h2>
+          <p style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>총 {requests.length}건 · 표시 {filteredReqs.length}건</p>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          {/* Status filter tabs */}
+          <div style={{ display: "flex", gap: 4 }}>
+            {(["전체", "초안", "요청됨", "검토중", "자료 수령", "완료", "반려"] as (ReqStatus | "전체")[]).map(s => (
+              <button key={s} onClick={() => setReqFilter(s)}
+                style={{
+                  padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  cursor: "pointer", border: "none", fontFamily: "inherit",
+                  background: reqFilter === s ? C.primary : "#F0F0F0",
+                  color: reqFilter === s ? "#fff" : "#666",
+                  transition: "all 0.15s",
+                }}>
+                {s}
+              </button>
+            ))}
+          </div>
+          {/* 그룹핑 토글 */}
+          <button
+            onClick={() => setGroupByEntity(p => !p)}
+            title={groupByEntity ? "목록 보기" : "법인별 보기"}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "6px 12px", borderRadius: 6, fontFamily: "inherit",
+              border: `1px solid ${groupByEntity ? C.primary : "#ddd"}`,
+              background: groupByEntity ? C.primaryBg : "#fff",
+              color: groupByEntity ? C.primary : "#666",
+              fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
+            }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+            법인별
+          </button>
+          <button onClick={() => setModal("add-request")}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "7px 14px", borderRadius: 6, border: "none",
+              background: C.primary, color: "#fff",
+              fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+            }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> 자료 요청
+          </button>
+        </div>
+      </div>
+
+      {/* ── 목록 보기 ── */}
+      {!groupByEntity && (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 820 }}>
+            <thead><tr>{COLS_FLAT.map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+            <tbody>
+              {filteredReqs.length === 0 ? (
+                <tr><td colSpan={9} style={{ padding: "48px 0", textAlign: "center", color: C.muted, fontSize: 13 }}>해당 상태의 자료 요청이 없습니다.</td></tr>
+              ) : filteredReqs.map(req => <ReqRow key={req.id} req={req} />)}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── 법인별 그룹 보기 ── */}
+      {groupByEntity && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {groupedEntities.length === 0 ? (
+            <p style={{ textAlign: "center", padding: "48px 0", color: C.muted, fontSize: 13 }}>해당 상태의 자료 요청이 없습니다.</p>
+          ) : groupedEntities.map(entity => {
+            const items   = grouped[entity];
+            const isOpen  = !collapsed[entity];
+            const statMap = items.reduce<Record<string, number>>((a, r) => { a[r.status] = (a[r.status] ?? 0) + 1; return a; }, {});
+            return (
+              <div key={entity} style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+                {/* Entity header */}
+                <button
+                  onClick={() => toggleCollapse(entity)}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 16px", background: isOpen ? "#FFFAF6" : "#F9F9F9",
+                    borderBottom: isOpen ? `1px solid ${C.border}` : "none",
+                    border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: isOpen ? C.primary : "#555", transform: `rotate(${isOpen ? 90 : 0}deg)`, display: "inline-block", transition: "transform 0.2s", lineHeight: 1 }}>▶</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{entity}</span>
+                  <span style={{ fontSize: 12, color: C.muted, fontWeight: 400 }}>{items.length}건</span>
+                  {/* 상태 미니 배지들 */}
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    {Object.entries(statMap).map(([st, cnt]) => {
+                      const sc = STATUS_CFG[st as ReqStatus];
+                      return (
+                        <span key={st} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: sc?.bg ?? "#eee", color: sc?.color ?? "#666" }}>
+                          {st} {cnt}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </button>
+                {/* 요청 테이블 */}
+                {isOpen && (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
+                      <thead><tr>{COLS_GROUPED.map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+                      <tbody>
+                        {items.map(req => <ReqRow key={req.id} req={req} hideEntity />)}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+
+  /* ── Users ── */
+  const allPwcSel    = pwcSelected    === PWC_USERS.length    && PWC_USERS.length > 0;
+  const allClientSel = clientSelected === CLIENT_USERS.length && CLIENT_USERS.length > 0;
+
+  const PageUsers = () => (
+    <Card>
+      {/* Tabs */}
+      <div style={{ display: "flex", borderBottom: `2px solid ${C.border}`, marginBottom: 18 }}>
+        {(["pwc", "client", "thirdparty", "all"] as UserTab[]).map(tab => {
+          const labels: Record<UserTab, string> = { pwc: "PwC", client: "Client", thirdparty: "Third Party", all: "All" };
+          const active = userTab === tab;
+          return (
+            <button key={tab} onClick={() => setUserTab(tab)}
+              style={{
+                padding: "9px 22px", cursor: "pointer", fontFamily: "inherit",
+                fontSize: 13, fontWeight: active ? 700 : 500,
+                color: active ? C.primary : "#777",
+                borderBottom: `3px solid ${active ? C.primary : "transparent"}`,
+                marginBottom: -2, background: "none", border: "none",
+                borderBottomStyle: "solid", borderBottomWidth: 3,
+                borderBottomColor: active ? C.primary : "transparent",
+                transition: "color 0.15s",
+              }}
+            >
+              {labels[tab]}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* PwC tab */}
+      {userTab === "pwc" && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <SectionTitle title="PwC Users" count={PWC_USERS.length} selected={pwcSelected} />
+            <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+              <button onClick={() => showToast("Group & User Management (GUM) Portal로 이동합니다.")}
+                style={{ color: C.primary, fontSize: 12, textDecoration: "underline", cursor: "pointer", background: "none", border: "none", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                Navigate to GUM Portal
+              </button>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginBottom: 12 }}>
+            <IconBtn title="Delete"      onClick={() => showToast("선택된 사용자를 삭제합니다.")}>🗑</IconBtn>
+            <IconBtn title="Add User"    onClick={() => setModal("add-pwc")}>⊕</IconBtn>
+            <IconBtn title="Change Role" onClick={() => showToast("역할 변경 모드")}>⇄</IconBtn>
+            <IconBtn title="Export"      onClick={() => showToast("사용자 목록이 다운로드됩니다.")}>💾</IconBtn>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 860 }}>
+              <thead>
+                <tr>
+                  <CheckTH checked={allPwcSel} onChange={v => setPwcSel(PWC_USERS.reduce((a, _, i) => ({ ...a, [i]: v }), {}))} />
+                  {["Name", "Email", "Country", "Status", "Aura Role", "Connect Role", "Custom Access Group(s)", "Last Access Date", ""].map(h => <TH key={h}>{h}</TH>)}
+                </tr>
+              </thead>
+              <tbody>
+                {PWC_USERS.map((u, i) => (
+                  <tr key={u.email}
+                    onMouseEnter={e => (e.currentTarget.style.background = C.rowHover)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "")}
+                  >
+                    <CheckTD checked={!!pwcSel[i]} onChange={v => setPwcSel(p => ({ ...p, [i]: v }))} />
+                    <TD>{u.name}</TD>
+                    <TD>
+                      <span title="이메일 발송" onClick={() => showToast(`${u.email}로 이메일을 발송합니다.`)}
+                        style={{ fontSize: 13, color: C.muted, marginRight: 4, cursor: "pointer" }}>✉</span>
+                      {u.email}
+                    </TD>
+                    <TD>{u.country}</TD>
+                    <TD><StatusDot status={u.status} /></TD>
+                    <TD>—</TD>
+                    <TD>{u.role}</TD>
+                    <TD>—</TD>
+                    <TD>{u.last}</TD>
+                    <TD></TD>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Client tab */}
+      {userTab === "client" && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <SectionTitle title="Client Users" count={CLIENT_USERS.length} selected={clientSelected} />
+            <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+              <button onClick={() => setModal("add-client")}
+                style={{ background: C.primary, color: "#fff", border: "none", padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                Add
+              </button>
+              <IconBtn title="Add User" onClick={() => setModal("add-client")}>⊕</IconBtn>
+              <IconBtn title="Import"   onClick={() => setModal("import")}>⇄</IconBtn>
+              <IconBtn title="Export"   onClick={() => showToast("Client 사용자 목록이 다운로드됩니다.")}>💾</IconBtn>
+            </div>
+          </div>
+          <div style={{ background: "#FFFBF5", border: `1px solid #FFE8D0`, borderLeft: `3px solid ${C.primary}`, padding: "8px 14px", borderRadius: 6, marginBottom: 14, fontSize: 12, color: "#777", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <strong style={{ color: C.sub }}>Approved Domains:</strong>
+            <span>irongrey.co · seah.co.kr · seah.global · seahctc.com · seahglobal.co.jp · seahgv.com</span>
+            <button onClick={() => showToast("도메인 관리 화면으로 이동합니다.")}
+              style={{ marginLeft: "auto", background: C.primary, color: "#fff", border: "none", padding: "4px 12px", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+              Manage Domains
+            </button>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 960 }}>
+              <thead>
+                <tr>
+                  <CheckTH checked={allClientSel} onChange={v => setClientSel(CLIENT_USERS.reduce((a, _, i) => ({ ...a, [i]: v }), {}))} />
+                  {["Name", "Email", "Organization", "Country", "Status", "Connect Role", "Custom Access Group(s)", "Last Access Date", ""].map(h => <TH key={h}>{h}</TH>)}
+                </tr>
+              </thead>
+              <tbody>
+                {CLIENT_USERS.map((u, i) => (
+                  <tr key={u.email}
+                    onMouseEnter={e => (e.currentTarget.style.background = C.rowHover)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "")}
+                  >
+                    <CheckTD checked={!!clientSel[i]} onChange={v => setClientSel(p => ({ ...p, [i]: v }))} />
+                    <TD>{u.name}</TD>
+                    <TD>
+                      <span title="이메일 발송" onClick={() => showToast(`${u.email}로 이메일을 발송합니다.`)}
+                        style={{ fontSize: 13, color: C.muted, marginRight: 4, cursor: "pointer" }}>✉</span>
+                      {u.email}
+                    </TD>
+                    <TD>{u.org}</TD>
+                    <TD>{u.country}</TD>
+                    <TD><StatusDot status={u.status} /></TD>
+                    <TD style={{ maxWidth: 220, whiteSpace: "normal" }}>{u.role}</TD>
+                    <TD>—</TD>
+                    <TD>{u.last}</TD>
+                    <TD></TD>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Third Party tab */}
+      {userTab === "thirdparty" && (
+        <div>
+          <SectionTitle title="Third Party Users" count={0} />
+          <div style={{ textAlign: "center", padding: "50px 0", color: C.muted }}>
+            <div style={{ fontSize: 38, marginBottom: 12 }}>👥</div>
+            <p style={{ fontSize: 13 }}>No Third Party users have been added yet.</p>
+            <button onClick={() => setModal("add-client")}
+              style={{ marginTop: 14, background: "#fff", color: C.primary, border: `1px solid ${C.primary}`, padding: "7px 18px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              + Add User
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* All tab */}
+      {userTab === "all" && (
+        <div>
+          <SectionTitle title="All Users" count={PWC_USERS.length + CLIENT_USERS.length} />
+          <p style={{ color: "#777", fontSize: 13 }}>PwC {PWC_USERS.length}명 + Client {CLIENT_USERS.length}명의 전체 사용자 목록이 표시됩니다.</p>
+        </div>
+      )}
+    </Card>
+  );
+
+  /* ── Placeholder pages ── */
+  const PlaceholderPage = ({ icon, label, desc }: { icon: string; label: string; desc: string }) => (
+    <Card>
+      <SectionTitle title={label} />
+      <div style={{ textAlign: "center", padding: "50px 0", color: C.muted }}>
+        <div style={{ fontSize: 38, marginBottom: 12 }}>{icon}</div>
+        <p style={{ fontSize: 13 }}>{desc}</p>
+      </div>
+    </Card>
+  );
+
+  /* ── Render ── */
+  return (
+    <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text }}>
+      <SidebarEl />
+
+      <main style={{ flex: 1, overflow: "auto", background: C.bg }}>
+        {/* Page title bar */}
+        <div style={{
+          background: "#fff", borderBottom: `1px solid ${C.border}`,
+          padding: "0 24px", height: 48,
+          display: "flex", alignItems: "center", gap: 10,
+          position: "sticky", top: 0, zIndex: 100,
+          boxShadow: "0 1px 3px rgba(0,0,0,.04)",
+        }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>Site Administration</span>
+          <span style={{ color: C.border, fontSize: 16 }}>|</span>
+          <span style={{ fontSize: 12, color: C.muted }}>05239 세아베스틸지주 EASY VIEW</span>
+        </div>
+
+        {page === "requests"       && <PageRequests />}
+        {page === "users"         && <PageUsers />}
+        {page === "modules"       && <PlaceholderPage icon="▪"  label="Modules"               desc="사이트에 활성화된 모듈을 관리합니다." />}
+        {page === "access-groups" && <PlaceholderPage icon="🔒" label="Custom Access Groups"   desc="맞춤 접근 권한 그룹을 생성하고 관리합니다." />}
+        {page === "localisations" && <PlaceholderPage icon="🌐" label="Localisations"           desc="지역화 설정을 관리합니다." />}
+        {page === "security"      && <PlaceholderPage icon="🛡"  label="Security"               desc="보안 설정을 관리합니다." />}
+        {page === "site-details"  && <PlaceholderPage icon="📑" label="Site Details"            desc="사이트 상세 정보를 관리합니다." />}
+      </main>
+
+      {/* Modals */}
+      {modal === "add-pwc" && (
+        <Modal title="Add User(s) Manually" onClose={closeModal} onConfirm={confirmModal} confirmLabel="Add">
+          <FRow>
+            <FGroup label="User(s)">
+              <FInput placeholder="Search for a user by name, email, or GUID" />
+            </FGroup>
+            <FGroup label="Connect Role">
+              <FSelect options={["- Select -", "Read-Only", "PwC - View Assignments Only", "PwC SDC User", "PwC - View All Unrestricted Requests", "PwC Administrator"]} defaultIdx={2} />
+            </FGroup>
+          </FRow>
+          <FCheck label="Send a welcome message" defaultChecked />
+          <FGroup label="Add a custom message?">
+            <FTextarea placeholder="시스템에서 발송되는 Welcome message에 추가하고자 하는 내용을 입력하세요." />
+          </FGroup>
+          <div style={{ textAlign: "right", marginTop: 4 }}>
+            <button onClick={() => showToast("Welcome 메시지 미리보기")}
+              style={{ background: C.primary, color: "#fff", border: "none", padding: "6px 18px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Preview
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === "add-client" && (
+        <Modal title="Add User(s) Manually" onClose={closeModal} onConfirm={confirmModal} confirmLabel="Add">
+          <FRow>
+            <FGroup label="User(s)">
+              <FInput placeholder="Search for a user by name or email" />
+            </FGroup>
+            <FGroup label="Connect Role">
+              <FSelect options={["- Select -", "Read-Only", "Client - View Assignments Only", "Client - View All Unrestricted Requests", "Client Request Manager - View Assignments Only", "Client Request Manager - View All Unrestricted Requests"]} defaultIdx={2} />
+            </FGroup>
+          </FRow>
+          <FCheck label="Send a welcome message" defaultChecked />
+          <FGroup label="Add a custom message?">
+            <FTextarea placeholder="시스템에서 발송되는 Welcome message에 추가하고자 하는 내용을 입력하세요." />
+          </FGroup>
+          <div style={{ textAlign: "right", marginTop: 4 }}>
+            <button onClick={() => showToast("Welcome 메시지 미리보기")}
+              style={{ background: C.primary, color: "#fff", border: "none", padding: "6px 18px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Preview
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === "add-request" && (() => {
+        const selStyle: React.CSSProperties = {
+          width: "100%", padding: "9px 32px 9px 12px",
+          border: "1px solid #ddd", borderRadius: 6, fontSize: 13,
+          appearance: "none",
+          background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2020/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 12px center`,
+          cursor: "pointer", boxSizing: "border-box",
+        };
+        const inputStyle: React.CSSProperties = {
+          width: "100%", padding: "9px 12px", border: "1px solid #ddd",
+          borderRadius: 6, fontSize: 13, outline: "none", boxSizing: "border-box",
+        };
+        const repeatCounts: Record<string, number> = { "월별": 12, "분기별": 4, "반기별": 2, "연간": 1 };
+        return (
+          <Modal title="신규 자료 요청" onClose={() => { closeModal(); resetNewForm(); }} onConfirm={confirmModal} confirmLabel="등록" onSecondary={() => submitRequest("초안")} secondaryLabel="초안 저장">
+            {/* 제목 */}
+            <FGroup label="제목" required>
+              <input type="text" placeholder="자료 요청 제목을 입력하세요" value={nTitle} onChange={e => setNTitle(e.target.value)}
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = "#aaa")}
+                onBlur={e => (e.target.style.borderColor = "#ddd")}
+              />
+            </FGroup>
+
+            {/* 법인 */}
+            <FGroup label="법인" required>
+              <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={selStyle}>
+                {ENTITIES.map(en => <option key={en}>{en}</option>)}
+              </select>
+            </FGroup>
+
+            {/* 요청자 (자동 세팅) */}
+            <FGroup label="요청자">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="text"
+                  value={nRequester}
+                  onChange={e => setNRequester(e.target.value)}
+                  style={{ flex: 1, padding: "9px 12px", border: "1px solid #ddd", borderRadius: 6, fontSize: 13, outline: "none", boxSizing: "border-box" as const, background: "#FAFAFA", color: "#444" }}
+                  onFocus={e => (e.target.style.borderColor = C.primary)}
+                  onBlur={e => (e.target.style.borderColor = "#ddd")}
+                />
+                <span style={{ fontSize: 11, color: C.muted, whiteSpace: "nowrap" }}>로그인 계정 자동 입력</span>
+              </div>
+            </FGroup>
+
+            {/* 담당자 (복수 선택) */}
+            <FGroup label="담당자 (복수 선택 가능)" required>
+              <select
+                value=""
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v && !nAssignees.includes(v)) setNAssignees(p => [...p, v]);
+                  e.target.value = "";
+                }}
+                style={selStyle}
+              >
+                <option value="">
+                  {(ENTITY_CLIENTS[nEntity] ?? []).length === 0
+                    ? "등록된 담당자가 없습니다"
+                    : "담당자 추가..."}
+                </option>
+                {(ENTITY_CLIENTS[nEntity] ?? ASSIGNEES)
+                  .filter(a => !nAssignees.includes(a))
+                  .map(a => (
+                    <option key={a} value={a}>{a}{ASSIGNEE_EMAIL[a] ? ` (${ASSIGNEE_EMAIL[a]})` : ""}</option>
+                  ))}
+              </select>
+              {nAssignees.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                  {nAssignees.map(a => (
+                    <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", background: C.primaryBg, color: C.primary, borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                      {a}
+                      <button onClick={() => setNAssignees(p => p.filter(x => x !== a))}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: C.primary, fontSize: 15, padding: "0 0 0 2px", lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </FGroup>
+
+            {/* 우선순위 */}
+            <FGroup label="우선순위">
+              <select value={nPriority} onChange={e => setNPriority(e.target.value as ReqPriority)} style={selStyle}>
+                {(["높음", "보통", "낮음"] as ReqPriority[]).map(p => <option key={p}>{p}</option>)}
+              </select>
+            </FGroup>
+
+            {/* 마감일 */}
+            <FGroup label="마감일" required>
+              <input type="date" value={nDue} onChange={e => setNDue(e.target.value)}
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = "#aaa")}
+                onBlur={e => (e.target.style.borderColor = "#ddd")}
+              />
+            </FGroup>
+
+            {/* 벌크(반복) 등록 */}
+            <div style={{ border: `1px solid ${nRepeatEnabled ? C.primary : C.border}`, borderRadius: 8, padding: "14px 16px", marginBottom: 16, transition: "border-color 0.2s" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 13, cursor: "pointer", marginBottom: nRepeatEnabled ? 14 : 0 }}>
+                <input type="checkbox" checked={nRepeatEnabled} onChange={e => setNRepeatEnabled(e.target.checked)} style={{ accentColor: C.primary, width: 15, height: 15 }} />
+                반복 생성 — 1년치 일괄 등록
+              </label>
+              {nRepeatEnabled && (
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 12, color: "#444", fontWeight: 600, display: "block", marginBottom: 4 }}>기준 연도</label>
+                    <select value={nYear} onChange={e => setNYear(e.target.value)} style={selStyle}>
+                      {["2024", "2025", "2026", "2027"].map(y => <option key={y}>{y}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 12, color: "#444", fontWeight: 600, display: "block", marginBottom: 4 }}>반복 주기</label>
+                    <select value={nRepeat} onChange={e => setNRepeat(e.target.value as typeof nRepeat)} style={selStyle}>
+                      {(["월별", "분기별", "반기별", "연간"] as const).map(r => <option key={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ paddingBottom: 10, flexShrink: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.primary }}>
+                      총 {repeatCounts[nRepeat]}건 생성
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 설명 */}
+            <FGroup label="설명">
+              <textarea placeholder="자료 요청에 대한 상세 설명을 입력하세요." value={nDesc} onChange={e => setNDesc(e.target.value)} maxLength={650}
+                style={{ width: "100%", minHeight: 90, resize: "vertical", padding: "9px 12px", border: "1px solid #ddd", borderRadius: 6, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }}
+                onFocus={e => (e.target.style.borderColor = C.primary)}
+                onBlur={e => (e.target.style.borderColor = "#ddd")}
+              />
+              <p style={{ textAlign: "right", fontSize: 11, color: C.muted, marginTop: 3 }}>{650 - nDesc.length} characters remaining</p>
+            </FGroup>
+          </Modal>
+        );
+      })()}
+
+      {modal === "import" && (
+        <Modal title="Import User(s)" onClose={closeModal} onConfirm={confirmModal} confirmLabel="Import">
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.primary, marginBottom: 8 }}>Step 1: Download Template</p>
+          <div style={{ marginBottom: 18 }}>
+            <button onClick={() => showToast("User Import Template.xls 다운로드 중...")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, color: C.primary, textDecoration: "underline", background: "none", border: "none", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={{ fontSize: 18 }}>📄</span> User Import Template.xls
+            </button>
+          </div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.primary, marginBottom: 8 }}>Step 2: Upload File</p>
+          <button onClick={() => showToast("파일 선택 대화상자가 열립니다.")}
+            style={{ background: "#f5f5f5", border: "1px solid #ddd", padding: "6px 16px", borderRadius: 6, fontSize: 13, cursor: "pointer", marginBottom: 6 }}>
+            Select Files
+          </button>
+          <p style={{ fontSize: 11, color: C.muted, marginBottom: 18 }}>Select populated Import Users Template for upload.</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.primary, marginBottom: 8 }}>Step 3: Welcome Message</p>
+          <FCheck label="Send a welcome message" defaultChecked />
+          <FGroup label="Add a custom message?">
+            <FTextarea placeholder="Type your message here" />
+          </FGroup>
+          <div style={{ textAlign: "right", marginTop: 4 }}>
+            <button onClick={() => showToast("Welcome 메시지 미리보기")}
+              style={{ background: C.primary, color: "#fff", border: "none", padding: "6px 18px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Preview
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {detailReq && (() => {
+        const sc = STATUS_CFG[detailReq.status];
+        const pc = PRIORITY_CFG[detailReq.priority];
+
+        const fmtSize = (b: number) =>
+          b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
+
+        const fileIcon = (name: string) => {
+          const ext = name.split(".").pop()?.toLowerCase() ?? "";
+          if (ext === "pdf") return "📄";
+          if (["xlsx","xls"].includes(ext)) return "📊";
+          if (["docx","doc"].includes(ext)) return "📝";
+          if (["zip","7z","rar"].includes(ext)) return "🗜";
+          if (["jpg","jpeg","png","gif"].includes(ext)) return "🖼";
+          return "📎";
+        };
+
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
+            onClick={() => setDetailReq(null)}>
+            <div style={{ background: "#fff", width: 580, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderRadius: 8 }}
+              onClick={e => e.stopPropagation()}>
+
+              {/* Header */}
+              <div style={{ padding: "22px 28px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
+                <div>
+                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{detailReq.reqCode}</div>
+                  <h3 style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{detailReq.title}</h3>
+                </div>
+                <button onClick={() => setDetailReq(null)} style={{ background: "none", border: "none", fontSize: 22, color: C.muted, cursor: "pointer", lineHeight: 1, marginLeft: 12 }}>×</button>
+              </div>
+
+              {/* Meta grid */}
+              <div style={{ padding: "20px 28px 4px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 24px" }}>
+                {([
+                  ["법인", detailReq.entity],
+                  ["담당자", detailReq.assignee],
+                  ["요청자", detailReq.requester],
+                  ["마감일", detailReq.dueDate],
+                  ["등록일", detailReq.createdDate],
+                ] as [string, string][]).map(([k, v]) => (
+                  <div key={k}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 3 }}>{k}</div>
+                    <div style={{ fontSize: 13, color: C.text }}>{v}</div>
+                  </div>
+                ))}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 3 }}>우선순위</div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: pc.color }}>{detailReq.priority}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 3 }}>상태</div>
+                  <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>{detailReq.status}</span>
+                </div>
+              </div>
+
+              {/* 설명 */}
+              {detailReq.description && (
+                <div style={{ padding: "16px 28px 4px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 6 }}>설명</div>
+                  <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.7, background: "#F9F9F9", padding: "12px 14px", borderRadius: 6 }}>{detailReq.description}</p>
+                </div>
+              )}
+
+              {/* ── 첨부파일 섹션 ── */}
+              <div style={{ padding: "20px 28px 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
+                  {!filesLoading && (
+                    <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
+                      {detailFiles.length}
+                    </span>
+                  )}
+                  {/* 업로드 버튼 */}
+                  <label style={{
+                    marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5,
+                    padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer",
+                    background: uploading ? "#eee" : C.primary, color: "#fff",
+                    fontSize: 12, fontWeight: 600, transition: "background 0.15s",
+                  }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      hidden
+                      disabled={uploading}
+                      onChange={e => handleFileUpload(e.target.files)}
+                    />
+                    {uploading ? "업로드 중..." : "+ 파일 첨부"}
+                  </label>
+                </div>
+
+                {/* 파일 목록 */}
+                {filesLoading ? (
+                  <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "12px 0" }}>불러오는 중...</p>
+                ) : detailFiles.length === 0 ? (
+                  <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "28px 0", textAlign: "center" }}>
+                    <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
+                    <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다</p>
+                    <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부해주세요</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {detailFiles.map(f => (
+                      <div key={f.id} style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "10px 14px", borderRadius: 8,
+                        border: `1px solid ${C.border}`, background: "#FAFAFA",
+                      }}>
+                        <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <a
+                            href={getFileUrl(f.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                            onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
+                            onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
+                          >
+                            {f.originalName}
+                          </a>
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                            {fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteFile(f.id)}
+                          title="삭제"
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
+                          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
+                          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
+                        >🗑</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 28px", background: "#fafafa", borderTop: `1px solid ${C.border}` }}>
+                <GrayBtn label="닫기" onClick={() => setDetailReq(null)} />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      <Toast msg={toast} />
+    </div>
+  );
+}
