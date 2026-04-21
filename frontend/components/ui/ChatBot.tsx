@@ -49,6 +49,7 @@ export default function ChatBot() {
         if (Math.sqrt(dx * dx + dy * dy) < 8) return;
         didDrag.current = true;
         setGrabbed(true);
+        setOpen(false);
         setSpeechText("악 놔주세요!"); setSpeechForced(true);
       }
       const w = fabRef.current?.offsetWidth  ?? 88;
