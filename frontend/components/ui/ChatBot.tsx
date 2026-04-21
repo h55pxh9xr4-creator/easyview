@@ -124,8 +124,8 @@ export default function ChatBot() {
         <div className="chatbot-panel" style={panelStyle}>
           <div className="chatbot-header">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <img src={SAMILKIM_IMG} alt="김삼일" style={{ width: 24, height: 24, objectFit: "contain" }} />
-              <span style={{ fontWeight: 700, fontSize: 14, color: "#2C2C2C" }}>AI 어시스턴트</span>
+              <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" style={{ width: 24, height: 24, objectFit: "contain" }} />
+              <span style={{ fontWeight: 700, fontSize: 14, color: "#2C2C2C" }}>김삼일 매니저</span>
             </div>
             <button className="chatbot-close" onClick={() => setOpen(false)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
