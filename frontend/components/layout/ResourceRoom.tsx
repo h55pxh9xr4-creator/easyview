@@ -601,9 +601,42 @@ export default function ResourceRoom() {
     setCollapsed(p => ({ ...p, [entity]: !p[entity] }));
 
   /* 공통 행 렌더러 */
+  const StatusIcon = ({ status, color }: { status: ReqStatus; color: string }) => {
+    const s = 14;
+    const cx = 7, cy = 7, r = 6;
+    if (status === "Draft") return (
+      <svg width={s} height={s} viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="1.8"/>
+      </svg>
+    );
+    if (status === "Requested") return (
+      <svg width={s} height={s} viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="1.8"/>
+        <path d={`M ${cx},${cy-r} A ${r},${r} 0 0,1 ${cx},${cy+r} L ${cx},${cy} Z`} fill={color}/>
+      </svg>
+    );
+    if (status === "Recall") return (
+      <svg width={s} height={s} viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="1.8"/>
+        <path d={`M ${cx},${cy-r} A ${r},${r} 0 1,1 ${cx-r},${cy} L ${cx},${cy} Z`} fill={color}/>
+      </svg>
+    );
+    if (status === "Submitted") return (
+      <svg width={s} height={s} viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
+        <circle cx={cx} cy={cy} r={r} fill={color}/>
+      </svg>
+    );
+    if (status === "Accepted") return (
+      <svg width={s} height={s} viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
+        <circle cx={cx} cy={cy} r={r} fill={color}/>
+        <path d="M 4,7 L 6,9.5 L 10,4.5" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    );
+    return null;
+  };
+
   const ReqRow = ({ req, hideEntity }: { req: Request; hideEntity?: boolean }) => {
     const sc = STATUS_CFG[req.status];
-    const pc = PRIORITY_CFG[req.priority];
     return (
       <tr
         style={{ cursor: "pointer" }}
@@ -623,12 +656,8 @@ export default function ResourceRoom() {
         )}
         <TD style={{ fontSize: 12, textAlign: "center" }}>{req.assignee}</TD>
         <TD style={{ textAlign: "center" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: pc.color }}>
-            {req.priority === "높음" ? "● " : req.priority === "보통" ? "◐ " : "○ "}{req.priority}
-          </span>
-        </TD>
-        <TD style={{ textAlign: "center" }}>
-          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
+            <StatusIcon status={req.status} color={sc.color}/>
             {req.status}
           </span>
         </TD>
@@ -655,8 +684,8 @@ export default function ResourceRoom() {
     );
   };
 
-  const COLS_FLAT    = ["번호", "제목", "법인", "담당자", "우선순위", "상태", "마감일", "등록일", ""];
-  const COLS_GROUPED = ["번호", "제목", "담당자", "우선순위", "상태", "마감일", "등록일", ""];
+  const COLS_FLAT    = ["번호", "제목", "법인", "담당자", "상태", "마감일", "등록일", ""];
+  const COLS_GROUPED = ["번호", "제목", "담당자", "상태", "마감일", "등록일", ""];
 
   const PageRequests = () => (
     <Card>
