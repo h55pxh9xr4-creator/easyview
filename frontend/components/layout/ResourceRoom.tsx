@@ -604,12 +604,6 @@ export default function ResourceRoom() {
   /* ── Sidebar ── */
   const SidebarEl = () => (
     <aside style={{ width: 250, flexShrink: 0, background: "#fff", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "14px 20px 10px", fontSize: 14, color: C.sub, fontWeight: 300, fontStyle: "italic", borderBottom: `1px solid ${C.border}` }}>
-        Site Administration
-      </div>
-      <div style={{ padding: "10px 20px 4px", fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px" }}>
-        Menu
-      </div>
       {SIDEBAR_ITEMS.map(item => {
         const active = page === item.key;
         return (
