@@ -620,9 +620,8 @@ export default function ResourceRoom() {
               onClick={() => {
                 if (hasSub) {
                   setSiteDetailsOpen(p => !p);
-                } else {
-                  setPage(item.key);
                 }
+                setPage(item.key);
               }}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
