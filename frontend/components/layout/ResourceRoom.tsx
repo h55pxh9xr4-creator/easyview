@@ -102,6 +102,14 @@ const ENTITY_CLIENTS: Record<string, string[]> = {
   "SeAH Besteel Holdings":      ["Inseon Choi", "SeungCheol Kim", "younha nam", "Jaesin Ha", "Ki-hyeon Lee"],
 };
 
+const STATUS_TRANSITIONS: Record<ReqStatus, ReqStatus[]> = {
+  "Draft":     ["Requested"],
+  "Requested": ["Submitted"],
+  "Submitted": ["Recall", "Accepted"],
+  "Recall":    ["Submitted"],
+  "Accepted":  [],
+};
+
 const STATUS_CFG: Record<ReqStatus, { bg: string; color: string }> = {
   "Draft":     { bg: "#F0F0F0", color: "#666" },
   "Requested": { bg: "#EBF0FD", color: "#1A56DB" },
@@ -915,7 +923,9 @@ export default function ResourceRoom() {
                     <div style={{ flex: "1 1 0", minWidth: 0 }}>
                       <div style={fieldLabel}>상태</div>
                       <select value={editDraft.status} onChange={e => setEditDraft(p => p ? { ...p, status: e.target.value as ReqStatus } : p)} style={fieldSelect}>
-                        {(["Draft", "Requested", "Submitted", "Recall", "Accepted"] as ReqStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+                        {[detailReq.status as ReqStatus, ...STATUS_TRANSITIONS[detailReq.status]].map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
