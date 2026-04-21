@@ -402,7 +402,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                 title: "Summary Dashboard",
                 desc: "주요 KPI와 손익, 유동성 지표를 한눈에 파악하고 경영 현황을 신속하게 인지합니다.",
                 icon: (
-                  <img src="/icons/icon-dashboard.svg" width={26} height={26} alt="dashboard" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                  <img src="/easyview/icons/icon-dashboard.svg" width={26} height={26} alt="dashboard" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                 ),
                 preview: (
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 ease-in-out">
@@ -440,7 +440,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                 title: "손익 분석",
                 desc: "매출, 영업이익, 당기순이익 추이를 분석하고 거래처별 매출 비중을 파악합니다.",
                 icon: (
-                  <img src="/icons/icon-pl.svg" width={26} height={26} alt="P&L" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                  <img src="/easyview/icons/icon-pl.svg" width={26} height={26} alt="P&L" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                 ),
                 preview: (
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 ease-in-out">
@@ -466,7 +466,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                 title: "재무상태 분석",
                 desc: "자산·부채·자본 구조 변화를 추적하고 회전율 개선 기회를 발굴합니다.",
                 icon: (
-                  <img src="/icons/icon-balance.svg" width={26} height={26} alt="balance sheet" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                  <img src="/easyview/icons/icon-balance.svg" width={26} height={26} alt="balance sheet" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                 ),
                 preview: (
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 ease-in-out">
@@ -494,7 +494,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                 title: "전표 분석",
                 desc: "전표 기표내역을 일자·계정·거래처별로 분석하고 상대계정을 추적합니다.",
                 icon: (
-                  <img src="/icons/icon-journal.svg" width={26} height={26} alt="journal" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                  <img src="/easyview/icons/icon-journal.svg" width={26} height={26} alt="journal" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                 ),
                 preview: (
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 ease-in-out">
@@ -522,7 +522,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                 title: "시나리오 분석",
                 desc: "6가지 시나리오로 자동 탐지하여 비정상 거래 위험을 선제적으로 알립니다.",
                 icon: (
-                  <img src="/icons/icon-scenario.svg" width={26} height={26} alt="scenario" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                  <img src="/easyview/icons/icon-scenario.svg" width={26} height={26} alt="scenario" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                 ),
                 preview: (
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 ease-in-out">
@@ -551,7 +551,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                 title: "PDF 리포트",
                 desc: "현재 탭 또는 전체 분석 결과를 PDF로 원클릭 내보내기합니다.",
                 icon: (
-                  <img src="/icons/icon-pdf.svg" width={26} height={26} alt="PDF" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                  <img src="/easyview/icons/icon-pdf.svg" width={26} height={26} alt="PDF" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                 ),
                 preview: (
                   <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-500 ease-in-out">
@@ -969,7 +969,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
               <div className="space-y-4">
                 <div className="flex items-center gap-4 bg-white rounded-lg border border-[#DFE3E6] p-5 hover:border-[#FD5108]/50 hover:shadow-md transition-all">
                   <div className="shrink-0 w-12 h-12 rounded-lg bg-[#FD5108]/10 flex items-center justify-center">
-                    <img src="/icons/icon-email.svg" alt="이메일" width="22" height="22" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                    <img src="/easyview/icons/icon-email.svg" alt="이메일" width="22" height="22" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                   </div>
                   <div>
                     <div className="text-[12px] font-semibold text-[#4B535E] mb-0.5">이메일</div>
@@ -981,7 +981,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
 
                 <div className="flex items-center gap-4 bg-white rounded-lg border border-[#DFE3E6] p-5 hover:border-[#FD5108]/50 hover:shadow-md transition-all">
                   <div className="shrink-0 w-12 h-12 rounded-lg bg-[#FD5108]/10 flex items-center justify-center">
-                    <img src="/icons/icon-phone.svg" alt="연락처" width="22" height="22" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                    <img src="/easyview/icons/icon-phone.svg" alt="연락처" width="22" height="22" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                   </div>
                   <div>
                     <div className="text-[12px] font-semibold text-[#4B535E] mb-0.5">연락처</div>
@@ -993,7 +993,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
 
                 <div className="flex items-start gap-4 bg-white rounded-lg border border-[#DFE3E6] p-5">
                   <div className="shrink-0 w-12 h-12 rounded-lg bg-[#FD5108]/10 flex items-center justify-center">
-                    <img src="/icons/icon-building.svg" alt="팀" width="22" height="22" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
+                    <img src="/easyview/icons/icon-building.svg" alt="팀" width="22" height="22" style={{ filter: "invert(38%) sepia(94%) saturate(1974%) hue-rotate(357deg) brightness(101%) contrast(97%)" }} />
                   </div>
                   <div>
                     <div className="text-[12px] font-semibold text-[#4B535E] mb-1">팀</div>
