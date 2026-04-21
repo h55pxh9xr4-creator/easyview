@@ -42,7 +42,7 @@ export default function ChatBot() {
     };
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      if (e.buttons === 0) { dragging.current = false; setGrabbed(false); showHyu(); return; }
+      if (e.buttons === 0) { dragging.current = false; setGrabbed(false); if (didDrag.current) showHyu(); return; }
       if (!didDrag.current) {
         const dx = e.clientX - pressStart.current.x;
         const dy = e.clientY - pressStart.current.y;
