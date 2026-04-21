@@ -647,9 +647,6 @@ export default function ResourceRoom() {
         <TD style={{ color: C.muted, fontSize: 11, textAlign: "center" }}>{req.reqCode}</TD>
         <TD style={{ textAlign: "left" }}>
           <span style={{ fontWeight: 600, color: C.text }}>{req.title}</span>
-          {req.status === "Recall" && (
-            <span style={{ marginLeft: 6, fontSize: 10, background: "#FEECEC", color: "#B91C1C", padding: "1px 6px", borderRadius: 10, fontWeight: 600 }}>Recall</span>
-          )}
         </TD>
         {!hideEntity && (
           <TD style={{ fontSize: 12, textAlign: "left", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.entity}</TD>
