@@ -728,7 +728,7 @@ export default function ResourceRoom() {
               });
               showToast("요청이 삭제되었습니다.");
             }}
-            style={{ color: C.primary, fontSize: 16, opacity: 0.55, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+            style={{ color: C.primary, fontSize: 20, opacity: 0.55, background: "none", border: "none", cursor: "pointer", padding: 4 }}
             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "0.55")}
           >🗑</button>
