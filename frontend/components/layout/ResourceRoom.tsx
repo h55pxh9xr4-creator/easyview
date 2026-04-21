@@ -991,21 +991,21 @@ export default function ResourceRoom() {
                     <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>{detailReq.title}</h2>
                   </div>
 
-                  {/* 메타 그리드 */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px 24px", marginBottom: 24, padding: "18px 20px", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                  {/* 메타 – 1행 */}
+                  <div style={{ display: "flex", gap: 0, marginBottom: 24, padding: "14px 20px", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, flexWrap: "wrap" }}>
                     {([
                       ["법인",  detailReq.entity],
                       ["담당자", detailReq.assignee],
                       ["요청자", detailReq.requester],
                       ["요청일", detailReq.createdDate],
                       ["마감일", detailReq.dueDate],
-                    ] as [string, string][]).map(([k, v]) => (
-                      <div key={k}>
+                    ] as [string, string][]).map(([k, v], i, arr) => (
+                      <div key={k} style={{ flex: "1 1 0", minWidth: 100, paddingRight: 16, borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none", marginRight: i < arr.length - 1 ? 16 : 0 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>{k}</div>
                         <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{v || "—"}</div>
                       </div>
                     ))}
-                    <div>
+                    <div style={{ flex: "1 1 0", minWidth: 100, paddingLeft: 0 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>상태</div>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
                         <StatusIcon status={detailReq.status} color={sc.color} />
