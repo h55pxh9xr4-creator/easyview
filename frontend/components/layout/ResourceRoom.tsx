@@ -86,6 +86,8 @@ const CLIENT_USERS = [
 
 const ENTITIES = ["SeAH Global Vina (SGV)", "SeAH Global Inc (SGI)", "SeAH CTC", "SeAH Global Japan (SGJ)", "SeAH Global Thailand (SGT)", "PT SeAH (인니)", "SeAH Global India (SGIN)", "SeAH Besteel Holdings"];
 
+const PARENT_COMPANIES = ["세아베스틸지주", "세아홀딩스"];
+
 const ASSIGNEES = ["Hongkyu Ahn", "Kwangseok Chae", "Inseon Choi", "Sathis Gopinath", "Jaesin Ha", "Naoko Ishikawa", "Juseung Jeong", "SeungCheol Kim", "Chanwoo Lee", "Soojin Moon", "Erli na", "younha nam", "Hoang Dung Pham", "obuchi Yositaka"];
 const ASSIGNEE_EMAIL: Record<string, string> = Object.fromEntries(
   CLIENT_USERS.map(u => [u.name, u.email])
@@ -387,6 +389,7 @@ export default function ResourceRoom() {
   const [groupByEntity, setGroupByEntity]   = useState(false);
   const [collapsed, setCollapsed]           = useState<Record<string, boolean>>({});
   const [entityFilter, setEntityFilter]     = useState<string>("전체");
+  const [parentFilter, setParentFilter]     = useState<string>("전체");
   const [myOnly, setMyOnly]                 = useState(true);
 
   /* new-request form state */
@@ -1152,45 +1155,64 @@ export default function ResourceRoom() {
         </div>
       </div>
 
-      {/* Header – row 2: 법인 드롭다운 + 내 요청만 토글 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+      {/* Header – row 2: 모회사(좌) + 법인/토글(우) */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        {/* 왼쪽: 모회사 드롭다운 (관리자용) */}
         <select
-          value={entityFilter}
-          onChange={e => setEntityFilter(e.target.value)}
+          value={parentFilter}
+          onChange={e => setParentFilter(e.target.value)}
           style={{
             padding: "6px 28px 6px 10px", borderRadius: 6, fontSize: 12,
-            border: `1px solid ${entityFilter !== "전체" ? C.primary : "#ddd"}`,
-            background: `${entityFilter !== "전체" ? C.primaryBg : "#fff"} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`,
-            color: entityFilter !== "전체" ? C.primary : "#666",
-            appearance: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: entityFilter !== "전체" ? 600 : 400,
+            border: `1px solid ${parentFilter !== "전체" ? C.primary : "#ddd"}`,
+            background: `${parentFilter !== "전체" ? C.primaryBg : "#fff"} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`,
+            color: parentFilter !== "전체" ? C.primary : "#666",
+            appearance: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: parentFilter !== "전체" ? 600 : 400,
           }}
         >
-          <option value="전체">전체 법인</option>
-          {ENTITIES.map(e => <option key={e} value={e}>{e}</option>)}
+          <option value="전체">전체 모회사</option>
+          {PARENT_COMPANIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
 
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
-          <div
-            onClick={() => setMyOnly(p => !p)}
+        {/* 오른쪽: 법인 필터 + 내 요청만 토글 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <select
+            value={entityFilter}
+            onChange={e => setEntityFilter(e.target.value)}
             style={{
-              width: 40, height: 22, borderRadius: 11,
-              background: myOnly ? C.primary : "#ccc",
-              position: "relative", transition: "background 0.2s", flexShrink: 0,
-              cursor: "pointer",
+              padding: "6px 28px 6px 10px", borderRadius: 6, fontSize: 12,
+              border: `1px solid ${entityFilter !== "전체" ? C.primary : "#ddd"}`,
+              background: `${entityFilter !== "전체" ? C.primaryBg : "#fff"} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`,
+              color: entityFilter !== "전체" ? C.primary : "#666",
+              appearance: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: entityFilter !== "전체" ? 600 : 400,
             }}
           >
-            <div style={{
-              width: 18, height: 18, borderRadius: "50%", background: "#fff",
-              position: "absolute", top: 2,
-              left: myOnly ? 20 : 2,
-              transition: "left 0.2s",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
-            }} />
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 600, color: myOnly ? C.primary : "#888" }}>
-            {myOnly ? "내 요청만" : "전체 요청"}
-          </span>
-        </label>
+            <option value="전체">전체 법인</option>
+            {ENTITIES.map(e => <option key={e} value={e}>{e}</option>)}
+          </select>
+
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+            <div
+              onClick={() => setMyOnly(p => !p)}
+              style={{
+                width: 40, height: 22, borderRadius: 11,
+                background: myOnly ? C.primary : "#ccc",
+                position: "relative", transition: "background 0.2s", flexShrink: 0,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{
+                width: 18, height: 18, borderRadius: "50%", background: "#fff",
+                position: "absolute", top: 2,
+                left: myOnly ? 20 : 2,
+                transition: "left 0.2s",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+              }} />
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: myOnly ? C.primary : "#888" }}>
+              {myOnly ? "내 요청만" : "전체 요청"}
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* ── 목록 보기 ── */}
