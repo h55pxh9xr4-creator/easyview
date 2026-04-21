@@ -869,94 +869,54 @@ export default function ResourceRoom() {
                     />
                   </div>
 
-                  {/* 메타 폼 */}
-                  <div style={{ background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "18px 20px", marginBottom: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-                    {/* 행 1: 법인 + 자료요청자 */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
-                      <div>
-                        <div style={fieldLabel}>법인</div>
-                        <select
-                          value={editDraft.entity}
-                          onChange={e => setEditDraft(p => p ? { ...p, entity: e.target.value, assignees: [] } : p)}
-                          style={fieldSelect}
-                        >
-                          {ENTITIES.map(en => <option key={en}>{en}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <div style={fieldLabel}>자료요청자</div>
-                        <input
-                          value={editDraft.requester}
-                          onChange={e => setEditDraft(p => p ? { ...p, requester: e.target.value } : p)}
-                          style={fieldInput}
-                        />
-                      </div>
+                  {/* 메타 폼 – 1행 */}
+                  <div style={{ background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24, display: "flex", gap: 0 }}>
+                    {/* 법인 */}
+                    <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
+                      <div style={fieldLabel}>법인</div>
+                      <select value={editDraft.entity} onChange={e => setEditDraft(p => p ? { ...p, entity: e.target.value, assignees: [] } : p)} style={fieldSelect}>
+                        {ENTITIES.map(en => <option key={en}>{en}</option>)}
+                      </select>
                     </div>
-
-                    {/* 행 2: 법인담당자 (전체 너비) */}
-                    <div>
+                    {/* 자료요청자 */}
+                    <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
+                      <div style={fieldLabel}>자료요청자</div>
+                      <input value={editDraft.requester} onChange={e => setEditDraft(p => p ? { ...p, requester: e.target.value } : p)} style={fieldInput} />
+                    </div>
+                    {/* 법인담당자 */}
+                    <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
                       <div style={fieldLabel}>법인담당자</div>
-                      <select
-                        value=""
-                        onChange={e => {
-                          const v = e.target.value;
-                          if (v && !editDraft.assignees.includes(v))
-                            setEditDraft(p => p ? { ...p, assignees: [...p.assignees, v] } : p);
-                          e.target.value = "";
-                        }}
-                        style={fieldSelect}
-                      >
-                        <option value="">
-                          {(ENTITY_CLIENTS[editDraft.entity] ?? []).length === 0 ? "등록된 담당자가 없습니다" : "담당자 추가..."}
-                        </option>
-                        {(ENTITY_CLIENTS[editDraft.entity] ?? ASSIGNEES)
-                          .filter(a => !editDraft.assignees.includes(a))
-                          .map(a => <option key={a} value={a}>{a}</option>)}
+                      <select value="" onChange={e => { const v = e.target.value; if (v && !editDraft.assignees.includes(v)) setEditDraft(p => p ? { ...p, assignees: [...p.assignees, v] } : p); e.target.value = ""; }} style={fieldSelect}>
+                        <option value="">{(ENTITY_CLIENTS[editDraft.entity] ?? []).length === 0 ? "등록 없음" : "추가..."}</option>
+                        {(ENTITY_CLIENTS[editDraft.entity] ?? ASSIGNEES).filter(a => !editDraft.assignees.includes(a)).map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
                       {editDraft.assignees.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                           {editDraft.assignees.map(a => (
-                            <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", background: C.primaryBg, color: C.primary, borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                            <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", background: C.primaryBg, color: C.primary, borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
                               {a}
-                              <button
-                                onClick={() => setEditDraft(p => p ? { ...p, assignees: p.assignees.filter(x => x !== a) } : p)}
-                                style={{ background: "none", border: "none", cursor: "pointer", color: C.primary, fontSize: 15, padding: "0 0 0 2px", lineHeight: 1 }}
-                              >×</button>
+                              <button onClick={() => setEditDraft(p => p ? { ...p, assignees: p.assignees.filter(x => x !== a) } : p)} style={{ background: "none", border: "none", cursor: "pointer", color: C.primary, fontSize: 14, padding: "0 0 0 2px", lineHeight: 1 }}>×</button>
                             </span>
                           ))}
                         </div>
                       )}
                     </div>
-
-                    {/* 행 3: 마감일 + 상태 */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
-                      <div>
-                        <div style={fieldLabel}>마감일</div>
-                        <input
-                          type="date"
-                          value={editDraft.dueDate}
-                          onChange={e => setEditDraft(p => p ? { ...p, dueDate: e.target.value } : p)}
-                          style={fieldInput}
-                        />
-                      </div>
-                      <div>
-                        <div style={fieldLabel}>상태</div>
-                        <select
-                          value={editDraft.status}
-                          onChange={e => setEditDraft(p => p ? { ...p, status: e.target.value as ReqStatus } : p)}
-                          style={fieldSelect}
-                        >
-                          {(["Draft", "Requested", "Submitted", "Recall", "Accepted"] as ReqStatus[]).map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* 요청일 (읽기 전용) */}
-                    <div>
+                    {/* 요청일 */}
+                    <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
                       <div style={fieldLabel}>요청일</div>
-                      <div style={{ fontSize: 13, color: C.sub }}>{detailReq.createdDate}</div>
+                      <div style={{ fontSize: 13, color: C.sub, fontWeight: 500 }}>{detailReq.createdDate}</div>
+                    </div>
+                    {/* 마감일 */}
+                    <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
+                      <div style={fieldLabel}>마감일</div>
+                      <input type="date" value={editDraft.dueDate} onChange={e => setEditDraft(p => p ? { ...p, dueDate: e.target.value } : p)} style={fieldInput} />
+                    </div>
+                    {/* 상태 */}
+                    <div style={{ flex: "1 1 0", minWidth: 0 }}>
+                      <div style={fieldLabel}>상태</div>
+                      <select value={editDraft.status} onChange={e => setEditDraft(p => p ? { ...p, status: e.target.value as ReqStatus } : p)} style={fieldSelect}>
+                        {(["Draft", "Requested", "Submitted", "Recall", "Accepted"] as ReqStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
                     </div>
                   </div>
 
