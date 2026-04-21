@@ -373,6 +373,7 @@ export default function ResourceRoom() {
   const [reqLoading, setReqLoading]         = useState(true);
   const [reqFilter, setReqFilter]           = useState<ReqStatus | "전체">("전체");
   const [detailReq, setDetailReq]           = useState<Request | null>(null);
+  const [showCreate, setShowCreate]         = useState(false);
   const [isEditing, setIsEditing]           = useState(false);
   const [editDraft, setEditDraft]           = useState<{
     title: string; entity: string; assignees: string[];
@@ -574,6 +575,7 @@ export default function ResourceRoom() {
     }
     resetNewForm();
     closeModal();
+    setShowCreate(false);
     showToast(status === "Draft"
       ? `Draft ${items.length}건이 저장되었습니다.`
       : `자료 요청 ${items.length}건이 등록되었습니다.`
@@ -751,6 +753,106 @@ export default function ResourceRoom() {
   };
 
   const PageRequests = () => {
+    /* ══════════ CREATE VIEW ══════════ */
+    if (showCreate) {
+      const fLabel: React.CSSProperties = { fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 5 };
+      const fInput: React.CSSProperties = { width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "#fff" };
+      const fSelect: React.CSSProperties = { ...fInput, appearance: "none", background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`, paddingRight: 28, cursor: "pointer" };
+      const divider: React.CSSProperties = { flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 };
+      const cancelCreate = () => { setShowCreate(false); resetNewForm(); };
+      return (
+        <>
+          <style>{`@keyframes _rdi{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}`}</style>
+          <Card>
+            <div style={{ animation: "_rdi 0.22s ease" }}>
+              {/* Back nav */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+                <button
+                  onClick={cancelCreate}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.border}`, background: "#fff", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.primary; (e.currentTarget as HTMLElement).style.color = C.primary; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.sub; }}
+                >← 목록으로</button>
+                <span style={{ fontSize: 12, color: C.muted }}>자료 요청 / 신규</span>
+              </div>
+
+              {/* 제목 */}
+              <div style={{ marginBottom: 24 }}>
+                <input
+                  type="text"
+                  placeholder="자료 요청 제목을 입력하세요"
+                  value={nTitle}
+                  onChange={e => setNTitle(e.target.value)}
+                  style={{ width: "100%", fontSize: 20, fontWeight: 700, color: C.text, border: "none", borderBottom: `2px solid ${C.primary}`, padding: "4px 2px 6px", outline: "none", background: "transparent", boxSizing: "border-box", letterSpacing: "-0.3px" }}
+                />
+              </div>
+
+              {/* 1행 메타 */}
+              <div style={{ display: "flex", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24 }}>
+                <div style={divider}>
+                  <div style={fLabel}>법인</div>
+                  <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={fSelect}>
+                    {ENTITIES.map(en => <option key={en}>{en}</option>)}
+                  </select>
+                </div>
+                <div style={divider}>
+                  <div style={fLabel}>자료요청자</div>
+                  <input value={nRequester} onChange={e => setNRequester(e.target.value)} placeholder="이름" style={fInput} />
+                </div>
+                <div style={divider}>
+                  <div style={fLabel}>법인담당자</div>
+                  <select value="" onChange={e => { const v = e.target.value; if (v && !nAssignees.includes(v)) setNAssignees(p => [...p, v]); e.target.value = ""; }} style={fSelect}>
+                    <option value="">{(ENTITY_CLIENTS[nEntity] ?? []).length === 0 ? "등록 없음" : "추가..."}</option>
+                    {(ENTITY_CLIENTS[nEntity] ?? ASSIGNEES).filter(a => !nAssignees.includes(a)).map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                  {nAssignees.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+                      {nAssignees.map(a => (
+                        <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", background: C.primaryBg, color: C.primary, borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
+                          {a}
+                          <button onClick={() => setNAssignees(p => p.filter(x => x !== a))} style={{ background: "none", border: "none", cursor: "pointer", color: C.primary, fontSize: 14, padding: "0 0 0 2px", lineHeight: 1 }}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={divider}>
+                  <div style={fLabel}>마감일</div>
+                  <input type="date" value={nDue} onChange={e => setNDue(e.target.value)} style={fInput} />
+                </div>
+                <div style={{ flex: "1 1 0", minWidth: 0 }}>
+                  <div style={fLabel}>상태</div>
+                  <select value={nStatus} onChange={e => setNStatus(e.target.value as ReqStatus)} style={fSelect}>
+                    {(["Draft", "Requested"] as ReqStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* 설명 */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={fLabel}>설명</div>
+                <textarea
+                  placeholder="자료 요청에 대한 상세 설명을 입력하세요."
+                  value={nDesc}
+                  onChange={e => setNDesc(e.target.value)}
+                  rows={4}
+                  style={{ width: "100%", resize: "vertical", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", outline: "none" }}
+                  onFocus={e => (e.target.style.borderColor = C.primary)}
+                  onBlur={e => (e.target.style.borderColor = C.border)}
+                />
+              </div>
+
+              {/* 저장/취소 */}
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, borderTop: `1px solid ${C.border}` }}>
+                <OrangeBtn label="저장" onClick={() => submitRequest(nStatus)} />
+                <GrayBtn label="취소" onClick={cancelCreate} />
+              </div>
+            </div>
+          </Card>
+        </>
+      );
+    }
+
     if (detailReq) {
       const sc       = STATUS_CFG[detailReq.status];
       const canEdit  = detailReq.status !== "Accepted";
@@ -1043,7 +1145,7 @@ export default function ResourceRoom() {
             </svg>
             법인별
           </button>
-          <button onClick={() => setModal("add-request")}
+          <button onClick={() => setShowCreate(true)}
             style={{
               display: "flex", alignItems: "center", gap: 5,
               padding: "7px 14px", borderRadius: 6, border: "none",
@@ -1419,86 +1521,6 @@ export default function ResourceRoom() {
         </Modal>
       )}
 
-      {modal === "add-request" && (() => {
-        const fLabel: React.CSSProperties = { fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 5 };
-        const fInput: React.CSSProperties = { width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "#fff" };
-        const fSelect: React.CSSProperties = { ...fInput, appearance: "none", background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`, paddingRight: 28, cursor: "pointer" };
-        const divider: React.CSSProperties = { flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 };
-        return (
-          <Modal title="신규 자료 요청" onClose={() => { closeModal(); resetNewForm(); }} onConfirm={confirmModal} confirmLabel="저장" width={760}>
-            {/* 제목 */}
-            <div style={{ marginBottom: 20 }}>
-              <input
-                type="text"
-                placeholder="자료 요청 제목을 입력하세요"
-                value={nTitle}
-                onChange={e => setNTitle(e.target.value)}
-                style={{ width: "100%", fontSize: 18, fontWeight: 700, color: C.text, border: "none", borderBottom: `2px solid ${C.primary}`, padding: "4px 2px 6px", outline: "none", background: "transparent", boxSizing: "border-box", letterSpacing: "-0.3px" }}
-              />
-            </div>
-
-            {/* 1행 메타 */}
-            <div style={{ display: "flex", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 16px", marginBottom: 20 }}>
-              {/* 법인 */}
-              <div style={divider}>
-                <div style={fLabel}>법인</div>
-                <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={fSelect}>
-                  {ENTITIES.map(en => <option key={en}>{en}</option>)}
-                </select>
-              </div>
-              {/* 자료요청자 */}
-              <div style={divider}>
-                <div style={fLabel}>자료요청자</div>
-                <input value={nRequester} onChange={e => setNRequester(e.target.value)} placeholder="이름" style={fInput} />
-              </div>
-              {/* 법인담당자 */}
-              <div style={divider}>
-                <div style={fLabel}>법인담당자</div>
-                <select value="" onChange={e => { const v = e.target.value; if (v && !nAssignees.includes(v)) setNAssignees(p => [...p, v]); e.target.value = ""; }} style={fSelect}>
-                  <option value="">{(ENTITY_CLIENTS[nEntity] ?? []).length === 0 ? "등록 없음" : "추가..."}</option>
-                  {(ENTITY_CLIENTS[nEntity] ?? ASSIGNEES).filter(a => !nAssignees.includes(a)).map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-                {nAssignees.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
-                    {nAssignees.map(a => (
-                      <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", background: C.primaryBg, color: C.primary, borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
-                        {a}
-                        <button onClick={() => setNAssignees(p => p.filter(x => x !== a))} style={{ background: "none", border: "none", cursor: "pointer", color: C.primary, fontSize: 14, padding: "0 0 0 2px", lineHeight: 1 }}>×</button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {/* 마감일 */}
-              <div style={divider}>
-                <div style={fLabel}>마감일</div>
-                <input type="date" value={nDue} onChange={e => setNDue(e.target.value)} style={fInput} />
-              </div>
-              {/* 상태 */}
-              <div style={{ flex: "1 1 0", minWidth: 0 }}>
-                <div style={fLabel}>상태</div>
-                <select value={nStatus} onChange={e => setNStatus(e.target.value as ReqStatus)} style={fSelect}>
-                  {(["Draft", "Requested"] as ReqStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {/* 설명 */}
-            <div>
-              <div style={fLabel}>설명</div>
-              <textarea
-                placeholder="자료 요청에 대한 상세 설명을 입력하세요."
-                value={nDesc}
-                onChange={e => setNDesc(e.target.value)}
-                rows={4}
-                style={{ width: "100%", resize: "vertical", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", outline: "none" }}
-                onFocus={e => (e.target.style.borderColor = C.primary)}
-                onBlur={e => (e.target.style.borderColor = C.border)}
-              />
-            </div>
-          </Modal>
-        );
-      })()}
 
       {modal === "import" && (
         <Modal title="Import User(s)" onClose={closeModal} onConfirm={confirmModal} confirmLabel="Import">
