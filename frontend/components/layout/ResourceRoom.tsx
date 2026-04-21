@@ -680,14 +680,12 @@ export default function ResourceRoom() {
                     cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
                     background: s === "전체"
                       ? (isActive ? C.primary : "#F0F0F0")
-                      : (cfg?.bg ?? "#F0F0F0"),
+                      : (isActive ? (cfg?.color ?? "#666") : (cfg?.bg ?? "#F0F0F0")),
                     color: s === "전체"
                       ? (isActive ? "#fff" : "#666")
-                      : (cfg?.color ?? "#666"),
-                    border: isActive && s !== "전체"
-                      ? `2px solid ${cfg?.color ?? "#ccc"}`
-                      : "2px solid transparent",
-                    opacity: !isActive && s !== "전체" ? 0.6 : 1,
+                      : (isActive ? "#fff" : (cfg?.color ?? "#666")),
+                    border: "2px solid transparent",
+                    opacity: !isActive && s !== "전체" ? 0.65 : 1,
                   }}>
                   {s}
                 </button>
