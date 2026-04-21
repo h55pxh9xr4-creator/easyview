@@ -105,7 +105,7 @@ const STATUS_CFG: Record<ReqStatus, { bg: string; color: string }> = {
   "초안":     { bg: "#F0F0F0", color: "#666" },
   "요청됨":   { bg: "#EBF0FD", color: "#1A56DB" },
   "검토중":   { bg: "#FFF8E1", color: "#B45309" },
-  "자료 수령":{ bg: "#E8F5E9", color: "#2E7D32" },
+  "자료 수령":{ bg: "#F3EEFF", color: "#7C3AED" },
   "완료":     { bg: "#E8F5E9", color: "#1B5E20" },
   "반려":     { bg: "#FEECEC", color: "#B91C1C" },
 };
