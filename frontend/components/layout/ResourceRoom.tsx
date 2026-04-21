@@ -628,7 +628,7 @@ export default function ResourceRoom() {
               width={22}
               height={22}
               alt=""
-              style={{ flexShrink: 0, opacity: active ? 1 : 0.45 }}
+              style={{ flexShrink: 0, opacity: 1 }}
             />
             {item.label}
           </button>
