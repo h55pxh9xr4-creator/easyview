@@ -730,22 +730,28 @@ export default function ResourceRoom() {
           {ENTITIES.map(e => <option key={e} value={e}>{e}</option>)}
         </select>
 
-        <button
-          onClick={() => setMyOnly(p => !p)}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-            cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-            border: myOnly ? "none" : "1px solid #ddd",
-            background: myOnly ? C.primary : "#fff",
-            color: myOnly ? "#fff" : "#666",
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          {myOnly ? "내 요청만" : "전체 요청"}
-        </button>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+          <div
+            onClick={() => setMyOnly(p => !p)}
+            style={{
+              width: 40, height: 22, borderRadius: 11,
+              background: myOnly ? C.primary : "#ccc",
+              position: "relative", transition: "background 0.2s", flexShrink: 0,
+              cursor: "pointer",
+            }}
+          >
+            <div style={{
+              width: 18, height: 18, borderRadius: "50%", background: "#fff",
+              position: "absolute", top: 2,
+              left: myOnly ? 20 : 2,
+              transition: "left 0.2s",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+            }} />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: myOnly ? C.primary : "#888" }}>
+            내 요청만
+          </span>
+        </label>
       </div>
 
       {/* ── 목록 보기 ── */}
