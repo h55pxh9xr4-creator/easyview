@@ -124,7 +124,7 @@ export default function ChatBot() {
         <div className="chatbot-panel" style={panelStyle}>
           <div className="chatbot-header">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="chatbot-icon-sm">✦</span>
+              <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" style={{ height: 20, objectFit: "contain" }} />
               <span style={{ fontWeight: 700, fontSize: 14, color: "#2C2C2C" }}>AI 어시스턴트</span>
             </div>
             <button className="chatbot-close" onClick={() => setOpen(false)}>
@@ -137,7 +137,7 @@ export default function ChatBot() {
           <div className="chatbot-messages">
             {messages.length === 0 && (
               <div className="chatbot-empty">
-                <span className="chatbot-icon-lg">✦</span>
+                <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" style={{ height: 36, objectFit: "contain", marginBottom: 12 }} />
                 <p>안녕하세요! 재무 데이터에 대해<br />궁금한 점을 질문해 주세요.</p>
               </div>
             )}
