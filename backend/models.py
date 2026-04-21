@@ -47,16 +47,17 @@ class JE(Base):
 class Inquiry(Base):
     __tablename__ = "inquiry"
 
-    id         = Column(Integer, primary_key=True, autoincrement=True)
-    category   = Column(String,  nullable=False, default="기타 문의")  # 조회 오류 | 데이터 오류 | 기타 문의
-    title      = Column(String,  nullable=False)
-    content    = Column(Text,    nullable=False)
-    author     = Column(String,  nullable=False)
-    is_secret  = Column(Boolean, default=False)     # 비밀글 여부
-    status     = Column(String,  default="답변대기") # 답변대기 | 답변완료
-    reply      = Column(Text,    nullable=True)     # 관리자 답변
-    reply_at   = Column(DateTime, nullable=True)    # 답변 일시
-    created_at = Column(DateTime, default=datetime.now)
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    category    = Column(String,  nullable=False, default="기타 문의")  # 조회 오류 | 데이터 오류 | 기타 문의
+    title       = Column(String,  nullable=False)
+    content     = Column(Text,    nullable=False)
+    author      = Column(String,  nullable=False)
+    corporation = Column(String,  nullable=True)     # 법인명
+    is_secret   = Column(Boolean, default=False)     # 비밀글 여부
+    status      = Column(String,  default="답변대기") # 답변대기 | 답변완료
+    reply       = Column(Text,    nullable=True)     # 관리자 답변
+    reply_at    = Column(DateTime, nullable=True)    # 답변 일시
+    created_at  = Column(DateTime, default=datetime.now)
 
 
 class DataRequest(Base):
