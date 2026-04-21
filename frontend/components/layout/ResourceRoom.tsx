@@ -1155,9 +1155,9 @@ export default function ResourceRoom() {
         </div>
       </div>
 
-      {/* Header – row 2: 모회사(좌) + 법인/토글(우) */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        {/* 왼쪽: 모회사 드롭다운 (관리자용) */}
+      {/* Header – row 2: 모회사 + 법인 + 토글 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        {/* 모회사 드롭다운 (관리자용) */}
         <select
           value={parentFilter}
           onChange={e => setParentFilter(e.target.value)}
@@ -1173,7 +1173,6 @@ export default function ResourceRoom() {
           {PARENT_COMPANIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
 
-        {/* 오른쪽: 법인 필터 + 내 요청만 토글 */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <select
             value={entityFilter}
