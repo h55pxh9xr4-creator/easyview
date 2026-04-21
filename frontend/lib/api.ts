@@ -388,6 +388,9 @@ export const createRequests = (items: RequestCreateBody[]) =>
 export const updateRequestStatus = (id: number, status: string) =>
   mut<{ ok: boolean }>(`${BASE}/api/requests/${id}/status`, "PATCH", { status });
 
+export const updateRequest = (id: number, body: Partial<RequestCreateBody>) =>
+  mut<DataRequest>(`${BASE}/api/requests/${id}`, "PATCH", body);
+
 export const deleteRequest = (id: number) =>
   mut<{ ok: boolean }>(`${BASE}/api/requests/${id}`, "DELETE");
 

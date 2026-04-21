@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  fetchRequests, createRequests, deleteRequest,
+  fetchRequests, createRequests, updateRequest, deleteRequest,
   fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
   type DataRequest as ApiRequest, type ReqFile,
 } from "@/lib/api";
@@ -365,6 +365,10 @@ export default function ResourceRoom() {
   const [reqLoading, setReqLoading]         = useState(true);
   const [reqFilter, setReqFilter]           = useState<ReqStatus | "전체">("전체");
   const [detailReq, setDetailReq]           = useState<Request | null>(null);
+  const [editDraft, setEditDraft]           = useState<{
+    title: string; entity: string; assignees: string[];
+    requester: string; dueDate: string; status: ReqStatus; description: string;
+  } | null>(null);
   const [detailFiles, setDetailFiles]       = useState<ReqFile[]>([]);
   const [filesLoading, setFilesLoading]     = useState(false);
   const [uploading, setUploading]           = useState(false);
@@ -429,7 +433,25 @@ export default function ResourceRoom() {
 
   useEffect(() => { loadRequests(); }, [loadRequests]);
 
-  /* 상세 모달 열릴 때 파일 목록 로드 */
+  /* detailReq 변경 시 editDraft 초기화 */
+  useEffect(() => {
+    if (!detailReq || detailReq.status === "Accepted") {
+      setEditDraft(null);
+      return;
+    }
+    setEditDraft({
+      title:      detailReq.title,
+      entity:     detailReq.entity,
+      assignees:  detailReq.assignee ? detailReq.assignee.split(", ").map(s => s.trim()).filter(Boolean) : [],
+      requester:  detailReq.requester,
+      dueDate:    detailReq.dueDate === "—" ? "" : detailReq.dueDate,
+      status:     detailReq.status,
+      description: detailReq.description,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailReq?.id]);
+
+  /* 상세 뷰 열릴 때 파일 목록 로드 */
   useEffect(() => {
     if (!detailReq) { setDetailFiles([]); return; }
     setFilesLoading(true);
@@ -451,6 +473,37 @@ export default function ResourceRoom() {
       showToast(`${files.length}개 파일이 업로드되었습니다.`);
     } catch { showToast("업로드 중 오류가 발생했습니다."); }
     finally { setUploading(false); }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!detailReq || !editDraft) return;
+    const body = {
+      title:       editDraft.title.trim(),
+      entity:      editDraft.entity,
+      assignee:    editDraft.assignees.join(", "),
+      requester:   editDraft.requester.trim(),
+      status:      editDraft.status,
+      due_date:    editDraft.dueDate || "",
+      description: editDraft.description,
+    };
+    const updatedReq: Request = {
+      ...detailReq,
+      title:       body.title,
+      entity:      body.entity,
+      assignee:    body.assignee,
+      requester:   body.requester,
+      status:      body.status as ReqStatus,
+      dueDate:     body.due_date || "—",
+      description: body.description,
+    };
+    try { await updateRequest(detailReq.id, body); } catch { /* backend down – update locally */ }
+    setDetailReq(updatedReq);
+    setRequests(prev => {
+      const next = prev.map(r => r.id === detailReq.id ? updatedReq : r);
+      saveCache(next);
+      return next;
+    });
+    showToast("수정 사항이 저장되었습니다.");
   };
 
   const handleDeleteFile = async (fileId: number) => {
@@ -700,12 +753,79 @@ export default function ResourceRoom() {
 
   const PageRequests = () => {
     if (detailReq) {
-      const sc = STATUS_CFG[detailReq.status];
+      const sc       = STATUS_CFG[detailReq.status];
+      const editable = editDraft !== null; // status !== "Accepted"
+
+      const fieldLabel: React.CSSProperties = {
+        fontSize: 10, fontWeight: 700, color: C.muted,
+        textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 5,
+      };
+      const fieldInput: React.CSSProperties = {
+        width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`,
+        borderRadius: 6, fontSize: 13, fontFamily: "inherit",
+        outline: "none", boxSizing: "border-box", background: "#fff",
+      };
+      const fieldSelect: React.CSSProperties = {
+        ...fieldInput,
+        appearance: "none",
+        background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`,
+        paddingRight: 28, cursor: "pointer",
+      };
+
+      /* ── 첨부파일 섹션 (공통) ── */
+      const FilesSection = () => (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
+            {!filesLoading && (
+              <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
+                {detailFiles.length}
+              </span>
+            )}
+            <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600 }}>
+              <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
+              {uploading ? "업로드 중..." : "+ 파일 첨부"}
+            </label>
+          </div>
+          {filesLoading ? (
+            <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
+          ) : detailFiles.length === 0 ? (
+            <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center" }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
+              <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다</p>
+              <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부해주세요</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {detailFiles.map(f => (
+                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
+                  <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
+                      style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
+                      onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
+                    >{f.originalName}</a>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
+                  </div>
+                  <button onClick={() => handleDeleteFile(f.id)} title="삭제"
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
+                  >🗑</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+
       return (
         <>
           <style>{`@keyframes _rdi{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}`}</style>
           <Card>
             <div style={{ animation: "_rdi 0.22s ease" }}>
+
               {/* ── Back nav ── */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
                 <button
@@ -713,98 +833,188 @@ export default function ResourceRoom() {
                   style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.border}`, background: "#fff", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.primary; (e.currentTarget as HTMLElement).style.color = C.primary; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.sub; }}
-                >
-                  ← 목록으로
-                </button>
+                >← 목록으로</button>
                 <span style={{ fontSize: 12, color: C.muted }}>자료 요청 / {detailReq.reqCode}</span>
-              </div>
-
-              {/* ── Title ── */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 5 }}>{detailReq.reqCode}</div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>{detailReq.title}</h2>
-              </div>
-
-              {/* ── Meta grid ── */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px 24px", marginBottom: 24, padding: "18px 20px", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}` }}>
-                {([
-                  ["법인",  detailReq.entity],
-                  ["담당자", detailReq.assignee],
-                  ["요청자", detailReq.requester],
-                  ["요청일", detailReq.createdDate],
-                  ["마감일", detailReq.dueDate],
-                ] as [string, string][]).map(([k, v]) => (
-                  <div key={k}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>{k}</div>
-                    <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{v || "—"}</div>
-                  </div>
-                ))}
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>상태</div>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
-                    <StatusIcon status={detailReq.status} color={sc.color} />
-                    {detailReq.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* ── 설명 ── */}
-              {detailReq.description && (
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 8 }}>설명</div>
-                  <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.75, background: "#F9F9F9", padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.border}`, margin: 0 }}>{detailReq.description}</p>
-                </div>
-              )}
-
-              {/* ── 첨부파일 ── */}
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
-                  {!filesLoading && (
-                    <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
-                      {detailFiles.length}
-                    </span>
-                  )}
-                  <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600, transition: "background 0.15s" }}>
-                    <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
-                    {uploading ? "업로드 중..." : "+ 파일 첨부"}
-                  </label>
-                </div>
-                {filesLoading ? (
-                  <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
-                ) : detailFiles.length === 0 ? (
-                  <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center" }}>
-                    <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
-                    <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다</p>
-                    <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부해주세요</p>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {detailFiles.map(f => (
-                      <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
-                        <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
-                            style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                            onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
-                            onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
-                          >
-                            {f.originalName}
-                          </a>
-                          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                            {fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}
-                          </div>
-                        </div>
-                        <button onClick={() => handleDeleteFile(f.id)} title="삭제"
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
-                          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
-                          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
-                        >🗑</button>
-                      </div>
-                    ))}
-                  </div>
+                {editable && (
+                  <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "#FFF5EE", color: C.primary }}>편집 가능</span>
                 )}
               </div>
+
+              {/* ══════════ EDITABLE VIEW ══════════ */}
+              {editable && editDraft ? (
+                <>
+                  {/* 제목 */}
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>{detailReq.reqCode}</div>
+                    <input
+                      value={editDraft.title}
+                      onChange={e => setEditDraft(p => p ? { ...p, title: e.target.value } : p)}
+                      style={{ width: "100%", fontSize: 20, fontWeight: 700, color: C.text, border: "none", borderBottom: `2px solid ${C.primary}`, padding: "4px 2px 6px", outline: "none", background: "transparent", boxSizing: "border-box", letterSpacing: "-0.3px" }}
+                    />
+                  </div>
+
+                  {/* 메타 폼 */}
+                  <div style={{ background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "18px 20px", marginBottom: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+                    {/* 행 1: 법인 + 요청자 */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+                      <div>
+                        <div style={fieldLabel}>법인</div>
+                        <select
+                          value={editDraft.entity}
+                          onChange={e => setEditDraft(p => p ? { ...p, entity: e.target.value, assignees: [] } : p)}
+                          style={fieldSelect}
+                        >
+                          {ENTITIES.map(en => <option key={en}>{en}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div style={fieldLabel}>요청자</div>
+                        <input
+                          value={editDraft.requester}
+                          onChange={e => setEditDraft(p => p ? { ...p, requester: e.target.value } : p)}
+                          style={fieldInput}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 행 2: 담당자 (전체 너비) */}
+                    <div>
+                      <div style={fieldLabel}>담당자</div>
+                      <select
+                        value=""
+                        onChange={e => {
+                          const v = e.target.value;
+                          if (v && !editDraft.assignees.includes(v))
+                            setEditDraft(p => p ? { ...p, assignees: [...p.assignees, v] } : p);
+                          e.target.value = "";
+                        }}
+                        style={fieldSelect}
+                      >
+                        <option value="">
+                          {(ENTITY_CLIENTS[editDraft.entity] ?? []).length === 0 ? "등록된 담당자가 없습니다" : "담당자 추가..."}
+                        </option>
+                        {(ENTITY_CLIENTS[editDraft.entity] ?? ASSIGNEES)
+                          .filter(a => !editDraft.assignees.includes(a))
+                          .map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                      {editDraft.assignees.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                          {editDraft.assignees.map(a => (
+                            <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", background: C.primaryBg, color: C.primary, borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                              {a}
+                              <button
+                                onClick={() => setEditDraft(p => p ? { ...p, assignees: p.assignees.filter(x => x !== a) } : p)}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: C.primary, fontSize: 15, padding: "0 0 0 2px", lineHeight: 1 }}
+                              >×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 행 3: 마감일 + 상태 */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+                      <div>
+                        <div style={fieldLabel}>마감일</div>
+                        <input
+                          type="date"
+                          value={editDraft.dueDate}
+                          onChange={e => setEditDraft(p => p ? { ...p, dueDate: e.target.value } : p)}
+                          style={fieldInput}
+                        />
+                      </div>
+                      <div>
+                        <div style={fieldLabel}>상태</div>
+                        <select
+                          value={editDraft.status}
+                          onChange={e => setEditDraft(p => p ? { ...p, status: e.target.value as ReqStatus } : p)}
+                          style={fieldSelect}
+                        >
+                          {(["Draft", "Requested", "Submitted", "Recall", "Accepted"] as ReqStatus[]).map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 요청일 (읽기 전용) */}
+                    <div>
+                      <div style={fieldLabel}>요청일</div>
+                      <div style={{ fontSize: 13, color: C.sub }}>{detailReq.createdDate}</div>
+                    </div>
+                  </div>
+
+                  {/* 설명 */}
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 8 }}>설명</div>
+                    <textarea
+                      value={editDraft.description}
+                      onChange={e => setEditDraft(p => p ? { ...p, description: e.target.value } : p)}
+                      rows={4}
+                      style={{ width: "100%", resize: "vertical", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", outline: "none" }}
+                      onFocus={e => (e.target.style.borderColor = C.primary)}
+                      onBlur={e => (e.target.style.borderColor = C.border)}
+                    />
+                  </div>
+
+                  {/* 첨부파일 */}
+                  <FilesSection />
+
+                  {/* 저장/닫기 버튼 */}
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
+                    <OrangeBtn label="저장" onClick={handleSaveEdit} />
+                    <GrayBtn label="닫기" onClick={() => setDetailReq(null)} />
+                  </div>
+                </>
+              ) : (
+                /* ══════════ READ-ONLY VIEW (Accepted) ══════════ */
+                <>
+                  {/* 제목 */}
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 5 }}>{detailReq.reqCode}</div>
+                    <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>{detailReq.title}</h2>
+                  </div>
+
+                  {/* 메타 그리드 */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px 24px", marginBottom: 24, padding: "18px 20px", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                    {([
+                      ["법인",  detailReq.entity],
+                      ["담당자", detailReq.assignee],
+                      ["요청자", detailReq.requester],
+                      ["요청일", detailReq.createdDate],
+                      ["마감일", detailReq.dueDate],
+                    ] as [string, string][]).map(([k, v]) => (
+                      <div key={k}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>{k}</div>
+                        <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{v || "—"}</div>
+                      </div>
+                    ))}
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>상태</div>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
+                        <StatusIcon status={detailReq.status} color={sc.color} />
+                        {detailReq.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 설명 */}
+                  {detailReq.description && (
+                    <div style={{ marginBottom: 24 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 8 }}>설명</div>
+                      <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.75, background: "#F9F9F9", padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.border}`, margin: 0 }}>{detailReq.description}</p>
+                    </div>
+                  )}
+
+                  {/* 첨부파일 */}
+                  <FilesSection />
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
+                    <GrayBtn label="닫기" onClick={() => setDetailReq(null)} />
+                  </div>
+                </>
+              )}
+
             </div>
           </Card>
         </>

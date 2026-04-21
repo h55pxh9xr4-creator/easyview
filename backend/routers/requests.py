@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from pathlib import Path
 import uuid, shutil
@@ -27,6 +27,16 @@ class RequestCreate(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: str
+
+class RequestUpdate(BaseModel):
+    title:       Optional[str] = None
+    entity:      Optional[str] = None
+    assignee:    Optional[str] = None
+    requester:   Optional[str] = None
+    status:      Optional[str] = None
+    priority:    Optional[str] = None
+    due_date:    Optional[str] = None
+    description: Optional[str] = None
 
 
 # ── Helpers ──────────────────────────────────────────────────
@@ -80,6 +90,18 @@ def create_requests(items: List[RequestCreate], db: Session = Depends(get_db)):
         created.append(row.id)
     db.commit()
     return {"ids": created}
+
+
+@router.patch("/{req_id}")
+def update_request(req_id: int, body: RequestUpdate, db: Session = Depends(get_db)):
+    row = db.query(DataRequest).filter(DataRequest.id == req_id).first()
+    if not row:
+        raise HTTPException(404, "Not found")
+    for field, value in body.model_dump(exclude_none=True).items():
+        setattr(row, field, value)
+    db.commit()
+    db.refresh(row)
+    return _fmt(row)
 
 
 @router.patch("/{req_id}/status")
