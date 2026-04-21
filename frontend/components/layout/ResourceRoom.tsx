@@ -695,7 +695,7 @@ export default function ResourceRoom() {
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           {/* Status filter tabs */}
           <div style={{ display: "flex", gap: 4 }}>
-            {(["전체", "Draft", "Requested", "Submitted", "Accepted", "Recall"] as (ReqStatus | "전체")[]).map(s => {
+            {(["전체", "Draft", "Requested", "Submitted", "Recall", "Accepted"] as (ReqStatus | "전체")[]).map(s => {
               const cfg = s === "전체" ? null : STATUS_CFG[s];
               const isActive = reqFilter === s;
               return (
