@@ -1471,7 +1471,9 @@ export default function ResourceRoom() {
           position: "sticky", top: 0, zIndex: 100,
           boxShadow: "0 1px 3px rgba(0,0,0,.04)",
         }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>Site Administration</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>
+            {SIDEBAR_ITEMS.find(i => i.key === page)?.label ?? "Site Administration"}
+          </span>
         </div>
 
         {page === "requests"       && PageRequests()}
