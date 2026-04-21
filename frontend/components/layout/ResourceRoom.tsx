@@ -728,10 +728,14 @@ export default function ResourceRoom() {
               });
               showToast("요청이 삭제되었습니다.");
             }}
-            style={{ color: C.primary, fontSize: 20, opacity: 0.55, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+            style={{ color: C.primary, opacity: 0.55, background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center" }}
             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "0.55")}
-          >🗑</button>
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
         </td>
       </tr>
     );
