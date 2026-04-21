@@ -741,8 +741,8 @@ export default function ResourceRoom() {
     );
   };
 
-  const COLS_FLAT    = ["번호", "제목", "법인", "담당자", "상태", "요청일", "마감일", ""];
-  const COLS_GROUPED = ["번호", "제목", "담당자", "상태", "요청일", "마감일", ""];
+  const COLS_FLAT    = ["번호", "제목", "법인", "법인담당자", "상태", "요청일", "마감일", ""];
+  const COLS_GROUPED = ["번호", "제목", "법인담당자", "상태", "요청일", "마감일", ""];
 
   const fmtSize = (b: number) =>
     b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
@@ -871,7 +871,7 @@ export default function ResourceRoom() {
 
                   {/* 메타 폼 */}
                   <div style={{ background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "18px 20px", marginBottom: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-                    {/* 행 1: 법인 + 요청자 */}
+                    {/* 행 1: 법인 + 자료요청자 */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
                       <div>
                         <div style={fieldLabel}>법인</div>
@@ -884,7 +884,7 @@ export default function ResourceRoom() {
                         </select>
                       </div>
                       <div>
-                        <div style={fieldLabel}>요청자</div>
+                        <div style={fieldLabel}>자료요청자</div>
                         <input
                           value={editDraft.requester}
                           onChange={e => setEditDraft(p => p ? { ...p, requester: e.target.value } : p)}
@@ -893,9 +893,9 @@ export default function ResourceRoom() {
                       </div>
                     </div>
 
-                    {/* 행 2: 담당자 (전체 너비) */}
+                    {/* 행 2: 법인담당자 (전체 너비) */}
                     <div>
-                      <div style={fieldLabel}>담당자</div>
+                      <div style={fieldLabel}>법인담당자</div>
                       <select
                         value=""
                         onChange={e => {
@@ -994,11 +994,11 @@ export default function ResourceRoom() {
                   {/* 메타 – 1행 */}
                   <div style={{ display: "flex", gap: 0, marginBottom: 24, padding: "14px 20px", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, flexWrap: "wrap" }}>
                     {([
-                      ["법인",  detailReq.entity],
-                      ["담당자", detailReq.assignee],
-                      ["요청자", detailReq.requester],
-                      ["요청일", detailReq.createdDate],
-                      ["마감일", detailReq.dueDate],
+                      ["법인",      detailReq.entity],
+                      ["자료요청자", detailReq.requester],
+                      ["법인담당자", detailReq.assignee],
+                      ["요청일",    detailReq.createdDate],
+                      ["마감일",    detailReq.dueDate],
                     ] as [string, string][]).map(([k, v], i, arr) => (
                       <div key={k} style={{ flex: "1 1 0", minWidth: 100, paddingRight: 16, borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none", marginRight: i < arr.length - 1 ? 16 : 0 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>{k}</div>
@@ -1497,8 +1497,8 @@ export default function ResourceRoom() {
               </select>
             </FGroup>
 
-            {/* 요청자 (자동 세팅) */}
-            <FGroup label="요청자">
+            {/* 자료요청자 (자동 세팅) */}
+            <FGroup label="자료요청자">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="text"
@@ -1512,8 +1512,8 @@ export default function ResourceRoom() {
               </div>
             </FGroup>
 
-            {/* 담당자 (복수 선택) */}
-            <FGroup label="담당자 (복수 선택 가능)" required>
+            {/* 법인담당자 (복수 선택) */}
+            <FGroup label="법인담당자 (복수 선택 가능)" required>
               <select
                 value=""
                 onChange={e => {
