@@ -24,6 +24,7 @@ export default function ChatBot() {
   const didDrag     = useRef(false);
   const dragOffset  = useRef({ x: 0, y: 0 });
   const pressTime   = useRef(0);
+  const pressStart  = useRef({ x: 0, y: 0 });
   const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -43,6 +44,9 @@ export default function ChatBot() {
       if (!dragging.current) return;
       if (e.buttons === 0) { dragging.current = false; setGrabbed(false); showHyu(); return; }
       if (!didDrag.current) {
+        const dx = e.clientX - pressStart.current.x;
+        const dy = e.clientY - pressStart.current.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 8) return;
         didDrag.current = true;
         setSpeechText("악 놔주세요!"); setSpeechForced(true);
       }
@@ -76,6 +80,7 @@ export default function ChatBot() {
     dragging.current = true;
     didDrag.current  = false;
     pressTime.current = Date.now();
+    pressStart.current = { x: e.clientX, y: e.clientY };
     if (speechTimer.current) { clearTimeout(speechTimer.current); speechTimer.current = null; }
     setGrabbed(true);
     setSpeechText(null); setSpeechForced(false);
