@@ -1051,9 +1051,15 @@ export default function ResourceRoom() {
       const HistoryTab = () => {
         const assignee = detailReq!.assignee || "법인담당자";
         const me = sessionStorage.getItem("ev_user") || "admin";
+        const mockUploads = detailFiles.length > 0
+          ? detailFiles.map(f => ({ ts: f.uploadedAt, actor: assignee, type: "upload" as const, detail: `파일 업로드: ${f.originalName}` }))
+          : [
+              { ts: "2026-04-21 10:15", actor: assignee, type: "upload" as const, detail: "파일 업로드: 재무제표_2026Q1.xlsx" },
+              { ts: "2026-04-21 10:16", actor: assignee, type: "upload" as const, detail: "파일 업로드: 손익계산서_2026Q1.pdf" },
+            ];
         const logs = [
           { ts: detailReq!.createdDate + " 09:00", actor: detailReq!.requester, type: "create"  as const, detail: `요청 생성 (${detailReq!.reqCode})` },
-          ...detailFiles.map(f => ({ ts: f.uploadedAt, actor: assignee, type: "upload" as const, detail: `파일 업로드: ${f.originalName}` })),
+          ...mockUploads,
           { ts: "2026-04-21 14:32", actor: me,       type: "comment" as const, detail: "논의 댓글 작성: \"TB 파일이 누락된 것 같습니다.\"" },
           { ts: "2026-04-21 15:10", actor: assignee, type: "comment" as const, detail: "논의 댓글 작성: \"지금 바로 업로드하겠습니다.\"" },
         ].sort((a, b) => b.ts.localeCompare(a.ts));
