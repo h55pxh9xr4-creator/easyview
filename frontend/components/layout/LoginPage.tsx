@@ -69,7 +69,7 @@ export default function LoginPage({ onLogin }: Props) {
       {/* 램프 */}
       <div
         onClick={() => setLampOn(p => !p)}
-        title={lampOn ? "램프 끄기" : "램프 켜기"}
+
         style={{ cursor: "pointer", userSelect: "none", position: "fixed", bottom: 32, right: 40, zIndex: 100 }}
       >
         <svg width="72" height="110" viewBox="0 0 72 110" fill="none" xmlns="http://www.w3.org/2000/svg"
