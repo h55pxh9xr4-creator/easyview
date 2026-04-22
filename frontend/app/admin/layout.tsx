@@ -19,7 +19,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, loading, logout } = useAdminAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const isLoginPage = pathname === "/admin/login";
+  const isLoginPage = pathname === "/admin/login" || pathname === "/admin/login/";
 
   useEffect(() => {
     if (isLoginPage) return;
