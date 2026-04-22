@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense, lazy } from "react";
 import {
   fetchRequests, createRequests, updateRequest, deleteRequest,
   fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
   type DataRequest as ApiRequest, type ReqFile,
 } from "@/lib/api";
 import ChatBot from "@/components/ui/ChatBot";
+
+const AdminDashboard   = lazy(() => import("@/app/admin/page"));
+const AdminAccounts    = lazy(() => import("@/app/admin/accounts/page"));
+const AdminRequests    = lazy(() => import("@/app/admin/requests/page"));
+const AdminLogs        = lazy(() => import("@/app/admin/logs/page"));
+const AdminPermissions = lazy(() => import("@/app/admin/permissions/page"));
+const AdminRoles       = lazy(() => import("@/app/admin/roles/page"));
 
 
 /* ── types ── */
@@ -362,6 +369,7 @@ function Toast({ msg }: { msg: string }) {
 /* ═══════════════════ Main Component ═══════════════════ */
 export default function ResourceRoom() {
   const [page, setPage]           = useState<SidebarPage>("requests");
+  const [adminSubPage, setAdminSubPage] = useState("dashboard");
   const [userTab, setUserTab]     = useState<UserTab>("pwc");
   const [modal, setModal]         = useState<"add-pwc" | "add-client" | "import" | "add-request" | null>(null);
   const [toast, setToast]         = useState("");
@@ -609,13 +617,7 @@ export default function ResourceRoom() {
         return (
           <button
             key={item.key}
-            onClick={() => {
-              if (item.key === "admin") {
-                window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/admin`;
-              } else {
-                setPage(item.key);
-              }
-            }}
+            onClick={() => setPage(item.key)}
             style={{
               display: "flex", alignItems: "center", gap: 12,
               padding: "10px 20px", width: "100%", textAlign: "left",
@@ -1465,6 +1467,58 @@ export default function ResourceRoom() {
   );
 
   /* ── Render ── */
+  const ADMIN_NAV = [
+    { key: "dashboard",   label: "Dashboard" },
+    { key: "accounts",    label: "계정 관리" },
+    { key: "requests",    label: "사용자 추가 신청" },
+    { key: "permissions", label: "리포트 접근 권한" },
+    { key: "roles",       label: "역할 정의" },
+    { key: "logs",        label: "로그/방문이력" },
+  ];
+
+  if (page === "admin") {
+    return (
+      <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text }}>
+        {SidebarEl()}
+        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+          <aside style={{ width: 200, background: "#fff", borderRight: "1px solid #e5e7eb", flexShrink: 0, display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+              관리자 메뉴
+            </div>
+            {ADMIN_NAV.map(item => {
+              const isActive = adminSubPage === item.key;
+              return (
+                <button key={item.key} onClick={() => setAdminSubPage(item.key)} style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "10px 16px", border: "none",
+                  background: isActive ? "#fff7ed" : "transparent",
+                  color: isActive ? "#d04a02" : "#555",
+                  fontWeight: isActive ? 600 : 400,
+                  fontSize: 13, cursor: "pointer",
+                  borderLeft: isActive ? "3px solid #d04a02" : "3px solid transparent",
+                  fontFamily: "inherit", transition: "all .12s",
+                }}>
+                  {item.label}
+                </button>
+              );
+            })}
+          </aside>
+          <div style={{ flex: 1, overflow: "auto", background: "#f3f4f6", padding: 24 }}>
+            <Suspense fallback={<div style={{ color: "#9ca3af", padding: 24 }}>로딩 중...</div>}>
+              {adminSubPage === "dashboard"   && <AdminDashboard />}
+              {adminSubPage === "accounts"    && <AdminAccounts />}
+              {adminSubPage === "requests"    && <AdminRequests />}
+              {adminSubPage === "permissions" && <AdminPermissions />}
+              {adminSubPage === "roles"       && <AdminRoles />}
+              {adminSubPage === "logs"        && <AdminLogs />}
+            </Suspense>
+          </div>
+        </div>
+        <Toast msg={toast} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text }}>
       {SidebarEl()}
