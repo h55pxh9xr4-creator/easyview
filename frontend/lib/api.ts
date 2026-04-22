@@ -311,7 +311,7 @@ export const fetchSC6Extract = (dateFrom: string, dateTo: string, counterparty: 
   get<SC6Extract[]>("/api/scenario/6/extract", { date_from: dateFrom, date_to: dateTo, counterparty });
 
 // ── Inquiry ──────────────────────────────────────────────────
-export const INQUIRY_CATEGORIES = ["Report Comment", "오류 문의", "유저추가/권한요청", "계약 문의", "기타 문의"] as const;
+export const INQUIRY_CATEGORIES = ["Report Comment", "유저추가/권한요청", "오류 문의", "계약 문의", "기타 문의"] as const;
 export type InquiryCategory = typeof INQUIRY_CATEGORIES[number];
 
 export interface InquiryItem {
