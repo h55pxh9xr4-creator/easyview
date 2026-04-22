@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Spline from "@splinetool/react-spline";
 
@@ -19,6 +19,19 @@ export default function LoginPage({ onLogin }: Props) {
   const [loading, setLoading] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
   const [showPw, setShowPw] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+      if (!canvas) return;
+      canvas.dispatchEvent(new MouseEvent("mousemove", {
+        bubbles: true, clientX: e.clientX, clientY: e.clientY,
+        screenX: e.screenX, screenY: e.screenY,
+      }));
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
