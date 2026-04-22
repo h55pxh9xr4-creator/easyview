@@ -944,7 +944,7 @@ export default function ResourceRoom() {
             <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center" }}>
               <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
               <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다.</p>
-              <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부하거나 파일을 드래그앤 드롭하여 첨부해주세요</p>
+              <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부하거나 파일을 드래그 앤 드롭하여 첨부해주세요.</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
