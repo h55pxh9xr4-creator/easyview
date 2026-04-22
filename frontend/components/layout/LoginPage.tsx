@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Spline from "@splinetool/react-spline";
 
 interface Props {
   onLogin: () => void;
@@ -17,7 +18,6 @@ export default function LoginPage({ onLogin }: Props) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
-  const [lampOn, setLampOn] = useState(true);
   const [showPw, setShowPw] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -47,19 +47,9 @@ export default function LoginPage({ onLogin }: Props) {
     <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
 
       {/* Spline 3D 배경 */}
-      <iframe
-        src="https://my.spline.design/googlyeyes-wvARTYjTIf5KDY8uuWGkjqs7-oqL/"
-        style={{ position: "fixed", inset: 0, width: "100%", height: "100%", border: "none", zIndex: 0 }}
-        allow="autoplay"
-      />
-
-      {/* 램프 오프 시 어두운 오버레이 */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 1,
-        background: lampOn ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.65)",
-        transition: "background 0.6s ease",
-        pointerEvents: "none",
-      }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
+        <Spline scene="https://prod.spline.design/NWKwPxi83XRPKiFM/scene.splinecode" />
+      </div>
 
       {/* 로그인 카드 */}
       <div style={{
@@ -78,14 +68,9 @@ export default function LoginPage({ onLogin }: Props) {
           width: "100%",
           maxWidth: "400px",
           overflow: "hidden",
-          transition: "box-shadow 0.5s ease",
         }}>
           {/* 브랜드 헤더 */}
-          <div style={{
-            background: "rgba(44,44,44,0.92)",
-            padding: "28px 32px 24px",
-            textAlign: "center",
-          }}>
+          <div style={{ background: "rgba(44,44,44,0.92)", padding: "28px 32px 24px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
               <Image src="/easyview/logo.png" alt="logo" width={28} height={28} style={{ height: "28px", width: "auto" }} />
               <span style={{ fontSize: "22px", fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
@@ -217,29 +202,9 @@ export default function LoginPage({ onLogin }: Props) {
           </form>
         </div>
 
-        <p style={{ marginTop: "20px", fontSize: "11px", color: "rgba(255,255,255,0.6)" }}>
+        <p style={{ marginTop: "20px", fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>
           © 2026 PwC. All rights reserved.
         </p>
-      </div>
-
-      {/* 램프 (오른쪽 하단 고정) */}
-      <div
-        onClick={() => setLampOn(p => !p)}
-        style={{ cursor: "pointer", userSelect: "none", position: "fixed", bottom: 32, right: 40, zIndex: 10 }}
-      >
-        <svg width="72" height="110" viewBox="0 0 72 110" fill="none" xmlns="http://www.w3.org/2000/svg"
-          style={{ filter: lampOn ? "drop-shadow(0 0 18px rgba(255,210,80,0.85)) drop-shadow(0 0 40px rgba(255,180,40,0.4))" : "none", transition: "filter 0.5s ease" }}>
-          {lampOn && <ellipse cx="36" cy="38" rx="28" ry="20" fill="rgba(255,220,80,0.13)" />}
-          <path d="M6 46 Q12 10 36 8 Q60 10 66 46 Z" fill={lampOn ? "#f0c040" : "#555"} style={{ transition: "fill 0.5s ease" }} />
-          <path d="M4 46 Q10 9 36 7 Q62 9 68 46" stroke={lampOn ? "#c8900a" : "#333"} strokeWidth="2.5" fill="none" style={{ transition: "stroke 0.5s ease" }} />
-          {lampOn && <path d="M12 44 Q18 18 36 14 Q54 18 60 44 Z" fill="rgba(255,240,160,0.25)" />}
-          <ellipse cx="36" cy="46" rx="7" ry="6" fill={lampOn ? "#fff9c4" : "#333"} style={{ transition: "fill 0.5s ease" }} />
-          <rect x="33.5" y="52" width="5" height="38" rx="2" fill="#555" />
-          <ellipse cx="36" cy="92" rx="18" ry="5" fill="#444" />
-          <ellipse cx="36" cy="97" rx="14" ry="4" fill="#333" />
-          <line x1="36" y1="46" x2="36" y2="64" stroke="#888" strokeWidth="1.2" />
-          <circle cx="36" cy="65" r="3" fill={lampOn ? "#fbbf24" : "#555"} style={{ transition: "fill 0.5s ease" }} />
-        </svg>
       </div>
     </div>
   );
