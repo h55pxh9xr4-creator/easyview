@@ -18,6 +18,7 @@ frontend/home/index.txt
 frontend/index.txt
 frontend/.nojekyll
 *.pyc
+.env
 .env.local
 
 backend/media/*.mp4

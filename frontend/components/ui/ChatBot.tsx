@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import SAMILKIM_IMG from "@/lib/samilkimImg";
+import { sendChatMessage, type ChatMessage } from "@/lib/api";
+import { useFilter } from "@/hooks/useFilter";
 
 interface Message {
   id: number;
@@ -13,6 +16,7 @@ export default function ChatBot() {
   const [open, setOpen]         = useState(false);
   const [input, setInput]       = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading]   = useState(false);
   const [pos, setPos]           = useState<{ x: number; y: number } | null>(null);
   const [grabbed, setGrabbed]       = useState(false);
   const [speechText, setSpeechText] = useState<string | null>(null);
@@ -26,6 +30,11 @@ export default function ChatBot() {
   const pressTime   = useRef(0);
   const pressStart  = useRef({ x: 0, y: 0 });
   const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 현재 페이지/필터 컨텍스트
+  const filter = useFilter();
+  const searchParams = useSearchParams();
+  const currentPage = searchParams.get("sub") ?? searchParams.get("tab") ?? "summary";
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -94,15 +103,42 @@ export default function ChatBot() {
     setOpen(p => !p);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim();
-    if (!text) return;
-    setMessages(prev => [
-      ...prev,
-      { id: Date.now(), role: "user", text },
-      { id: Date.now() + 1, role: "assistant", text: "AI 응답 기능은 준비 중입니다." },
-    ]);
+    if (!text || loading) return;
+
+    const userMsg: Message = { id: Date.now(), role: "user", text };
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
+    setLoading(true);
+
+    // 대화 기록 구성 (최근 10개)
+    const history: ChatMessage[] = messages.slice(-10).map(m => ({
+      role: m.role,
+      text: m.text,
+    }));
+
+    try {
+      const res = await sendChatMessage({
+        message: text,
+        base_ym: filter.baseYm,
+        period_type: filter.periodType,
+        page: currentPage,
+        history,
+      });
+
+      setMessages(prev => [
+        ...prev,
+        { id: Date.now(), role: "assistant", text: res.reply },
+      ]);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        { id: Date.now(), role: "assistant", text: "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -144,9 +180,17 @@ export default function ChatBot() {
             {messages.map(m => (
               <div key={m.id} className={`chatbot-msg chatbot-msg-${m.role}`}>
                 {m.role === "assistant" && <span className="chatbot-msg-avatar">✦</span>}
-                <div className="chatbot-msg-bubble">{m.text}</div>
+                <div className="chatbot-msg-bubble" style={{ whiteSpace: "pre-wrap" }}>{m.text}</div>
               </div>
             ))}
+            {loading && (
+              <div className="chatbot-msg chatbot-msg-assistant">
+                <span className="chatbot-msg-avatar">✦</span>
+                <div className="chatbot-msg-bubble chatbot-typing">
+                  <span className="chatbot-dot" /><span className="chatbot-dot" /><span className="chatbot-dot" />
+                </div>
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 
@@ -159,8 +203,9 @@ export default function ChatBot() {
               onKeyDown={handleKey}
               placeholder="질문을 입력하세요… (Enter로 전송)"
               rows={1}
+              disabled={loading}
             />
-            <button className="chatbot-send" onClick={handleSend} disabled={!input.trim()}>
+            <button className="chatbot-send" onClick={handleSend} disabled={!input.trim() || loading}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
