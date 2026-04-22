@@ -957,8 +957,8 @@ export default function ResourceRoom() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {detailFiles.map(f => (
-                  <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
+                {detailFiles.map((f, i) => (
+                  <div key={f.id ?? f.filename ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
                     <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
