@@ -924,52 +924,63 @@ export default function ResourceRoom() {
       );
 
       /* ── 업로드 탭 ── */
-      const UploadTab = () => (
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
-            {!filesLoading && (
-              <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
-                {detailFiles.length}
-              </span>
-            )}
-            <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600 }}>
-              <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
-              {uploading ? "업로드 중..." : "+ 파일 첨부"}
-            </label>
-          </div>
-          {filesLoading ? (
-            <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
-          ) : detailFiles.length === 0 ? (
-            <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center" }}>
-              <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
-              <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다.</p>
-              <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부하거나 파일을 드래그 앤 드롭하여 첨부해주세요.</p>
+      const UploadTab = () => {
+        const [isDragOver, setIsDragOver] = useState(false);
+        const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
+        const onDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); };
+        const onDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); handleFileUpload(e.dataTransfer.files); };
+        return (
+          <div
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            style={{ borderRadius: 8, border: isDragOver ? `2px dashed ${C.primary}` : "2px solid transparent", background: isDragOver ? C.primaryBg : "transparent", transition: "all 0.15s" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
+              {!filesLoading && (
+                <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
+                  {detailFiles.length}
+                </span>
+              )}
+              <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600 }}>
+                <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
+                {uploading ? "업로드 중..." : "+ 파일 첨부"}
+              </label>
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {detailFiles.map(f => (
-                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
-                  <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
-                      style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                      onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
-                      onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
-                    >{f.originalName}</a>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
+            {filesLoading ? (
+              <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
+            ) : detailFiles.length === 0 ? (
+              <div style={{ border: `2px dashed ${isDragOver ? C.primary : C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center", background: "transparent", transition: "all 0.15s" }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
+                <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다.</p>
+                <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부하거나 파일을 드래그 앤 드롭하여 첨부해주세요.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {detailFiles.map(f => (
+                  <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
+                    <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
+                        onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
+                      >{f.originalName}</a>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
+                    </div>
+                    <button onClick={() => handleDeleteFile(f.id)} title="삭제"
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
+                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
+                    >🗑</button>
                   </div>
-                  <button onClick={() => handleDeleteFile(f.id)} title="삭제"
-                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
-                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
-                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
-                  >🗑</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      };
 
       /* ── 논의 탭 ── */
       const DiscussionTab = () => {
