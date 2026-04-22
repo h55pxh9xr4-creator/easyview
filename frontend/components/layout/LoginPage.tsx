@@ -22,6 +22,11 @@ export default function LoginPage({ onLogin }: Props) {
   const [cardVisible, setCardVisible] = useState(false);
 
   useEffect(() => {
+    const t = setTimeout(() => setCardVisible(true), 3500);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const canvas = document.querySelector<HTMLCanvasElement>("canvas");
       if (!canvas) return;
@@ -62,10 +67,7 @@ export default function LoginPage({ onLogin }: Props) {
 
       {/* Spline 3D 배경 */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
-        <Spline
-          scene="https://prod.spline.design/NWKwPxi83XRPKiFM/scene.splinecode"
-          onLoad={() => setTimeout(() => setCardVisible(true), 2800)}
-        />
+        <Spline scene="https://prod.spline.design/NWKwPxi83XRPKiFM/scene.splinecode" />
       </div>
 
       {/* 로그인 카드 */}
