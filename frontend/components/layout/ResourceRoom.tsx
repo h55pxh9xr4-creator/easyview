@@ -1115,6 +1115,12 @@ export default function ResourceRoom() {
                 {isEditing && (
                   <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, background: "#FFF5EE", color: C.primary, border: `1px solid ${C.primary}` }}>편집 중</span>
                 )}
+                {isEditing && editDraft && (
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                    <GrayBtn label="취소" onClick={() => { setIsEditing(false); setEditDraft(null); }} />
+                    <OrangeBtn label="저장" onClick={handleSaveEdit} />
+                  </div>
+                )}
                 {canEdit && !isEditing && (
                   <button
                     onClick={startEditing}
@@ -1207,12 +1213,6 @@ export default function ResourceRoom() {
                   </div>
 
                   {TabbedSection()}
-
-                  {/* 저장/취소 버튼 */}
-                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
-                    <OrangeBtn label="저장" onClick={handleSaveEdit} />
-                    <GrayBtn label="취소" onClick={() => { setIsEditing(false); setEditDraft(null); }} />
-                  </div>
                 </>
               ) : (
                 /* ══════════ READ-ONLY VIEW (Accepted) ══════════ */
