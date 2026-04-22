@@ -17,6 +17,13 @@ import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 
+const AdminDashboard   = dynamic(() => import("@/app/admin/page"),             { ssr: false });
+const AdminAccounts    = dynamic(() => import("@/app/admin/accounts/page"),    { ssr: false });
+const AdminRequests    = dynamic(() => import("@/app/admin/requests/page"),    { ssr: false });
+const AdminLogs        = dynamic(() => import("@/app/admin/logs/page"),        { ssr: false });
+const AdminPermissions = dynamic(() => import("@/app/admin/permissions/page"), { ssr: false });
+const AdminRoles       = dynamic(() => import("@/app/admin/roles/page"),       { ssr: false });
+
 const Summary      = dynamic(() => import("@/components/pages/Summary"),         { ssr: false });
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
 const PLTrend      = dynamic(() => import("@/components/pages/pl/PLTrend"),      { ssr: false });
@@ -62,6 +69,7 @@ function PageInner() {
   const searchParams = useSearchParams();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [topTab, setTopTab] = useState<TopTab>("서비스 소개");
+  const [adminSubPage, setAdminSubPage] = useState("dashboard");
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
@@ -174,6 +182,54 @@ function PageInner() {
           </div>
         </div>
       )}
+
+      {/* ── 관리자 ── */}
+      {topTab === "관리자" && (() => {
+        const ADMIN_NAV = [
+          { key: "dashboard",   label: "Dashboard" },
+          { key: "accounts",    label: "계정 관리" },
+          { key: "requests",    label: "사용자 추가 신청" },
+          { key: "permissions", label: "리포트 접근 권한" },
+          { key: "roles",       label: "역할 정의" },
+          { key: "logs",        label: "로그/방문이력" },
+        ];
+        return (
+          <div className="app-body">
+            <aside style={{ width: 200, background: "#fff", borderRight: "1px solid #e5e7eb", flexShrink: 0, display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                관리자 메뉴
+              </div>
+              {ADMIN_NAV.map(item => {
+                const isActive = adminSubPage === item.key;
+                return (
+                  <button key={item.key} onClick={() => setAdminSubPage(item.key)} style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "10px 16px", border: "none",
+                    background: isActive ? "#fff7ed" : "transparent",
+                    color: isActive ? "#d04a02" : "#555",
+                    fontWeight: isActive ? 600 : 400,
+                    fontSize: 13, cursor: "pointer",
+                    borderLeft: isActive ? "3px solid #d04a02" : "3px solid transparent",
+                    fontFamily: "inherit", transition: "all .12s",
+                  }}>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </aside>
+            <div className="main-content" style={{ background: "#f3f4f6", padding: 24 }}>
+              <Suspense fallback={<div style={{ color: "#9ca3af" }}>로딩 중...</div>}>
+                {adminSubPage === "dashboard"   && <AdminDashboard />}
+                {adminSubPage === "accounts"    && <AdminAccounts />}
+                {adminSubPage === "requests"    && <AdminRequests />}
+                {adminSubPage === "permissions" && <AdminPermissions />}
+                {adminSubPage === "roles"       && <AdminRoles />}
+                {adminSubPage === "logs"        && <AdminLogs />}
+              </Suspense>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="app-body" style={{ display: topTab !== "리포트" && topTab !== "자료실" ? "none" : undefined }}>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, Suspense, lazy } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   fetchRequests, createRequests, updateRequest, deleteRequest,
   fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
@@ -8,16 +8,9 @@ import {
 } from "@/lib/api";
 import ChatBot from "@/components/ui/ChatBot";
 
-const AdminDashboard   = lazy(() => import("@/app/admin/page"));
-const AdminAccounts    = lazy(() => import("@/app/admin/accounts/page"));
-const AdminRequests    = lazy(() => import("@/app/admin/requests/page"));
-const AdminLogs        = lazy(() => import("@/app/admin/logs/page"));
-const AdminPermissions = lazy(() => import("@/app/admin/permissions/page"));
-const AdminRoles       = lazy(() => import("@/app/admin/roles/page"));
-
 
 /* ── types ── */
-type SidebarPage = "requests" | "users" | "modules" | "access-groups" | "localisations" | "security" | "site-details" | "admin";
+type SidebarPage = "requests";
 type UserTab = "pwc" | "client" | "thirdparty" | "all";
 type ReqStatus = "Draft" | "Requested" | "Submitted" | "Accepted" | "Recall";
 type ReqPriority = "높음" | "보통" | "낮음";
@@ -133,10 +126,7 @@ const PRIORITY_CFG: Record<ReqPriority, { color: string }> = {
 };
 
 const SIDEBAR_ITEMS: { key: SidebarPage; icon: string; label: string }[] = [
-  { key: "requests",     icon: "/icons/icon-journal.svg",  label: "자료 요청" },
-  { key: "users",        icon: "/icons/icon-building.svg", label: "Users" },
-  { key: "admin",        icon: "/icons/icon-trust.svg",    label: "관리자" },
-  { key: "site-details", icon: "/icons/icon-pdf.svg",      label: "Site Details" },
+  { key: "requests", icon: "/icons/icon-journal.svg", label: "자료 요청" },
 ];
 
 /* ── shared small components ── */
@@ -369,7 +359,6 @@ function Toast({ msg }: { msg: string }) {
 /* ═══════════════════ Main Component ═══════════════════ */
 export default function ResourceRoom() {
   const [page, setPage]           = useState<SidebarPage>("requests");
-  const [adminSubPage, setAdminSubPage] = useState("dashboard");
   const [userTab, setUserTab]     = useState<UserTab>("pwc");
   const [modal, setModal]         = useState<"add-pwc" | "add-client" | "import" | "add-request" | null>(null);
   const [toast, setToast]         = useState("");
@@ -1466,59 +1455,6 @@ export default function ResourceRoom() {
     </Card>
   );
 
-  /* ── Render ── */
-  const ADMIN_NAV = [
-    { key: "dashboard",   label: "Dashboard" },
-    { key: "accounts",    label: "계정 관리" },
-    { key: "requests",    label: "사용자 추가 신청" },
-    { key: "permissions", label: "리포트 접근 권한" },
-    { key: "roles",       label: "역할 정의" },
-    { key: "logs",        label: "로그/방문이력" },
-  ];
-
-  if (page === "admin") {
-    return (
-      <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text }}>
-        {SidebarEl()}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          <aside style={{ width: 200, background: "#fff", borderRight: "1px solid #e5e7eb", flexShrink: 0, display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-              관리자 메뉴
-            </div>
-            {ADMIN_NAV.map(item => {
-              const isActive = adminSubPage === item.key;
-              return (
-                <button key={item.key} onClick={() => setAdminSubPage(item.key)} style={{
-                  display: "block", width: "100%", textAlign: "left",
-                  padding: "10px 16px", border: "none",
-                  background: isActive ? "#fff7ed" : "transparent",
-                  color: isActive ? "#d04a02" : "#555",
-                  fontWeight: isActive ? 600 : 400,
-                  fontSize: 13, cursor: "pointer",
-                  borderLeft: isActive ? "3px solid #d04a02" : "3px solid transparent",
-                  fontFamily: "inherit", transition: "all .12s",
-                }}>
-                  {item.label}
-                </button>
-              );
-            })}
-          </aside>
-          <div style={{ flex: 1, overflow: "auto", background: "#f3f4f6", padding: 24 }}>
-            <Suspense fallback={<div style={{ color: "#9ca3af", padding: 24 }}>로딩 중...</div>}>
-              {adminSubPage === "dashboard"   && <AdminDashboard />}
-              {adminSubPage === "accounts"    && <AdminAccounts />}
-              {adminSubPage === "requests"    && <AdminRequests />}
-              {adminSubPage === "permissions" && <AdminPermissions />}
-              {adminSubPage === "roles"       && <AdminRoles />}
-              {adminSubPage === "logs"        && <AdminLogs />}
-            </Suspense>
-          </div>
-        </div>
-        <Toast msg={toast} />
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text }}>
       {SidebarEl()}
@@ -1537,14 +1473,7 @@ export default function ResourceRoom() {
           </span>
         </div>
 
-        {page === "requests"       && PageRequests()}
-        {page === "users"         && <PageUsers />}
-        {page === "modules"       && <PlaceholderPage icon="▪"  label="Modules"               desc="사이트에 활성화된 모듈을 관리합니다." />}
-        {page === "access-groups" && <PlaceholderPage icon="🔒" label="Custom Access Groups"   desc="맞춤 접근 권한 그룹을 생성하고 관리합니다." />}
-        {page === "localisations" && <PlaceholderPage icon="🌐" label="Localisations"           desc="지역화 설정을 관리합니다." />}
-        {page === "security"      && <PlaceholderPage icon="🛡"  label="Security"               desc="보안 설정을 관리합니다." />}
-        {page === "admin"         && <PlaceholderPage icon="🔐" label="관리자"                   desc="시스템 관리자 설정 페이지입니다." />}
-        {page === "site-details"  && <PlaceholderPage icon="📑" label="Site Details"            desc="사이트 상세 정보를 관리합니다." />}
+        {page === "requests" && PageRequests()}
       </main>
 
       {/* Modals */}
