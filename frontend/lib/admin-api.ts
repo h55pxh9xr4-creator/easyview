@@ -1,0 +1,116 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+const ADMIN_LOGIN_PATH = `${BASE_PATH}/admin/login`;
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('admin_token');
+}
+
+async function request(path: string, options: RequestInit = {}) {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
+  if (res.status === 401) {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    window.location.href = ADMIN_LOGIN_PATH;
+    throw new Error('인증이 만료되었습니다.');
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: '요청에 실패했습니다.' }));
+    throw new Error(err.detail || '요청에 실패했습니다.');
+  }
+
+  return res.json();
+}
+
+const api = {
+  get: (path: string) => request(path),
+  post: (path: string, body?: unknown) => request(path, { method: 'POST', body: JSON.stringify(body) }),
+  put: (path: string, body?: unknown) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
+  delete: (path: string) => request(path, { method: 'DELETE' }),
+};
+
+export const adminAuthApi = {
+  login: (email: string, password: string) => api.post('/api/admin/auth/login', { email, password }),
+  logout: () => api.post('/api/admin/auth/logout'),
+  me: () => api.get('/api/admin/auth/me'),
+};
+
+export const adminUsersApi = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get(`/api/admin/users${qs}`);
+  },
+  get: (id: number) => api.get(`/api/admin/users/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/api/admin/users', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/api/admin/users/${id}`, data),
+  delete: (id: number) => api.delete(`/api/admin/users/${id}`),
+  resetPassword: (id: number) => api.post(`/api/admin/users/${id}/reset-password`),
+  toggleStatus: (id: number) => api.post(`/api/admin/users/${id}/toggle-status`),
+};
+
+export const adminGroupsApi = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get(`/api/admin/groups${qs}`);
+  },
+  create: (data: Record<string, unknown>) => api.post('/api/admin/groups', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/api/admin/groups/${id}`, data),
+};
+
+export const adminPermissionsApi = {
+  matrix: (reportName?: string) => {
+    const qs = reportName ? `?report_name=${encodeURIComponent(reportName)}` : '';
+    return api.get(`/api/admin/permissions/matrix${qs}`);
+  },
+  updateMatrix: (permissions: unknown[]) => api.put('/api/admin/permissions/matrix', { permissions }),
+  detail: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get(`/api/admin/permissions/detail${qs}`);
+  },
+  updateDetail: (permissions: unknown[]) => api.put('/api/admin/permissions/detail', { permissions }),
+};
+
+export const adminRequestsApi = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get(`/api/admin/user-requests${qs}`);
+  },
+  create: (data: Record<string, unknown>) => api.post('/api/admin/user-requests', data),
+  approve: (id: number) => api.put(`/api/admin/user-requests/${id}/approve`),
+  reject: (id: number) => api.put(`/api/admin/user-requests/${id}/reject`),
+};
+
+export const adminAuditApi = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get(`/api/admin/audit-logs${qs}`);
+  },
+  stats: () => api.get('/api/admin/audit-logs/stats'),
+};
+
+export const adminRolesApi = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return api.get(`/api/admin/roles${qs}`);
+  },
+  create: (data: Record<string, unknown>) => api.post('/api/admin/roles', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/api/admin/roles/${id}`, data),
+  delete: (id: number) => api.delete(`/api/admin/roles/${id}`),
+};
+
+export const adminCompaniesApi = {
+  list: () => api.get('/api/admin/companies'),
+  create: (data: Record<string, unknown>) => api.post('/api/admin/companies', data),
+  createSubsidiary: (data: Record<string, unknown>) => api.post('/api/admin/companies/subsidiaries', data),
+  names: () => api.get('/api/admin/companies/names'),
+};

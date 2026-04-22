@@ -609,7 +609,13 @@ export default function ResourceRoom() {
         return (
           <button
             key={item.key}
-            onClick={() => setPage(item.key)}
+            onClick={() => {
+              if (item.key === "admin") {
+                window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/admin`;
+              } else {
+                setPage(item.key);
+              }
+            }}
             style={{
               display: "flex", alignItems: "center", gap: 12,
               padding: "10px 20px", width: "100%", textAlign: "left",
