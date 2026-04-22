@@ -12,12 +12,20 @@ from database import get_db
 
 router = APIRouter()
 
-# ── PwC GenAI Client ──────────────────────────────────────────
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY", ""),
-    base_url=os.getenv("OPENAI_BASE_URL", "https://genai-sharedservice-americas.pwcinternal.com"),
-)
-MODEL = os.getenv("CHAT_MODEL", "gpt-4o")
+# ── PwC GenAI Client (lazy init) ──────────────────────────────
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY", ""),
+            base_url=os.getenv("OPENAI_BASE_URL", "https://genai-sharedservice-americas.pwcinternal.com"),
+        )
+    return _client
+
+def get_model():
+    return os.getenv("CHAT_MODEL", "openai.gpt-4o")
 
 # ── 김삼일 시스템 프롬프트 ─────────────────────────────────────
 SYSTEM_PROMPT = """당신은 삼일회계법인 소속 매니저 '김삼일'입니다.
@@ -509,74 +517,86 @@ class ChatResponse(BaseModel):
 @router.post("/message", response_model=ChatResponse)
 async def chat_message(req: ChatRequest, db: Session = Depends(get_db)):
     """김삼일 AI 채팅"""
+    import traceback
 
-    # 페이지 컨텍스트 메시지 구성
-    page_context = ""
-    if req.page:
-        page_names = {
-            "summary": "Summary 대시보드", "pl-sum": "PL 요약", "pl-trend": "PL 추이분석",
-            "pl-acct": "PL 계정분석", "pl-sale": "매출분석", "pl-item": "손익항목",
-            "bs-sum": "BS 요약", "bs-trend": "BS 추이분석", "bs-acct": "BS 계정분석",
-            "vch-analysis": "전표분석", "vch-search": "전표검색",
-            "sc-dup": "SC1 중복전표", "sc-cash-debt": "SC2 현금→부채",
-            "sc-weekend": "SC3 주말현금", "sc-big-cash": "SC4 고액현금",
-            "sc-cost-cash": "SC5 비용+현금", "sc-seldom": "SC6 희소거래처",
-        }
-        page_label = page_names.get(req.page, req.page)
-        page_context = f"\n\n[현재 사용자가 보고 있는 페이지: {page_label}]\n[기준 연월: {req.base_ym}, 기간: {req.period_type}]"
+    try:
+        # 페이지 컨텍스트 메시지 구성
+        page_context = ""
+        if req.page:
+            page_names = {
+                "summary": "Summary 대시보드", "pl-sum": "PL 요약", "pl-trend": "PL 추이분석",
+                "pl-acct": "PL 계정분석", "pl-sale": "매출분석", "pl-item": "손익항목",
+                "bs-sum": "BS 요약", "bs-trend": "BS 추이분석", "bs-acct": "BS 계정분석",
+                "vch-analysis": "전표분석", "vch-search": "전표검색",
+                "sc-dup": "SC1 중복전표", "sc-cash-debt": "SC2 현금→부채",
+                "sc-weekend": "SC3 주말현금", "sc-big-cash": "SC4 고액현금",
+                "sc-cost-cash": "SC5 비용+현금", "sc-seldom": "SC6 희소거래처",
+            }
+            page_label = page_names.get(req.page, req.page)
+            page_context = f"\n\n[현재 사용자가 보고 있는 페이지: {page_label}]\n[기준 연월: {req.base_ym}, 기간: {req.period_type}]"
 
-    # 대화 기록 구성
-    messages = [{"role": "system", "content": SYSTEM_PROMPT + page_context}]
+        # 대화 기록 구성
+        messages = [{"role": "system", "content": SYSTEM_PROMPT + page_context}]
 
-    if req.history:
-        for h in req.history[-10:]:  # 최근 10개만
-            messages.append({"role": h.get("role", "user"), "content": h.get("text", "")})
+        if req.history:
+            for h in req.history[-10:]:
+                role = h.get("role", "user") if isinstance(h, dict) else getattr(h, "role", "user")
+                text = h.get("text", "") if isinstance(h, dict) else getattr(h, "text", "")
+                messages.append({"role": role, "content": text})
 
-    messages.append({"role": "user", "content": req.message})
+        messages.append({"role": "user", "content": req.message})
 
-    # 첫 번째 호출 — 모델이 tool 호출 여부 결정
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-        tools=TOOLS,
-        tool_choice="auto",
-        temperature=0.7,
-        max_tokens=1500,
-    )
+        # 첫 번째 호출 — 모델이 tool 호출 여부 결정
+        ai = get_client()
+        model = get_model()
 
-    assistant_msg = response.choices[0].message
-
-    # tool_calls가 있으면 실행 후 재호출
-    if assistant_msg.tool_calls:
-        messages.append(assistant_msg)
-
-        for tool_call in assistant_msg.tool_calls:
-            fn_name = tool_call.function.name
-            fn_args = json.loads(tool_call.function.arguments)
-
-            # base_ym 기본값 주입
-            if "base_ym" not in fn_args:
-                fn_args["base_ym"] = req.base_ym
-            if "period_type" not in fn_args:
-                fn_args["period_type"] = req.period_type
-
-            result = execute_tool(fn_name, fn_args, db)
-
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": result,
-            })
-
-        # 두 번째 호출 — tool 결과를 바탕으로 최종 답변
-        final_response = client.chat.completions.create(
-            model=MODEL,
+        response = ai.chat.completions.create(
+            model=model,
             messages=messages,
+            tools=TOOLS,
+            tool_choice="auto",
             temperature=0.7,
             max_tokens=1500,
         )
-        reply = final_response.choices[0].message.content
-    else:
-        reply = assistant_msg.content
 
-    return ChatResponse(reply=reply or "죄송합니다, 응답을 생성하지 못했습니다.")
+        assistant_msg = response.choices[0].message
+
+        # tool_calls가 있으면 실행 후 재호출
+        if assistant_msg.tool_calls:
+            messages.append(assistant_msg)
+
+            for tool_call in assistant_msg.tool_calls:
+                fn_name = tool_call.function.name
+                fn_args = json.loads(tool_call.function.arguments)
+
+                # base_ym 기본값 주입
+                if "base_ym" not in fn_args:
+                    fn_args["base_ym"] = req.base_ym
+                if "period_type" not in fn_args:
+                    fn_args["period_type"] = req.period_type
+
+                result = execute_tool(fn_name, fn_args, db)
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result,
+                })
+
+            # 두 번째 호출 — tool 결과를 바탕으로 최종 답변
+            final_response = ai.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1500,
+            )
+            reply = final_response.choices[0].message.content
+        else:
+            reply = assistant_msg.content
+
+        return ChatResponse(reply=reply or "죄송합니다, 응답을 생성하지 못했습니다.")
+
+    except Exception as e:
+        print(f"[CHAT ERROR] {e}")
+        traceback.print_exc()
+        return ChatResponse(reply=f"오류가 발생했습니다: {str(e)}")
