@@ -6,7 +6,6 @@ import {
   fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
   type DataRequest as ApiRequest, type ReqFile,
 } from "@/lib/api";
-import ChatBot from "@/components/ui/ChatBot";
 
 
 /* ── types ── */
@@ -1799,7 +1798,6 @@ export default function ResourceRoom() {
       )}
 
       <Toast msg={toast} />
-      <ChatBot />
     </div>
   );
 }
