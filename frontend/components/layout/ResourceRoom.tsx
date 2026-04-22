@@ -969,10 +969,14 @@ export default function ResourceRoom() {
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
                     </div>
                     <button onClick={() => handleDeleteFile(f.id)} title="삭제"
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
-                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
-                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
-                    >🗑</button>
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0, color: C.primary, opacity: 0.6, display: "inline-flex", alignItems: "center" }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
+                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "0.6")}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
