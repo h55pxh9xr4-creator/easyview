@@ -934,7 +934,6 @@ export default function ResourceRoom() {
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            style={{ borderRadius: 8, border: isDragOver ? `2px dashed ${C.primary}` : "2px solid transparent", background: isDragOver ? C.primaryBg : "transparent", transition: "all 0.15s" }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
