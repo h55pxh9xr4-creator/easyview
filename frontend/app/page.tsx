@@ -185,37 +185,32 @@ function PageInner() {
 
       {/* ── 관리자 ── */}
       {topTab === "관리자" && (() => {
+        const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
         const ADMIN_NAV = [
-          { key: "dashboard",   label: "Dashboard" },
-          { key: "accounts",    label: "계정 관리" },
-          { key: "requests",    label: "사용자 추가 신청" },
-          { key: "permissions", label: "리포트 접근 권한" },
-          { key: "roles",       label: "역할 정의" },
-          { key: "logs",        label: "로그/방문이력" },
+          { key: "dashboard",   label: "Dashboard",        icon: `${BASE}/icons/icon-dashboard.svg` },
+          { key: "accounts",    label: "계정 관리",          icon: `${BASE}/icons/icon-building.svg` },
+          { key: "requests",    label: "사용자 추가 신청",   icon: `${BASE}/icons/icon-email.svg` },
+          { key: "permissions", label: "리포트 접근 권한",  icon: `${BASE}/icons/icon-trust.svg` },
+          { key: "roles",       label: "역할 정의",          icon: `${BASE}/icons/icon-globe.svg` },
+          { key: "logs",        label: "로그/방문이력",      icon: `${BASE}/icons/icon-journal.svg` },
         ];
         return (
           <div className="app-body">
-            <aside style={{ width: 200, background: "#fff", borderRight: "1px solid #e5e7eb", flexShrink: 0, display: "flex", flexDirection: "column" }}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                관리자 메뉴
+            <aside className="sidebar" style={{ position: "sticky", top: 52, height: "calc(100vh - 52px)", alignSelf: "flex-start" }}>
+              <div className="sb-list">
+                {ADMIN_NAV.map(item => {
+                  const isActive = adminSubPage === item.key;
+                  return (
+                    <button key={item.key} onClick={() => setAdminSubPage(item.key)} className={`sb-item${isActive ? " active" : ""}`}>
+                      <span className="sb-icon">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.icon} alt="" width={22} height={22} style={{ display: "block", opacity: 1 }} />
+                      </span>
+                      <span className="sb-label">{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-              {ADMIN_NAV.map(item => {
-                const isActive = adminSubPage === item.key;
-                return (
-                  <button key={item.key} onClick={() => setAdminSubPage(item.key)} style={{
-                    display: "block", width: "100%", textAlign: "left",
-                    padding: "10px 16px", border: "none",
-                    background: isActive ? "#fff7ed" : "transparent",
-                    color: isActive ? "#d04a02" : "#555",
-                    fontWeight: isActive ? 600 : 400,
-                    fontSize: 13, cursor: "pointer",
-                    borderLeft: isActive ? "3px solid #d04a02" : "3px solid transparent",
-                    fontFamily: "inherit", transition: "all .12s",
-                  }}>
-                    {item.label}
-                  </button>
-                );
-              })}
             </aside>
             <div className="main-content" style={{ background: "#f3f4f6", padding: 24 }}>
               <Suspense fallback={<div style={{ color: "#9ca3af" }}>로딩 중...</div>}>

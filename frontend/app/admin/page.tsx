@@ -40,13 +40,9 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/pwc-logo.png`} alt="PwC" style={{ height: 28 }} />
-        <div>
-          <h1 className="text-2xl font-bold text-pwc-black">Dashboard</h1>
-          <p className="text-sm text-pwc-gray-500 mt-1">Easy View 관리 포탈 현황을 한눈에 확인하세요.</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-pwc-black">Dashboard</h1>
+        <p className="text-sm text-pwc-gray-500 mt-1">Easy View 관리 포탈 현황을 한눈에 확인하세요.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
