@@ -766,8 +766,8 @@ export default function ResourceRoom() {
   const fmtSize = (b: number) =>
     b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
 
-  const fileIcon = (name: string) => {
-    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const fileIcon = (name: string | undefined) => {
+    const ext = (name ?? "").split(".").pop()?.toLowerCase() ?? "";
     if (ext === "pdf") return "📄";
     if (["xlsx", "xls"].includes(ext)) return "📊";
     if (["docx", "doc"].includes(ext)) return "📝";
@@ -965,7 +965,7 @@ export default function ResourceRoom() {
                         style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                         onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
                         onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
-                      >{f.originalName}</a>
+                      >{f.originalName ?? f.filename ?? "파일"}</a>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
                     </div>
                     <button onClick={() => handleDeleteFile(f.id)} title="삭제"
