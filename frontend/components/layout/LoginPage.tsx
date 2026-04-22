@@ -56,8 +56,8 @@ export default function LoginPage({ onLogin }: Props) {
         position: "relative", zIndex: 2,
         minHeight: "100vh",
         display: "flex", flexDirection: "column",
-        alignItems: "flex-end", justifyContent: "center",
-        padding: "24px 6% 24px 24px",
+        alignItems: "center", justifyContent: "center",
+        padding: "24px",
         pointerEvents: "none",
       }}>
         <div style={{
