@@ -19,6 +19,7 @@ export default function LoginPage({ onLogin }: Props) {
   const [loading, setLoading] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [cardVisible, setCardVisible] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -61,7 +62,10 @@ export default function LoginPage({ onLogin }: Props) {
 
       {/* Spline 3D 배경 */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
-        <Spline scene="https://prod.spline.design/NWKwPxi83XRPKiFM/scene.splinecode" />
+        <Spline
+          scene="https://prod.spline.design/NWKwPxi83XRPKiFM/scene.splinecode"
+          onLoad={() => setTimeout(() => setCardVisible(true), 2800)}
+        />
       </div>
 
       {/* 로그인 카드 */}
@@ -70,11 +74,14 @@ export default function LoginPage({ onLogin }: Props) {
         minHeight: "100vh",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        padding: "12vh 24px 24px",
+        padding: "15vh 24px 24px",
         pointerEvents: "none",
       }}>
         <div style={{
           pointerEvents: "auto",
+          opacity: cardVisible ? 1 : 0,
+          transform: cardVisible ? "translateY(0)" : "translateY(24px)",
+          transition: "opacity 0.7s ease, transform 0.7s ease",
           background: "rgba(255,255,255,0.82)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
@@ -217,7 +224,7 @@ export default function LoginPage({ onLogin }: Props) {
           </form>
         </div>
 
-        <p style={{ marginTop: "20px", fontSize: "11px", color: "rgba(255,255,255,0.7)", pointerEvents: "auto" }}>
+        <p style={{ marginTop: "20px", fontSize: "11px", color: "rgba(255,255,255,0.7)", pointerEvents: "auto", opacity: cardVisible ? 1 : 0, transition: "opacity 0.7s ease 0.2s" }}>
           © 2026 PwC. All rights reserved.
         </p>
       </div>
