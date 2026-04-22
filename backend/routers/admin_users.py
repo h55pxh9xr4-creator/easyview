@@ -87,10 +87,6 @@ async def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_
     if not u: raise HTTPException(404, "사용자를 찾을 수 없습니다.")
     old_role, old_status = u.role, u.status
     update = data.model_dump(exclude_unset=True)
-    new_role = update.get("role", u.role)
-    email = update.get("email", u.email)
-    if new_role in ("admin", "manager") and not email.endswith("@pwc.com"):
-        raise HTTPException(400, "PwC 역할은 @pwc.com 도메인 계정만 설정 가능합니다.")
     for k, v in update.items(): setattr(u, k, v)
     db.add(AuditLog(actor=current_user.name, action_type="사용자 수정",
                     detail=f"{u.name} 사용자 정보 수정", target=u.name))
