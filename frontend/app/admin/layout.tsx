@@ -24,6 +24,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/pwc-logo.png`} alt="PwC" style={{ height: 22 }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: "#2d2d2d" }}>Easy View Admin</span>
         </div>
+        <a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`} style={{ fontSize: 12, color: "#888", textDecoration: "none", padding: "4px 12px", border: "1px solid #e0e0e0", borderRadius: 6, display: "flex", alignItems: "center", gap: 4 }}>
+          ← 메인으로
+        </a>
       </header>
 
       <div style={{ display: "flex", flex: 1 }}>
