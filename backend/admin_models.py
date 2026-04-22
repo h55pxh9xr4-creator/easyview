@@ -1,5 +1,5 @@
 """Admin models - merged from easy-view-admin"""
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Date
 from sqlalchemy.sql import func
 from database import Base
 
@@ -82,7 +82,17 @@ class AdminCompany(Base):
     __tablename__ = "companies"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
+    subsidiary_name = Column(String, nullable=True)
+    biz_start = Column(Date, nullable=True)
+    biz_end = Column(Date, nullable=True)
+    country = Column(String, nullable=True)
+    company_type = Column(String, nullable=True)
+    contract_start = Column(Date, nullable=True)
+    contract_end = Column(Date, nullable=True)
+    base_currency = Column(String, nullable=True)
+    base_period = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class AdminSubsidiary(Base):
