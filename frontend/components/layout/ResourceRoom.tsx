@@ -6,7 +6,6 @@ import {
   fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
   type DataRequest as ApiRequest, type ReqFile,
 } from "@/lib/api";
-import ChatBot from "@/components/ui/ChatBot";
 
 
 /* ── types ── */
@@ -369,6 +368,7 @@ export default function ResourceRoom() {
   const [reqLoading, setReqLoading]         = useState(true);
   const [reqFilter, setReqFilter]           = useState<ReqStatus | "전체">("전체");
   const [detailReq, setDetailReq]           = useState<Request | null>(null);
+  const [detailTab, setDetailTab]           = useState<"upload" | "discussion" | "history">("upload");
   const [showCreate, setShowCreate]         = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isEditing, setIsEditing]           = useState(false);
@@ -532,7 +532,7 @@ export default function ResourceRoom() {
   const closeModal   = () => setModal(null);
   const submitRequest = async (status: ReqStatus) => {
     if (!nTitle.trim())          { showToast("제목을 입력해주세요."); return; }
-    if (!nDue)                   { showToast("마감일을 선택해주세요."); return; }
+    if (!nDue)                   { showToast("제출마감일을 선택해주세요."); return; }
     if (nAssignees.length === 0) { showToast("담당자를 1명 이상 선택해주세요."); return; }
 
     const items = [{
@@ -649,6 +649,28 @@ export default function ResourceRoom() {
     setCollapsed(p => ({ ...p, [entity]: !p[entity] }));
 
   /* 공통 행 렌더러 */
+  const OverdueBadge = ({ days }: { days: number }) => {
+    const [hov, setHov] = useState(false);
+    return (
+      <span style={{ position: "relative", display: "inline-flex", alignItems: "center" }}
+        onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+        <span style={{ width: 16, height: 16, borderRadius: "50%", background: "#DC2626", color: "#fff", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "default" }}>!</span>
+        {hov && (
+          <span style={{
+            position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
+            background: "#1a1a1a", color: "#fff", fontSize: 11, fontWeight: 500,
+            padding: "5px 10px", borderRadius: 6, whiteSpace: "nowrap", zIndex: 999,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+            pointerEvents: "none",
+          }}>
+            <span style={{ color: "#FF6B6B", fontWeight: 700 }}>{days}일</span> 초과
+            <span style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: "5px solid #1a1a1a" }} />
+          </span>
+        )}
+      </span>
+    );
+  };
+
   const StatusIcon = ({ status, color }: { status: ReqStatus; color: string }) => {
     const s = 14;
     const cx = 7, cy = 7, r = 6;
@@ -690,7 +712,7 @@ export default function ResourceRoom() {
         style={{ cursor: "pointer" }}
         onMouseEnter={e => (e.currentTarget.style.background = C.rowHover)}
         onMouseLeave={e => (e.currentTarget.style.background = "")}
-        onClick={() => setDetailReq(req)}
+        onClick={() => { setDetailReq(req); setDetailTab("upload"); }}
       >
         <TD style={{ color: C.muted, fontSize: 11, textAlign: "center" }}>{req.reqCode}</TD>
         <TD style={{ textAlign: "left" }}>
@@ -707,8 +729,21 @@ export default function ResourceRoom() {
             {req.status}
           </span>
         </TD>
-        <TD style={{ fontSize: 12, color: C.muted, textAlign: "center" }}>{req.createdDate}</TD>
-        <TD style={{ fontSize: 12, color: req.dueDate === "—" ? C.muted : C.sub, textAlign: "center" }}>{req.dueDate}</TD>
+        <TD style={{ fontSize: 12, color: C.sub, textAlign: "center" }}>{req.createdDate}</TD>
+        <TD style={{ textAlign: "center" }}>
+          {(() => {
+            const today = new Date(new Date().toDateString());
+            const due = req.dueDate && req.dueDate !== "—" ? new Date(req.dueDate) : null;
+            const overdueDays = due ? Math.floor((today.getTime() - due.getTime()) / 86400000) : 0;
+            const isOverdue = overdueDays > 0;
+            return (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: isOverdue ? "#DC2626" : req.dueDate === "—" ? C.muted : C.sub, fontWeight: 400 }}>
+                {isOverdue && <OverdueBadge days={overdueDays} />}
+                {req.dueDate}
+              </span>
+            );
+          })()}
+        </TD>
         <td style={{ padding: "11px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "center" }}>
           <button
             onClick={e => { e.stopPropagation(); setDeleteConfirmId(req.id); }}
@@ -725,14 +760,14 @@ export default function ResourceRoom() {
     );
   };
 
-  const COLS_FLAT    = ["번호", "제목", "법인", "자료요청자", "법인담당자", "상태", "요청일", "마감일", ""];
-  const COLS_GROUPED = ["번호", "제목", "자료요청자", "법인담당자", "상태", "요청일", "마감일", ""];
+  const COLS_FLAT    = ["번호", "제목", "법인", "자료요청자", "법인담당자", "상태", "자료요청일", "제출마감일", ""];
+  const COLS_GROUPED = ["번호", "제목", "자료요청자", "법인담당자", "상태", "자료요청일", "제출마감일", ""];
 
   const fmtSize = (b: number) =>
     b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
 
-  const fileIcon = (name: string) => {
-    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const fileIcon = (name: string | undefined) => {
+    const ext = (name ?? "").split(".").pop()?.toLowerCase() ?? "";
     if (ext === "pdf") return "📄";
     if (["xlsx", "xls"].includes(ext)) return "📊";
     if (["docx", "doc"].includes(ext)) return "📝";
@@ -806,7 +841,7 @@ export default function ResourceRoom() {
                   )}
                 </div>
                 <div style={divider}>
-                  <div style={fLabel}>마감일</div>
+                  <div style={fLabel}>제출마감일</div>
                   <input type="date" value={nDue} onChange={e => setNDue(e.target.value)} style={fInput} />
                 </div>
                 <div style={{ flex: "1 1 0", minWidth: 0 }}>
@@ -862,51 +897,217 @@ export default function ResourceRoom() {
         paddingRight: 28, cursor: "pointer",
       };
 
-      /* ── 첨부파일 섹션 (공통) ── */
-      const FilesSection = () => (
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
-            {!filesLoading && (
-              <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
-                {detailFiles.length}
-              </span>
-            )}
-            <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600 }}>
-              <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
-              {uploading ? "업로드 중..." : "+ 파일 첨부"}
-            </label>
-          </div>
-          {filesLoading ? (
-            <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
-          ) : detailFiles.length === 0 ? (
-            <div style={{ border: `2px dashed ${C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center" }}>
-              <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
-              <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다</p>
-              <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부해주세요</p>
+      /* ── 탭 바 ── */
+      const DETAIL_TABS = [
+        { key: "upload",     label: "업로드" },
+        { key: "discussion", label: "논의" },
+        { key: "history",    label: "히스토리" },
+      ] as const;
+
+      const TabBar = () => (
+        <div style={{ display: "flex", borderBottom: `2px solid ${C.border}`, marginBottom: 20, gap: 0 }}>
+          {DETAIL_TABS.map(t => {
+            const active = detailTab === t.key;
+            return (
+              <button key={t.key} onClick={() => setDetailTab(t.key)}
+                style={{
+                  padding: "10px 22px", border: "none", background: "none",
+                  fontFamily: "inherit", fontSize: 13, fontWeight: active ? 700 : 500,
+                  color: active ? C.primary : C.muted,
+                  borderBottom: active ? `2px solid ${C.primary}` : "2px solid transparent",
+                  marginBottom: -2, cursor: "pointer", transition: "all 0.15s",
+                }}
+              >{t.label}</button>
+            );
+          })}
+        </div>
+      );
+
+      /* ── 업로드 탭 ── */
+      const UploadTab = () => {
+        const [isDragOver, setIsDragOver] = useState(false);
+        const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
+        const onDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); };
+        const onDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); handleFileUpload(e.dataTransfer.files); };
+        return (
+          <div
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
+              {!filesLoading && (
+                <span style={{ fontSize: 11, background: detailFiles.length ? C.primaryBg : "#F0F0F0", color: detailFiles.length ? C.primary : C.muted, padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
+                  {detailFiles.length}
+                </span>
+              )}
+              <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600 }}>
+                <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
+                {uploading ? "업로드 중..." : "+ 파일 첨부"}
+              </label>
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {detailFiles.map(f => (
-                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
-                  <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
-                      style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                      onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
-                      onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
-                    >{f.originalName}</a>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
+            {filesLoading ? (
+              <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
+            ) : detailFiles.length === 0 ? (
+              <div style={{ border: `2px dashed ${isDragOver ? C.primary : C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center", background: "transparent", transition: "all 0.15s" }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
+                <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다.</p>
+                <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부하거나 파일을 드래그 앤 드롭하여 첨부해주세요.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {detailFiles.map((f, i) => (
+                  <div key={f.id ?? f.filename ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
+                    <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
+                        onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
+                      >{f.originalName ?? f.filename ?? "파일"}</a>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
+                    </div>
+                    <button onClick={() => handleDeleteFile(f.id)} title="삭제"
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0, color: C.primary, opacity: 0.6, display: "inline-flex", alignItems: "center" }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
+                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "0.6")}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                      </svg>
+                    </button>
                   </div>
-                  <button onClick={() => handleDeleteFile(f.id)} title="삭제"
-                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: C.muted, padding: 4, flexShrink: 0 }}
-                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")}
-                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = C.muted)}
-                  >🗑</button>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      /* ── 논의 탭 ── */
+      const DiscussionTab = () => {
+        const me = sessionStorage.getItem("ev_user") || "admin";
+        const myAvatar = localStorage.getItem("ev_avatar") || null;
+        const assignee = detailReq!.assignee || "법인담당자";
+        const [comments, setComments] = useState<{ id: number; author: string; text: string; ts: string; fileRef?: string }[]>([
+          { id: 1, author: me,       text: "첨부하신 파일 확인했습니다. TB 파일이 누락된 것 같습니다.", ts: "2026-04-21 14:32", fileRef: "분개장_Q1.xlsx" },
+          { id: 2, author: assignee, text: "죄송합니다. 지금 바로 업로드하겠습니다.", ts: "2026-04-21 15:10" },
+        ]);
+        const [draft, setDraft] = useState("");
+        const addComment = () => {
+          if (!draft.trim()) return;
+          setComments(p => [...p, { id: Date.now(), author: me, text: draft.trim(), ts: new Date().toLocaleString("sv").slice(0, 16) }]);
+          setDraft("");
+        };
+        return (
+          <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20, maxHeight: 400, overflowY: "auto", padding: "4px 0" }}>
+              {comments.length === 0 && (
+                <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "24px 0" }}>아직 논의 내용이 없습니다.</p>
+              )}
+              {comments.map(c => {
+                const isMine = c.author === me;
+                return (
+                  <div key={c.id} style={{ display: "flex", flexDirection: isMine ? "row-reverse" : "row", alignItems: "flex-end", gap: 8 }}>
+                    {/* 아바타 */}
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: isMine ? C.primary : "#6B7280", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0, overflow: "hidden" }}>
+                      {isMine && myAvatar
+                        ? <img src={myAvatar} alt="me" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : c.author[0].toUpperCase()}
+                    </div>
+                    <div style={{ maxWidth: "68%", display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start", gap: 3 }}>
+                      {/* 이름 (상대방만) */}
+                      {!isMine && <span style={{ fontSize: 11, fontWeight: 600, color: C.sub, paddingLeft: 2 }}>{c.author}</span>}
+                      {/* 파일 참조 */}
+                      {c.fileRef && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 12, background: isMine ? "#FFE8D6" : "#F0F0F0", color: isMine ? C.primary : "#555", fontSize: 11 }}>
+                          📎 {c.fileRef}
+                        </div>
+                      )}
+                      {/* 말풍선 */}
+                      <div style={{
+                        padding: "9px 13px", borderRadius: isMine ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
+                        background: "#F0F0F0",
+                        color: C.text,
+                        fontSize: 13, lineHeight: 1.6,
+                      }}>
+                        {c.text}
+                      </div>
+                      <span style={{ fontSize: 10, color: C.muted }}>{c.ts}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
+            {/* 입력창 */}
+            <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+              <textarea
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                placeholder="메시지를 입력하세요... (Enter 전송 / Shift+Enter 줄바꿈)"
+                rows={2}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addComment(); } }}
+                style={{ flex: 1, resize: "none", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
+                onFocus={e => (e.target.style.borderColor = C.primary)}
+                onBlur={e => (e.target.style.borderColor = C.border)}
+              />
+              <button onClick={addComment}
+                style={{ alignSelf: "flex-end", padding: "9px 18px", background: C.primary, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+              >전송</button>
+            </div>
+          </div>
+        );
+      };
+
+      /* ── 히스토리 탭 ── */
+      const HistoryTab = () => {
+        const assignee = detailReq!.assignee || "법인담당자";
+        const me = sessionStorage.getItem("ev_user") || "admin";
+        const mockUploads = detailFiles.length > 0
+          ? detailFiles.map(f => ({ ts: f.uploadedAt, actor: assignee, type: "upload" as const, detail: `파일 업로드: ${f.originalName}` }))
+          : [
+              { ts: "2026-04-21 10:15", actor: assignee, type: "upload" as const, detail: "파일 업로드: 재무제표_2026Q1.xlsx" },
+              { ts: "2026-04-21 10:16", actor: assignee, type: "upload" as const, detail: "파일 업로드: 손익계산서_2026Q1.pdf" },
+            ];
+        const logs = [
+          { ts: detailReq!.createdDate + " 09:00", actor: detailReq!.requester, type: "create"  as const, detail: `요청 생성 (${detailReq!.reqCode})` },
+          ...mockUploads,
+          { ts: "2026-04-21 14:32", actor: me,       type: "comment" as const, detail: "논의 댓글 작성: \"TB 파일이 누락된 것 같습니다.\"" },
+          { ts: "2026-04-21 15:10", actor: assignee, type: "comment" as const, detail: "논의 댓글 작성: \"지금 바로 업로드하겠습니다.\"" },
+        ].sort((a, b) => b.ts.localeCompare(a.ts));
+
+        const iconMap = { upload: "📤", download: "📥", comment: "💬", create: "📋", status: "🔄" } as const;
+        const colorMap = { upload: "#3B82F6", download: "#10B981", comment: "#F59E0B", create: C.primary, status: "#8B5CF6" } as const;
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {logs.length === 0 && <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "24px 0" }}>히스토리가 없습니다.</p>}
+            {logs.map((log, i) => (
+              <div key={i} style={{ display: "flex", gap: 14, paddingBottom: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 28, flexShrink: 0 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: colorMap[log.type] + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, border: `2px solid ${colorMap[log.type]}` }}>
+                    {iconMap[log.type]}
+                  </div>
+                  {i < logs.length - 1 && <div style={{ width: 2, flex: 1, background: C.border, marginTop: 4 }} />}
+                </div>
+                <div style={{ paddingTop: 4, paddingBottom: 4 }}>
+                  <p style={{ fontSize: 13, color: C.text, margin: 0, fontWeight: 500 }}>{log.detail}</p>
+                  <p style={{ fontSize: 11, color: C.muted, margin: "3px 0 0" }}>{log.actor} · {log.ts}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      };
+
+      /* ── 탭 콘텐츠 묶음 ── */
+      const TabbedSection = () => (
+        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20, marginTop: 8 }}>
+          <TabBar />
+          {detailTab === "upload"     && <UploadTab />}
+          {detailTab === "discussion" && <DiscussionTab />}
+          {detailTab === "history"    && <HistoryTab />}
         </div>
       );
 
@@ -927,6 +1128,12 @@ export default function ResourceRoom() {
                 <span style={{ fontSize: 12, color: C.muted }}>자료 요청 / {detailReq.reqCode}</span>
                 {isEditing && (
                   <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, background: "#FFF5EE", color: C.primary, border: `1px solid ${C.primary}` }}>편집 중</span>
+                )}
+                {isEditing && editDraft && (
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                    <GrayBtn label="취소" onClick={() => { setIsEditing(false); setEditDraft(null); }} />
+                    <OrangeBtn label="저장" onClick={handleSaveEdit} />
+                  </div>
                 )}
                 {canEdit && !isEditing && (
                   <button
@@ -985,14 +1192,14 @@ export default function ResourceRoom() {
                         </div>
                       )}
                     </div>
-                    {/* 요청일 */}
+                    {/* 자료요청일 */}
                     <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
-                      <div style={fieldLabel}>요청일</div>
+                      <div style={fieldLabel}>자료요청일</div>
                       <div style={{ fontSize: 13, color: C.sub, fontWeight: 500 }}>{detailReq.createdDate}</div>
                     </div>
-                    {/* 마감일 */}
+                    {/* 제출마감일 */}
                     <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
-                      <div style={fieldLabel}>마감일</div>
+                      <div style={fieldLabel}>제출마감일</div>
                       <input type="date" value={editDraft.dueDate} onChange={e => setEditDraft(p => p ? { ...p, dueDate: e.target.value } : p)} style={fieldInput} />
                     </div>
                     {/* 상태 */}
@@ -1019,14 +1226,7 @@ export default function ResourceRoom() {
                     />
                   </div>
 
-                  {/* 첨부파일 */}
-                  {FilesSection()}
-
-                  {/* 저장/취소 버튼 */}
-                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
-                    <OrangeBtn label="저장" onClick={handleSaveEdit} />
-                    <GrayBtn label="취소" onClick={() => { setIsEditing(false); setEditDraft(null); }} />
-                  </div>
+                  {TabbedSection()}
                 </>
               ) : (
                 /* ══════════ READ-ONLY VIEW (Accepted) ══════════ */
@@ -1043,14 +1243,30 @@ export default function ResourceRoom() {
                       ["법인",      detailReq.entity],
                       ["자료요청자", detailReq.requester],
                       ["법인담당자", detailReq.assignee],
-                      ["요청일",    detailReq.createdDate],
-                      ["마감일",    detailReq.dueDate],
-                    ] as [string, string][]).map(([k, v], i, arr) => (
-                      <div key={k} style={{ flex: "1 1 0", minWidth: 100, paddingRight: 16, borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none", marginRight: i < arr.length - 1 ? 16 : 0 }}>
+                      ["자료요청일",    detailReq.createdDate],
+                    ] as [string, string][]).map(([k, v], i) => (
+                      <div key={k} style={{ flex: "1 1 0", minWidth: 100, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>{k}</div>
                         <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{v || "—"}</div>
                       </div>
                     ))}
+                    {/* 제출마감일 - 초과 시 빨간색 + ! 뱃지 */}
+                    {(() => {
+                      const due = detailReq.dueDate;
+                      const today = new Date(new Date().toDateString());
+                      const dueDate = due && due !== "—" ? new Date(due) : null;
+                      const overdueDays = dueDate ? Math.floor((today.getTime() - dueDate.getTime()) / 86400000) : 0;
+                      const isOverdue = overdueDays > 0;
+                      return (
+                        <div style={{ flex: "1 1 0", minWidth: 100, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>제출마감일</div>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: isOverdue ? "#DC2626" : C.text, fontWeight: 500 }}>
+                            {isOverdue && <OverdueBadge days={overdueDays} />}
+                            {due || "—"}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div style={{ flex: "1 1 0", minWidth: 100, paddingLeft: 0 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>상태</div>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
@@ -1068,8 +1284,7 @@ export default function ResourceRoom() {
                     </div>
                   )}
 
-                  {/* 첨부파일 */}
-                  {FilesSection()}
+                  {TabbedSection()}
 
                   <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: `1px solid ${C.border}` }}>
                     <GrayBtn label="닫기" onClick={() => setDetailReq(null)} />
@@ -1245,12 +1460,13 @@ export default function ResourceRoom() {
                   <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{entity}</span>
                   <span style={{ fontSize: 12, color: C.muted, fontWeight: 400 }}>{items.length}건</span>
                   {/* 상태 미니 배지들 */}
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
                     {Object.entries(statMap).map(([st, cnt]) => {
                       const sc = STATUS_CFG[st as ReqStatus];
                       return (
-                        <span key={st} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: sc?.bg ?? "#eee", color: sc?.color ?? "#666" }}>
-                          {st} {cnt}
+                        <span key={st} title={st} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, color: sc?.color ?? "#666", fontWeight: 600 }}>
+                          <StatusIcon status={st as ReqStatus} color={sc?.color ?? "#aaa"} />
+                          {cnt}
                         </span>
                       );
                     })}
@@ -1259,7 +1475,17 @@ export default function ResourceRoom() {
                 {/* 요청 테이블 */}
                 {isOpen && (
                   <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", minWidth: 720 }}>
+                      <colgroup>
+                        <col style={{ width: 90 }} />
+                        <col style={{ width: 200 }} />
+                        <col style={{ width: 130 }} />
+                        <col style={{ width: 130 }} />
+                        <col style={{ width: 120 }} />
+                        <col style={{ width: 100 }} />
+                        <col style={{ width: 100 }} />
+                        <col style={{ width: 44 }} />
+                      </colgroup>
                       <thead><tr>{COLS_GROUPED.map(h => <TH key={h}>{h}</TH>)}</tr></thead>
                       <tbody>
                         {items.map(req => <ReqRow key={req.id} req={req} hideEntity />)}
@@ -1586,7 +1812,6 @@ export default function ResourceRoom() {
       )}
 
       <Toast msg={toast} />
-      <ChatBot />
     </div>
   );
 }

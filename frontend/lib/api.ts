@@ -394,15 +394,29 @@ export const updateRequest = (id: number, body: Partial<RequestCreateBody>) =>
 export const deleteRequest = (id: number) =>
   mut<{ ok: boolean }>(`${BASE}/api/requests/${id}`, "DELETE");
 
+function mapFile(raw: any): ReqFile {
+  return {
+    id:           raw.id,
+    requestId:    raw.requestId    ?? raw.request_id,
+    filename:     raw.filename,
+    originalName: raw.originalName ?? raw.original_name ?? raw.filename ?? "",
+    uploader:     raw.uploader     ?? "",
+    size:         raw.size         ?? raw.file_size ?? 0,
+    uploadedAt:   raw.uploadedAt   ?? raw.uploaded_at ?? "",
+    url:          raw.url          ?? "",
+  };
+}
+
 export const fetchRequestFiles = (reqId: number) =>
-  get<ReqFile[]>(`/api/requests/${reqId}/files`);
+  get<any[]>(`/api/requests/${reqId}/files`).then(list => list.map(mapFile));
 
 export const uploadRequestFile = (reqId: number, file: File, uploader: string) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("uploader", uploader);
   return fetch(`${BASE}/api/requests/${reqId}/files`, { method: "POST", body: fd })
-    .then(r => r.json()) as Promise<ReqFile>;
+    .then(r => r.json())
+    .then(mapFile) as Promise<ReqFile>;
 };
 
 export const deleteRequestFile = (reqId: number, fileId: number) =>
