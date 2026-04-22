@@ -166,6 +166,15 @@ function PageInner() {
         <ServiceIntro onNavigateToReport={() => { handleNavigate("summary", "summary", "Summary"); setTopTab("리포트"); }} />
       )}
 
+      {/* ── 문의게시판 ── */}
+      {topTab === "문의게시판" && (
+        <div className="app-body">
+          <div className="main-content">
+            <Inquiry onNavigate={handleNavigate} />
+          </div>
+        </div>
+      )}
+
       <div className="app-body" style={{ display: topTab !== "리포트" && topTab !== "자료실" ? "none" : undefined }}>
 
         {/* ── 리포트 ── */}

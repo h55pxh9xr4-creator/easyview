@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export type TopTab = "서비스 소개" | "리포트" | "자료실";
-const TOP_TABS: TopTab[] = ["서비스 소개", "리포트", "자료실"];
+export type TopTab = "서비스 소개" | "리포트" | "자료실" | "문의게시판";
+const TOP_TABS: TopTab[] = ["서비스 소개", "리포트", "자료실", "문의게시판"];
 
 interface Props {
   user?: string;
