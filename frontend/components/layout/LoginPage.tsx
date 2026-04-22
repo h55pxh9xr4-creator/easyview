@@ -58,8 +58,10 @@ export default function LoginPage({ onLogin }: Props) {
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         padding: "24px",
+        pointerEvents: "none",
       }}>
         <div style={{
+          pointerEvents: "auto",
           background: "rgba(255,255,255,0.82)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
@@ -202,7 +204,7 @@ export default function LoginPage({ onLogin }: Props) {
           </form>
         </div>
 
-        <p style={{ marginTop: "20px", fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>
+        <p style={{ marginTop: "20px", fontSize: "11px", color: "rgba(255,255,255,0.7)", pointerEvents: "auto" }}>
           © 2026 PwC. All rights reserved.
         </p>
       </div>
