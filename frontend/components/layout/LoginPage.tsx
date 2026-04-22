@@ -68,11 +68,11 @@ export default function LoginPage({ onLogin }: Props) {
           borderRadius: "16px",
           boxShadow: "0 8px 40px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.4)",
           width: "100%",
-          maxWidth: "400px",
+          maxWidth: "320px",
           overflow: "hidden",
         }}>
           {/* 브랜드 헤더 */}
-          <div style={{ background: "rgba(44,44,44,0.92)", padding: "28px 32px 24px", textAlign: "center" }}>
+          <div style={{ background: "rgba(44,44,44,0.92)", padding: "20px 24px 16px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
               <Image src="/easyview/logo.png" alt="logo" width={28} height={28} style={{ height: "28px", width: "auto" }} />
               <span style={{ fontSize: "22px", fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
@@ -88,7 +88,7 @@ export default function LoginPage({ onLogin }: Props) {
           <div style={{ height: "3px", background: "#E87722" }} />
 
           {/* 로그인 폼 */}
-          <form onSubmit={handleSubmit} style={{ padding: "32px" }}>
+          <form onSubmit={handleSubmit} style={{ padding: "20px 24px 24px" }}>
             <p style={{ fontSize: "16px", fontWeight: 700, color: "#2C2C2C", marginBottom: "24px", letterSpacing: "-0.3px" }}>
               로그인
             </p>
