@@ -278,6 +278,8 @@ function PageInner() {
 
         {topTab === "리포트" && <ChatBot />}
       </div>
+
+      {topTab !== "서비스 소개" && topTab !== "리포트" && <ChatBot />}
     </>
   );
 }
