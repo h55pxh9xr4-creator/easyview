@@ -8,6 +8,7 @@
 
 ## 목차
 
+0. [개발 환경 설정](#0-개발-환경-설정)
 1. [공통 사항](#공통-사항)
 2. [필터 (Filters)](#1-필터-filters)
 3. [Summary 대시보드](#2-summary-대시보드)
@@ -17,15 +18,220 @@
 7. [Scenario 시나리오분석](#6-scenario-시나리오분석)
 8. [문의게시판 (Inquiry)](#7-문의게시판-inquiry)
 9. [자료요청 (Requests)](#8-자료요청-requests)
-10. [Admin 인증](#9-admin-인증)
-11. [Admin 사용자 관리](#10-admin-사용자-관리)
-12. [Admin 그룹 관리](#11-admin-그룹-관리)
-13. [Admin 권한 관리](#12-admin-권한-관리)
-14. [Admin 역할 관리](#13-admin-역할-관리)
-15. [Admin 활동 로그](#14-admin-활동-로그)
-16. [Admin 보안](#15-admin-보안)
-17. [Admin 회사 관리](#16-admin-회사-관리)
-18. [Admin 사용자 추가 요청](#17-admin-사용자-추가-요청)
+10. [김삼일 AI 챗봇 (Chat)](#10-김삼일-ai-챗봇-chat)
+11. [Admin 인증](#11-admin-인증)
+12. [Admin 사용자 관리](#12-admin-사용자-관리)
+13. [Admin 그룹 관리](#13-admin-그룹-관리)
+14. [Admin 권한 관리](#14-admin-권한-관리)
+15. [Admin 역할 관리](#15-admin-역할-관리)
+16. [Admin 활동 로그](#16-admin-활동-로그)
+17. [Admin 보안](#17-admin-보안)
+18. [Admin 회사 관리](#18-admin-회사-관리)
+19. [Admin 사용자 추가 요청](#19-admin-사용자-추가-요청)
+
+---
+
+## 0. 개발 환경 설정
+
+### 프로젝트 구조
+
+```
+easyview-api/
+├── backend/                  # FastAPI 백엔드
+│   ├── main.py               # 앱 진입점
+│   ├── database.py           # DB 연결 (SQLite)
+│   ├── models.py             # SQLAlchemy 모델 (JE, TB 등)
+│   ├── admin_models.py       # Admin 모델 (User, Group 등)
+│   ├── schemas.py            # Pydantic 스키마
+│   ├── admin_auth.py         # JWT 인증
+│   ├── email_service.py      # 이메일 발송
+│   ├── config.py             # 설정
+│   ├── seed.py / admin_seed.py  # 초기 데이터
+│   ├── requirements.txt      # Python 의존성
+│   ├── .env                  # 환경변수 (git 미추적)
+│   ├── easyview.db           # SQLite DB 파일
+│   └── routers/
+│       ├── filters.py        # 필터
+│       ├── summary.py        # Summary 대시보드
+│       ├── pl.py             # PL 손익분석
+│       ├── bs.py             # BS 재무상태분석
+│       ├── vch.py            # VCH 전표분석
+│       ├── scenario.py       # Scenario 시나리오분석
+│       ├── inquiry.py        # 문의게시판
+│       ├── requests.py       # 자료요청
+│       ├── chat.py           # 김삼일 AI 챗봇
+│       └── admin_*.py        # Admin 라우터들
+├── frontend/                 # Next.js 프론트엔드
+│   ├── app/                  # 페이지
+│   ├── components/           # 컴포넌트
+│   ├── hooks/                # 커스텀 훅
+│   ├── lib/                  # API 클라이언트, 유틸
+│   └── package.json
+├── data/
+│   └── easyview.db           # 원본 DB
+└── render.yaml               # Render 배포 설정
+```
+
+### Git 브랜치 워크플로우
+
+```bash
+git checkout master
+git pull origin master
+git checkout -b feature/{작업명}    # 브랜치 생성
+# ... 작업 ...
+git add .
+git commit -m "커밋 내용"
+git push origin feature/{작업명}
+# → GitHub에서 PR 생성 (master에 merge)
+```
+
+**브랜치 네이밍 규칙:** `feature/{작업내용}` (영어 소문자)
+
+| 작업            | 브랜치명                |
+|-----------------|-------------------------|
+| 자료실          | `feature/resource-room` |
+| 문의게시판      | `feature/inquiry`       |
+| 관리자 페이지   | `feature/admin`         |
+| 리포트          | `feature/report`        |
+| AI 챗봇         | `feature/ai-chatbot`    |
+
+### 백엔드 로컬 실행
+
+```bash
+cd backend
+
+# 1. 가상환경 생성 (최초 1회)
+python -m venv venv
+source venv/bin/activate        # Mac/Linux
+venv\Scripts\activate           # Windows
+
+# 2. 패키지 설치
+pip install -r requirements.txt
+
+# 3. 환경변수 설정 — .env 파일 생성
+cat > .env << 'EOF'
+OPENAI_API_KEY=sk-ufGsrl_pJl4D9Fp_GTtb1w
+OPENAI_BASE_URL=https://genai-sharedservice-americas.pwcinternal.com
+CHAT_MODEL=gpt-4o
+EOF
+
+# 4. 서버 실행
+uvicorn main:app --reload --port 8000
+```
+
+> `.env` 파일은 `.gitignore`에 포함되어 있어 git에 추적되지 않습니다.
+
+### 프론트엔드 로컬 실행
+
+```bash
+cd frontend
+
+# 1. 패키지 설치
+npm install
+
+# 2. 개발 서버 실행
+npm run dev
+```
+
+> `next.config.ts`에 `basePath: "/easyview"` 설정이 되어 있어, 로컬에서는 `http://localhost:3000/easyview` 로 접속해야 합니다.
+
+### 배포 URL
+
+| 환경     | 백엔드 (FastAPI)                     | 프론트엔드 (Next.js)                               |
+|----------|--------------------------------------|-----------------------------------------------------|
+| 로컬     | `http://localhost:8000`              | `http://localhost:3000/easyview`                    |
+| 배포     | Render (render.yaml 참조)            | GitHub Pages (`/easyview`)                          |
+
+### 프론트엔드 환경변수
+
+| 변수                     | 설명             | 기본값                  |
+|--------------------------|------------------|-------------------------|
+| `NEXT_PUBLIC_API_URL`    | 백엔드 API URL   | `http://localhost:8000` |
+| `NEXT_PUBLIC_BASE_PATH`  | 정적 파일 경로   | `/easyview`             |
+
+---
+
+## GenAI (김삼일 AI 챗봇) 설정
+
+### PwC GenAI Shared Service
+
+김삼일 AI 챗봇은 **PwC GenAI Shared Service**를 통해 LLM을 호출합니다.
+
+| 항목           | 값                                                              |
+|----------------|-----------------------------------------------------------------|
+| **API Key**    | `sk-ufGsrl_pJl4D9Fp_GTtb1w`                                   |
+| **Base URL (Internal)** | `https://genai-sharedservice-americas.pwcinternal.com` |
+| **Base URL (External)** | `https://genai-sharedservice-americas.pwc.com`         |
+| **사용 모델**  | `gpt-4o` (변경 가능)                                           |
+| **모델 목록 확인** | `https://genai-sharedservice-americas.pwcinternal.com/genai/models` |
+| **가이드 문서** | [Migration Guide (SharePoint)](https://pwc.sharepoint.com/sites/GBL-IFS-GlobalTechPortfolio/Documentation-AI-Services/SitePages/Migration-Guide-for-GenAI-Shared-Service.aspx) |
+
+> **네트워크 요구사항:** PwC Internal URL은 **사내 네트워크 또는 VPN** 연결이 필요합니다.
+
+### 백엔드 환경변수 (.env)
+
+```env
+# PwC GenAI Shared Service
+OPENAI_API_KEY=sk-ufGsrl_pJl4D9Fp_GTtb1w
+OPENAI_BASE_URL=https://genai-sharedservice-americas.pwcinternal.com
+CHAT_MODEL=gpt-4o
+```
+
+| 변수              | 필수 | 설명                                         |
+|-------------------|------|----------------------------------------------|
+| `OPENAI_API_KEY`  | O    | PwC GenAI Shared Service API Key             |
+| `OPENAI_BASE_URL` | O    | Internal 또는 External URL                   |
+| `CHAT_MODEL`      | X    | 사용할 모델 (기본값: `gpt-4o`)               |
+
+### SDK 호환성
+
+PwC GenAI Shared Service는 **OpenAI API 호환** 형태이므로, 아래 SDK 중 선택하여 사용 가능합니다.
+
+| SDK         | 설치                          | 현재 사용 여부 |
+|-------------|-------------------------------|----------------|
+| **OpenAI**  | `pip install openai`          | ✅ 사용 중     |
+| LangChain   | `pip install langchain-openai langchain` | 미사용 |
+| LiteLLM     | `pip install litellm`         | 미사용         |
+
+```python
+# 현재 프로젝트에서 사용 중인 방식 (OpenAI SDK)
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="sk-ufGsrl_pJl4D9Fp_GTtb1w",
+    base_url="https://genai-sharedservice-americas.pwcinternal.com",
+)
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+```
+
+### 아키텍처
+
+```
+사용자 질문 + 페이지 컨텍스트
+       │
+       ▼
+┌─ 프론트엔드 (ChatBot.tsx) ──────────────┐
+│  POST /api/chat/message                  │
+│  { message, base_ym, page, history }     │
+└──────────────┬───────────────────────────┘
+               ▼
+┌─ 백엔드 (routers/chat.py) ──────────────┐
+│  1. 시스템 프롬프트 (김삼일 페르소나)    │
+│  2. OpenAI API 호출 (Function Calling)   │
+│     → 모델이 tool 선택                   │
+│     → DB에서 실시간 데이터 조회          │
+│     → 결과를 모델에 전달                 │
+│  3. 김삼일 스타일로 최종 답변 생성       │
+└──────────────┬───────────────────────────┘
+               ▼
+┌─ PwC GenAI Shared Service ──────────────┐
+│  gpt-4o (OpenAI 호환 API)                │
+└──────────────────────────────────────────┘
+```
 
 ---
 
@@ -1414,9 +1620,125 @@
 
 ---
 
-## 9. Admin 인증
+## 10. 김삼일 AI 챗봇 (Chat)
 
-### 9.1 관리자 로그인
+### 10.1 채팅 메시지 전송
+
+- **URL:** `POST /api/chat/message`
+- **인증:** 불필요
+- **설명:** 김삼일 AI 매니저에게 질문을 보내고 답변을 받습니다. 현재 보고 있는 페이지와 필터 정보를 함께 전달하면 컨텍스트 인식 답변을 제공합니다.
+
+**Request Header**
+
+| Header         | Type   | 필수 | 설명                             |
+|----------------|--------|------|----------------------------------|
+| `Content-Type` | string | O    | `application/json`               |
+
+**Request Body**
+
+| Field         | Type        | 필수 | 기본값       | 설명                                    |
+|---------------|-------------|------|--------------|-----------------------------------------|
+| `message`     | string      | O    |              | 사용자 질문 내용                        |
+| `base_ym`     | string      | X    | `2025-09`    | 기준 연월 (`YYYY-MM`)                   |
+| `period_type` | string      | X    | `cumulative` | `monthly` / `cumulative`                |
+| `page`        | string      | X    | null         | 현재 페이지 ID (아래 표 참조)           |
+| `history`     | ChatMessage[] | X  | null         | 이전 대화 기록 (최근 10개까지 사용)     |
+
+**ChatMessage 구조**
+
+| Field  | Type   | 설명                    |
+|--------|--------|-------------------------|
+| `role` | string | `user` / `assistant`    |
+| `text` | string | 메시지 내용             |
+
+**page 값 목록**
+
+| page 값         | 페이지 이름            |
+|-----------------|------------------------|
+| `summary`       | Summary 대시보드       |
+| `pl-sum`        | PL 요약                |
+| `pl-trend`      | PL 추이분석            |
+| `pl-acct`       | PL 계정분석            |
+| `pl-sale`       | 매출분석               |
+| `pl-item`       | 손익항목               |
+| `bs-sum`        | BS 요약                |
+| `bs-trend`      | BS 추이분석            |
+| `bs-acct`       | BS 계정분석            |
+| `vch-analysis`  | 전표분석               |
+| `vch-search`    | 전표검색               |
+| `sc-dup`        | SC1 중복전표           |
+| `sc-cash-debt`  | SC2 현금→부채          |
+| `sc-weekend`    | SC3 주말현금           |
+| `sc-big-cash`   | SC4 고액현금           |
+| `sc-cost-cash`  | SC5 비용+현금          |
+| `sc-seldom`     | SC6 희소거래처         |
+
+**Request 예시**
+
+```json
+{
+  "message": "이번 달 매출 이상한 점 있어?",
+  "base_ym": "2025-09",
+  "period_type": "cumulative",
+  "page": "pl-sum",
+  "history": [
+    { "role": "user", "text": "안녕하세요" },
+    { "role": "assistant", "text": "안녕하세요! 김삼일입니다. 무엇을 도와드릴까요?" }
+  ]
+}
+```
+
+**Response Body** `200 OK`
+
+| Field   | Type   | 설명                |
+|---------|--------|---------------------|
+| `reply` | string | 김삼일 AI 답변 내용 |
+
+```json
+{
+  "reply": "2025년 9월 누적 매출액은 5,230,000원으로 전년 동기 대비 19.1% 증가했습니다.\n\n다만 주요 거래처 중 A사 매출이 전년 대비 40% 급감했으니 확인이 필요합니다.\n\n추가로 SC1 시나리오에서 중복 전표 3건이 발견되었으니 점검을 권장드립니다."
+}
+```
+
+**에러 응답**
+
+| Status | 조건                          | Body                                                      |
+|--------|-------------------------------|------------------------------------------------------------|
+| 422    | message 누락                  | `{"detail": [{"loc": ["body","message"], "msg": "..."}]}`  |
+| 500    | GenAI API 연결 실패           | `{"detail": "Internal Server Error"}`                      |
+
+### 10.2 사용 가능한 AI 도구 (Function Calling)
+
+김삼일 AI는 사용자 질문에 따라 아래 도구를 자동으로 호출하여 DB에서 실시간 데이터를 조회합니다.
+
+| Tool 이름            | 설명                                              | 주요 파라미터               |
+|----------------------|---------------------------------------------------|-----------------------------|
+| `get_kpi`            | 매출액, 영업이익 KPI 지표 조회                    | `base_ym`, `period_type`    |
+| `get_pl_summary`     | PL 요약 (당기/전기 전 항목)                       | `base_ym`, `period_type`    |
+| `get_pl_sales_top`   | 거래처별 매출 순위                                | `base_ym`, `period_type`, `top_n` |
+| `get_pl_items`       | 손익항목 상세 (공시용계정별)                      | `base_ym`, `period_type`    |
+| `get_bs_summary`     | BS 요약 (자산/부채/자본 기말/기초)                | `base_ym`                   |
+| `get_bs_ratios`      | 재무비율 (유동비율, 부채비율)                     | `base_ym`                   |
+| `get_indicators`     | 재무 지표 (이익률, 유동비율 등)                   | `base_ym`, `period_type`    |
+| `get_scenario_count` | SC1~SC6 시나리오 이상 전표 건수                   | `base_ym`                   |
+| `get_scenario_detail`| 특정 시나리오 이상 전표 상세 내역                 | `base_ym`, `scenario_num`   |
+| `get_top3_changes`   | 매출 거래처/비용 계정/자산/부채 증감 Top3         | `base_ym`, `period_type`    |
+
+### 10.3 김삼일 페르소나
+
+| 항목      | 설명                                                    |
+|-----------|---------------------------------------------------------|
+| 이름      | 김삼일                                                  |
+| 소속      | 삼일회계법인 매니저                                     |
+| 성격      | 전문적이면서 친근한 말투 (존댓말)                       |
+| 전문분야  | 회계/재무분석, 이상 전표 탐지, 재무비율 분석            |
+| 답변 스타일 | 핵심 먼저 → 부연설명, bullet point, 숫자에 단위 표기  |
+
+---
+
+## 11. Admin 인증
+
+### 11.1 관리자 로그인
 
 - **URL:** `POST /api/auth/login`
 - **인증:** 불필요
@@ -1462,7 +1784,7 @@
 
 ---
 
-### 9.2 로그아웃
+### 11.2 로그아웃
 
 - **URL:** `POST /api/auth/logout`
 
@@ -1470,7 +1792,7 @@
 
 ---
 
-### 9.3 현재 사용자 조회
+### 11.3 현재 사용자 조회
 
 - **URL:** `GET /api/auth/me`
 - **인증:** 필요
@@ -1479,11 +1801,11 @@
 
 ---
 
-## 10. Admin 사용자 관리
+## 12. Admin 사용자 관리
 
 > 모든 엔드포인트 인증 필요 (Bearer Token)
 
-### 10.1 사용자 목록
+### 12.1 사용자 목록
 
 - **URL:** `GET /api/users`
 
@@ -1514,7 +1836,7 @@
 
 ---
 
-### 10.2 사용자 생성
+### 12.2 사용자 생성
 
 - **URL:** `POST /api/users`
 
@@ -1533,7 +1855,7 @@
 
 ---
 
-### 10.3 사용자 상세 / 수정 / 삭제
+### 12.3 사용자 상세 / 수정 / 삭제
 
 | Endpoint                        | Method | 설명             |
 |---------------------------------|--------|------------------|
@@ -1545,7 +1867,7 @@
 
 ---
 
-## 11. Admin 그룹 관리
+## 13. Admin 그룹 관리
 
 | Endpoint                  | Method | 설명     |
 |---------------------------|--------|----------|
@@ -1575,7 +1897,7 @@
 
 ---
 
-## 12. Admin 권한 관리
+## 14. Admin 권한 관리
 
 | Endpoint                  | Method | 설명                   |
 |---------------------------|--------|------------------------|
@@ -1613,7 +1935,7 @@
 
 ---
 
-## 13. Admin 역할 관리
+## 15. Admin 역할 관리
 
 | Endpoint               | Method | 설명   |
 |------------------------|--------|--------|
@@ -1644,7 +1966,7 @@
 
 ---
 
-## 14. Admin 활동 로그
+## 16. Admin 활동 로그
 
 | Endpoint              | Method | 설명     |
 |-----------------------|--------|----------|
@@ -1667,7 +1989,7 @@
 
 ---
 
-## 15. Admin 보안
+## 17. Admin 보안
 
 | Endpoint                       | Method | 설명               |
 |--------------------------------|--------|--------------------|
@@ -1686,7 +2008,7 @@
 
 ---
 
-## 16. Admin 회사 관리
+## 18. Admin 회사 관리
 
 | Endpoint                       | Method | 설명         |
 |--------------------------------|--------|--------------|
@@ -1701,7 +2023,7 @@
 
 ---
 
-## 17. Admin 사용자 추가 요청
+## 19. Admin 사용자 추가 요청
 
 | Endpoint                                | Method | 설명     |
 |-----------------------------------------|--------|----------|
