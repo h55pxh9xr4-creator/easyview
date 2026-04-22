@@ -10,7 +10,7 @@ import ChatBot from "@/components/ui/ChatBot";
 
 
 /* ── types ── */
-type SidebarPage = "requests" | "users" | "modules" | "access-groups" | "localisations" | "security" | "site-details";
+type SidebarPage = "requests" | "users" | "modules" | "access-groups" | "localisations" | "security" | "site-details" | "admin";
 type UserTab = "pwc" | "client" | "thirdparty" | "all";
 type ReqStatus = "Draft" | "Requested" | "Submitted" | "Accepted" | "Recall";
 type ReqPriority = "높음" | "보통" | "낮음";
@@ -128,6 +128,7 @@ const PRIORITY_CFG: Record<ReqPriority, { color: string }> = {
 const SIDEBAR_ITEMS: { key: SidebarPage; icon: string; label: string }[] = [
   { key: "requests",     icon: "/icons/icon-journal.svg",  label: "자료 요청" },
   { key: "users",        icon: "/icons/icon-building.svg", label: "Users" },
+  { key: "admin",        icon: "/icons/icon-trust.svg",    label: "관리자" },
   { key: "site-details", icon: "/icons/icon-pdf.svg",      label: "Site Details" },
 ];
 
@@ -1482,6 +1483,7 @@ export default function ResourceRoom() {
         {page === "access-groups" && <PlaceholderPage icon="🔒" label="Custom Access Groups"   desc="맞춤 접근 권한 그룹을 생성하고 관리합니다." />}
         {page === "localisations" && <PlaceholderPage icon="🌐" label="Localisations"           desc="지역화 설정을 관리합니다." />}
         {page === "security"      && <PlaceholderPage icon="🛡"  label="Security"               desc="보안 설정을 관리합니다." />}
+        {page === "admin"         && <PlaceholderPage icon="🔐" label="관리자"                   desc="시스템 관리자 설정 페이지입니다." />}
         {page === "site-details"  && <PlaceholderPage icon="📑" label="Site Details"            desc="사이트 상세 정보를 관리합니다." />}
       </main>
 
