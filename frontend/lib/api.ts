@@ -423,3 +423,20 @@ export const deleteRequestFile = (reqId: number, fileId: number) =>
   fetch(`${BASE}/api/requests/${reqId}/files/${fileId}`, { method: "DELETE" }).then(r => r.json());
 
 export const getFileUrl = (url: string) => `${BASE}${url}`;
+
+// ── Chat (김삼일 AI) ─────────────────────────────────────────
+export interface ChatMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export interface ChatRequestBody {
+  message: string;
+  base_ym?: string;
+  period_type?: string;
+  page?: string;
+  history?: ChatMessage[];
+}
+
+export const sendChatMessage = (body: ChatRequestBody) =>
+  mut<{ reply: string }>(`${BASE}/api/chat/message`, "POST", body);
