@@ -204,7 +204,7 @@ export default function AccountsPage() {
                     </td>
                   </tr>
                 ))}
-                {users.length === 0 && <tr><td colSpan={7} className="py-12 text-center text-pwc-gray-400">검색 결과가 없습니다.</td></tr>}
+                {users.length === 0 && <tr><td colSpan={7} className="py-12 text-center text-pwc-gray-400">!</td></tr>}
               </tbody>
             </table>
           )}
