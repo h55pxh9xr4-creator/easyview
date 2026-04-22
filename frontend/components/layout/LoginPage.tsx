@@ -27,6 +27,20 @@ export default function LoginPage({ onLogin }: Props) {
   }, []);
 
   useEffect(() => {
+    const hide = () => {
+      document.querySelectorAll("a").forEach(a => {
+        if (a.href.includes("spline")) {
+          a.style.display = "none";
+        }
+      });
+    };
+    const observer = new MutationObserver(hide);
+    observer.observe(document.body, { childList: true, subtree: true });
+    hide();
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const canvas = document.querySelector<HTMLCanvasElement>("canvas");
       if (!canvas) return;
@@ -67,7 +81,12 @@ export default function LoginPage({ onLogin }: Props) {
 
       {/* Spline 3D 배경 */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
-        <Spline scene="https://prod.spline.design/NWKwPxi83XRPKiFM/scene.splinecode" />
+        <Spline
+          scene="https://prod.spline.design/NWKwPxi83XRPKiFM/scene.splinecode"
+          onLoad={(spline: any) => {
+            try { spline._renderer.pipeline.setWatermark(null); } catch {}
+          }}
+        />
       </div>
 
       {/* 로그인 카드 */}
