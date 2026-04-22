@@ -91,7 +91,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
 
   const loadList = () => {
     setLoading(true);
-    fetchInquiries().then(setList).finally(() => setLoading(false));
+    fetchInquiries().then(setList).catch(() => setList([])).finally(() => setLoading(false));
   };
 
   useEffect(() => { loadList(); }, []);
