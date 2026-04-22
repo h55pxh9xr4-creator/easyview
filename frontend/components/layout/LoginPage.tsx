@@ -18,6 +18,7 @@ export default function LoginPage({ onLogin }: Props) {
   const [loading, setLoading] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
   const [lampOn, setLampOn] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,23 +191,47 @@ export default function LoginPage({ onLogin }: Props) {
             <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: labelClr, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.4px", transition: "color 0.5s" }}>
               비밀번호
             </label>
-            <input
-              type="password"
-              value={pw}
-              onChange={e => setPw(e.target.value)}
-              placeholder="비밀번호를 입력하세요"
-              autoComplete="current-password"
-              required
-              style={{
-                width: "100%", border: `1px solid ${inputBdr}`, borderRadius: "6px",
-                padding: "9px 12px", fontSize: "13px", fontFamily: "inherit",
-                color: textClr, background: inputBg, outline: "none",
-                transition: "border-color .15s, background 0.5s, color 0.5s",
-                boxSizing: "border-box",
-              }}
-              onFocus={e => e.target.style.borderColor = "#E87722"}
-              onBlur={e => e.target.style.borderColor = inputBdr}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPw ? "text" : "password"}
+                value={pw}
+                onChange={e => setPw(e.target.value)}
+                placeholder="비밀번호를 입력하세요"
+                autoComplete="current-password"
+                required
+                style={{
+                  width: "100%", border: `1px solid ${inputBdr}`, borderRadius: "6px",
+                  padding: "9px 40px 9px 12px", fontSize: "13px", fontFamily: "inherit",
+                  color: textClr, background: inputBg, outline: "none",
+                  transition: "border-color .15s, background 0.5s, color 0.5s",
+                  boxSizing: "border-box",
+                }}
+                onFocus={e => e.target.style.borderColor = "#E87722"}
+                onBlur={e => e.target.style.borderColor = inputBdr}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(p => !p)}
+                style={{
+                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", padding: 4,
+                  color: labelClr, display: "flex", alignItems: "center",
+                }}
+              >
+                {showPw ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
