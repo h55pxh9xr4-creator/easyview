@@ -10,7 +10,7 @@ import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 type View = "list" | "detail" | "write" | "edit";
-const ADMIN_ID = "admin";
+
 const PAGE_SIZE = 10;
 
 // 페이지명 → 탭/서브 매핑
@@ -52,7 +52,7 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
   const [page,       setPage]       = useState(1);
 
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
-  const isAdmin = currentUser === ADMIN_ID;
+  const isAdmin = typeof window !== "undefined" ? (sessionStorage.getItem("ev_role") === "admin") : false;
   const { triggerComment, openPanel } = useComment();
   const pendingId    = usePendingInquiry(state => state.pendingId);
   const clearPending = usePendingInquiry(state => state.setPendingId);

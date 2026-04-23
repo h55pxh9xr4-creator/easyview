@@ -425,19 +425,28 @@ export default function ResourceRoom() {
     try {
       setReqLoading(true);
       const data = await fetchRequests();
+      // API 응답에 없는 법인의 FALLBACK 요청은 항상 병합 (test 법인 등 DB 미등록 법인 지원)
+      const mergeWithFallback = (apiReqs: Request[]): Request[] => {
+        const apiEntities = new Set(apiReqs.map(r => r.entity));
+        const fallbackOnly = FALLBACK_REQUESTS.filter(r => !apiEntities.has(r.entity));
+        return [...apiReqs, ...fallbackOnly];
+      };
       if (data.length > 0) {
-        const reqs = data as Request[];
+        const reqs = mergeWithFallback(data as Request[]);
         setRequests(reqs);
         saveCache(reqs);
       } else {
         const cached = loadCache();
-        const reqs = cached ?? FALLBACK_REQUESTS;
+        const reqs = cached ? mergeWithFallback(cached) : FALLBACK_REQUESTS;
         setRequests(reqs);
         if (!cached) saveCache(reqs);
       }
     } catch {
       const cached = loadCache();
-      setRequests(cached ?? FALLBACK_REQUESTS);
+      setRequests(cached ? (() => {
+        const apiEntities = new Set(cached.map((r: Request) => r.entity));
+        return [...cached, ...FALLBACK_REQUESTS.filter(r => !apiEntities.has(r.entity))];
+      })() : FALLBACK_REQUESTS);
     } finally { setReqLoading(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -639,9 +648,12 @@ export default function ResourceRoom() {
 
   /* ── Requests ── */
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
-  const userCompany = typeof window !== "undefined" ? (sessionStorage.getItem("ev_company") ?? "전체") : "전체";
+  const userCompany = typeof window !== "undefined" ? (sessionStorage.getItem("ev_company") ?? "PwC") : "PwC";
   const isAdmin     = typeof window !== "undefined" ? (sessionStorage.getItem("ev_role") === "admin") : true;
-  const allowedEntities = isAdmin ? ENTITIES : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
+  // PwC 또는 admin → 전체 법인. 그 외 → 소속 회사 이름이 포함된 법인만
+  const allowedEntities = (isAdmin || userCompany === "PwC" || userCompany === "전체")
+    ? ENTITIES
+    : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
   const filteredReqs = requests.filter(r => {
     if (myOnly && currentUser && r.assignee !== currentUser) return false;
     if (reqFilter !== "전체" && r.status !== reqFilter) return false;
@@ -826,7 +838,7 @@ export default function ResourceRoom() {
                 <div style={divider}>
                   <div style={fLabel}>법인</div>
                   <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={fSelect}>
-                    {ENTITIES.map(en => <option key={en}>{en}</option>)}
+                    {allowedEntities.map(en => <option key={en}>{en}</option>)}
                   </select>
                 </div>
                 <div style={divider}>
@@ -1359,15 +1371,17 @@ export default function ResourceRoom() {
             </svg>
             법인별
           </button>
-          <button onClick={() => setShowCreate(true)}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              padding: "7px 14px", borderRadius: 6, border: "none",
-              background: C.primary, color: "#fff",
-              fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-            }}>
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> 자료 요청
-          </button>
+          {isAdmin && (
+            <button onClick={() => setShowCreate(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "7px 14px", borderRadius: 6, border: "none",
+                background: C.primary, color: "#fff",
+                fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+              }}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> 자료 요청
+            </button>
+          )}
         </div>
       </div>
 
