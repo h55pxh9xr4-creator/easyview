@@ -110,12 +110,12 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // URL 동기화 헬퍼
+  // URL 동기화 헬퍼 — window.history 직접 사용 (static export 호환)
   const pushUrl = (tab: TopTab, sub?: string, label?: string) => {
     const params = new URLSearchParams({ page: TAB_TO_PAGE[tab] });
     if (sub)   params.set("sub", sub);
     if (label) params.set("label", encodeURIComponent(label));
-    router.push(`/?${params.toString()}`);
+    window.history.pushState({}, "", `?${params.toString()}`);
   };
 
   const handleTopTabChange = (tab: TopTab) => {
