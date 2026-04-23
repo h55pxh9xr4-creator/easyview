@@ -160,7 +160,8 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
   const filtered = list.filter(item => {
     const matchCat  = !filterCat  || item.category === filterCat;
     const matchText = !searchText || item.title.includes(searchText) || item.author.includes(searchText);
-    return matchCat && matchText;
+    const matchUser = isAdmin || item.author === currentUser;
+    return matchCat && matchText && matchUser;
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);

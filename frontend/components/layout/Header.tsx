@@ -5,15 +5,23 @@ import { useEffect, useRef, useState } from "react";
 export type TopTab = "서비스 소개" | "리포트" | "자료실" | "문의게시판" | "관리자";
 const TOP_TABS: TopTab[] = ["서비스 소개", "리포트", "자료실", "문의게시판", "관리자"];
 
+export const ROLE_TABS: Record<string, TopTab[]> = {
+  admin:           ["서비스 소개", "리포트", "자료실", "문의게시판", "관리자"],
+  viewer:          ["서비스 소개", "리포트", "문의게시판"],
+  uploader:        ["서비스 소개", "자료실", "문의게시판"],
+  viewer_uploader: ["서비스 소개", "리포트", "자료실", "문의게시판"],
+};
+
 interface Props {
   user?: string;
   activeTopTab?: TopTab;
   onTopTabChange?: (tab: TopTab) => void;
   onLogout?: () => void;
   onSettings?: () => void;
+  allowedTabs?: TopTab[];
 }
 
-export default function Header({ user, activeTopTab = "리포트", onTopTabChange, onLogout, onSettings }: Props) {
+export default function Header({ user, activeTopTab = "리포트", onTopTabChange, onLogout, onSettings, allowedTabs }: Props) {
   const [displayName, setDisplayName] = useState(user ?? "");
   const [avatar, setAvatar]           = useState<string | null>(null);
   const [dropOpen, setDropOpen]       = useState(false);
@@ -53,7 +61,7 @@ export default function Header({ user, activeTopTab = "리포트", onTopTabChang
 
       {/* 상단 탭 */}
       <nav className="hdr-tabs">
-        {TOP_TABS.map(t => (
+        {(allowedTabs ?? TOP_TABS).map(t => (
           <span
             key={t}
             className={`hdr-tab${activeTopTab === t ? " active" : ""}`}
