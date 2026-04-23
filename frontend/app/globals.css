@@ -244,7 +244,8 @@ thead th:last-child{border-radius:0 4px 0 0}
 tbody tr{border-bottom:1px solid #F5F5F5}
 tbody tr:hover{background:#FFF8F3}
 tbody td{padding:7px 10px;text-align:right;color:#555;white-space:nowrap;font-variant-numeric:tabular-nums}
-tfoot td{padding:7px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+tfoot td{padding:7px 10px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tfoot td:first-child{text-align:left}
 tbody td:first-child{text-align:left;font-weight:600;color:#2C2C2C}
 .td-s1{padding-left:18px!important;color:#888!important;font-weight:500!important}
 .td-s2{padding-left:30px!important;color:#aaa!important;font-weight:400!important}
