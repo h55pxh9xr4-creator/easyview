@@ -306,15 +306,15 @@ export default function PLAccount() {
                             {mgmt}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 당기`)}
-                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 당기`, value: fmt(mgmtCur) }, { top: r.top, right: r.right }); }}>
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 당기`, value: fmt(mgmtCur) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             {fmt(mgmtCur)}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 전기`)}
-                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 전기`, value: fmt(mgmtPri) }, { top: r.top, right: r.right }); }}>
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 전기`, value: fmt(mgmtPri) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             {fmt(mgmtPri)}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 증감`)} className={mgmtChg >= 0 ? "up-t" : "dn-t"}
-                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toFixed(1)}%` }, { top: r.top, right: r.right }); }}>
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toFixed(1)}%` }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toFixed(1)}%
                           </td>
                         </tr>,
@@ -456,7 +456,8 @@ export default function PLAccount() {
                                             value: `일자: ${v.date} | 전표번호: ${v.voucher_no} | 거래처: ${v.counterparty ?? "-"} | 적요: ${v.description ?? "-"} | 금액: ${fmt(v.amount)}`,
                                             sub: detail.mgmt_acct,
                                           },
-                                          { top: r.top, right: r.right }
+                                          { top: r.top, right: r.right },
+                                          e.currentTarget
                                         );
                                       }}
                                     >

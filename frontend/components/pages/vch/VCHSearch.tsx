@@ -247,7 +247,7 @@ export default function VCHSearch() {
                         onClick={(e) => {
                           if (isSelected) {
                             const rect = e.currentTarget.getBoundingClientRect();
-                            triggerComment({ page: PAGE, label: r.voucher_no, value: `${fmtN(r.amount)}원` }, { top: rect.top, right: rect.right });
+                            triggerComment({ page: PAGE, label: r.voucher_no, value: `${fmtN(r.amount)}원` }, { top: rect.top, right: rect.right }, e.currentTarget);
                           } else { handleRowClick(r.voucher_no); }
                         }}
                         style={{ cursor: "pointer", background: isSelected ? selRowBg : undefined, borderLeft: isSelected ? `3px solid ${ORANGE}` : "3px solid transparent" }}>

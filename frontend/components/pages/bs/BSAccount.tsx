@@ -233,15 +233,15 @@ export default function BSAccount() {
                                 {disc}
                               </td>
                               <td style={cmtStyle(`${disc} 기말`)}
-                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기말`, value: `${fmtB(discEnd)}백만` }, { top: r.top, right: r.right }); }}>
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기말`, value: `${fmtB(discEnd)}백만` }, { top: r.top, right: r.right }, e.currentTarget); }}>
                                 {fmtB(discEnd)}
                               </td>
                               <td style={cmtStyle(`${disc} 기초`)}
-                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기초`, value: `${fmtB(discOpn)}백만` }, { top: r.top, right: r.right }); }}>
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기초`, value: `${fmtB(discOpn)}백만` }, { top: r.top, right: r.right }, e.currentTarget); }}>
                                 {fmtB(discOpn)}
                               </td>
                               <td style={{ ...cmtStyle(`${disc} 증감`) }} className={discChg >= 0 ? "up-t" : "dn-t"}
-                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 증감`, value: fmtChg(discChg) }, { top: r.top, right: r.right }); }}>
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 증감`, value: fmtChg(discChg) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                                 {fmtChg(discChg)}
                               </td>
                             </tr>
@@ -438,7 +438,7 @@ export default function BSAccount() {
                       </thead>
                       <tbody>
                         {(activeDetail?.vouchers ?? []).map((v, i) => (
-                          <tr key={i} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: v.counterparty || v.account_name, value: `${fmtB(v.amount)}백만`, sub: selected ?? undefined }, { top: r.top, right: r.right }); }}>
+                          <tr key={i} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: v.counterparty || v.account_name, value: `${fmtB(v.amount)}백만`, sub: selected ?? undefined }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
                             <td style={{ textAlign: "center", color: subTxt, fontSize: 11 }}>{v.voucher_no}</td>
                             <td style={{ textAlign: "left" }}>{v.account_name}</td>

@@ -271,7 +271,7 @@ export default function SC1() {
                     {extract.map((r, i) => {
                       const label = `${r.year_month} ${r.account_name}`;
                       return (
-                      <tr key={i} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: PAGE, label, value: `${fmtN(r.dr > 0 ? r.dr : r.cr)}원` }, { top: rect.top, right: rect.right }); }} style={{ cursor: "pointer" }}>
+                      <tr key={i} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: PAGE, label, value: `${fmtN(r.dr > 0 ? r.dr : r.cr)}원` }, { top: rect.top, right: rect.right }, e.currentTarget); }} style={{ cursor: "pointer" }}>
                         <td style={{ textAlign: "center", color: subTxt, fontSize: 11, whiteSpace: "nowrap" }}>
                           {r.year_month.slice(2, 4)}-{r.year_month.slice(5, 7)}
                         </td>
@@ -334,7 +334,7 @@ export default function SC1() {
                 </thead>
                 <tbody>
                   {lines.map((v, i) => (
-                    <tr key={i} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: PAGE, label: v.voucher_no, value: `${fmtN(v.amount)}원`, bodyTemplate: `페이지: ${PAGE}\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtN(v.amount)}원\n\n문의내용:\n` }, { top: rect.top, right: rect.right }); }} style={{ cursor: "pointer" }}>
+                    <tr key={i} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: PAGE, label: v.voucher_no, value: `${fmtN(v.amount)}원`, bodyTemplate: `페이지: ${PAGE}\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtN(v.amount)}원\n\n문의내용:\n` }, { top: rect.top, right: rect.right }, e.currentTarget); }} style={{ cursor: "pointer" }}>
                       <td style={{ textAlign: "center", whiteSpace: "nowrap", color: subTxt, fontSize: 11 }}>{v.date}</td>
                       <td style={{ textAlign: "center", color: subTxt, fontSize: 11, whiteSpace: "nowrap" }}>
                         {v.voucher_no}

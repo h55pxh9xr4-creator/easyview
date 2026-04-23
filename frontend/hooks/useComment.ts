@@ -12,6 +12,8 @@ export interface CommentTarget {
   existingCategory?: string;
   inquiryId?: number;
   existingReply?: string | null;
+  // 김삼일 AI에 첨부할 데이터 (Add to Chat)
+  chatAttachment?: { label: string; summary: string; source?: string };
 }
 
 export interface CommentRect {
@@ -19,26 +21,42 @@ export interface CommentRect {
   right: number;
 }
 
+const SELECTED_CLASS = "ev-comment-selected";
+
 interface CommentStore {
   target: CommentTarget | null;
   rect: CommentRect | null;
   panelOpen: boolean;
-  triggerComment: (t: CommentTarget, rect?: CommentRect) => void;
+  selectedElement: HTMLElement | null;
+  triggerComment: (t: CommentTarget, rect?: CommentRect, element?: HTMLElement | null) => void;
   openPanel: () => void;
   closeAll: () => void;
 }
 
-export const useComment = create<CommentStore>((set) => ({
+export const useComment = create<CommentStore>((set, get) => ({
   target: null,
   rect: null,
   panelOpen: false,
-  triggerComment: (target, rect = undefined) => set((state) => {
+  selectedElement: null,
+  triggerComment: (target, rect = undefined, element = null) => {
+    const state = get();
     // 같은 개체 다시 클릭 → 토글(닫기)
     if (state.target?.page === target.page && state.target?.label === target.label) {
-      return { target: null, rect: null, panelOpen: false };
+      if (state.selectedElement) state.selectedElement.classList.remove(SELECTED_CLASS);
+      set({ target: null, rect: null, panelOpen: false, selectedElement: null });
+      return;
     }
-    return { target, rect: rect ?? null, panelOpen: false };
-  }),
+    // 이전 element 하이라이트 해제 + 새 element 하이라이트
+    if (state.selectedElement && state.selectedElement !== element) {
+      state.selectedElement.classList.remove(SELECTED_CLASS);
+    }
+    if (element) element.classList.add(SELECTED_CLASS);
+    set({ target, rect: rect ?? null, panelOpen: false, selectedElement: element });
+  },
   openPanel: () => set({ panelOpen: true }),
-  closeAll: () => set({ target: null, rect: null, panelOpen: false }),
+  closeAll: () => {
+    const state = get();
+    if (state.selectedElement) state.selectedElement.classList.remove(SELECTED_CLASS);
+    set({ target: null, rect: null, panelOpen: false, selectedElement: null });
+  },
 }));

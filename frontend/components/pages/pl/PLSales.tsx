@@ -183,7 +183,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap, isDark = false
 // ── 전표 테이블 ────────────────────────────────────────────────
 function VoucherTable({ rows, title, onRowClick, isDark = false }: {
   rows: VoucherRow[]; title: string;
-  onRowClick?: (r: VoucherRow, rect: { top: number; right: number }) => void;
+  onRowClick?: (r: VoucherRow, rect: { top: number; right: number }, el: HTMLElement) => void;
   isDark?: boolean;
 }) {
   const [open, setOpen] = useState(true);
@@ -212,7 +212,7 @@ function VoucherTable({ rows, title, onRowClick, isDark = false }: {
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i} style={{ cursor: onRowClick ? "pointer" : undefined }} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); onRowClick?.(r, { top: rect.top, right: rect.right }); }}>
+                <tr key={i} style={{ cursor: onRowClick ? "pointer" : undefined }} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); onRowClick?.(r, { top: rect.top, right: rect.right }, e.currentTarget); }}>
                   <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{r.date}</td>
                   <td style={{ fontSize: 11, textAlign: "center" }}>{r.voucher_no}</td>
                   <td style={{ whiteSpace: "nowrap", textAlign: "left" }}>{r.counterparty}</td>
@@ -241,10 +241,15 @@ export default function PLSales() {
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const lift = (label: string): React.CSSProperties => {
-    const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "매출분석" && cmtTarget.label === label;
-    return on
-      ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
-      : { transition: "box-shadow 0.25s, transform 0.25s" };
+    const viewingInquiry = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "매출분석" && cmtTarget.label === label;
+    const isSelected = !!cmtTarget && !cmtTarget.inquiryId && cmtTarget.page === "매출분석" && cmtTarget.label === label;
+    if (viewingInquiry) {
+      return { boxShadow: "0 8px 24px rgba(232,119,34,0.14), 0 0 0 2px rgba(232,119,34,0.28), 0 0 0 10px rgba(232,119,34,0.04)", borderRadius: 10, transform: "translateY(-4px)", zIndex: 10, transition: "all 0.25s" };
+    }
+    if (isSelected) {
+      return { boxShadow: "0 4px 14px rgba(232,119,34,0.1), 0 0 0 1.5px rgba(232,119,34,0.22), 0 0 0 8px rgba(232,119,34,0.05)", borderRadius: 10, zIndex: 10, transition: "all 0.25s" };
+    }
+    return { transition: "all 0.25s" };
   };
 
   const [kpi, setKpi] = useState<KPIData | null>(null);
@@ -441,7 +446,7 @@ export default function PLSales() {
 
         {/* [1,1] KPI 카드 2개 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, gridColumn: "1", gridRow: "1", alignSelf: "stretch" }}>
-          <div style={{ cursor: "pointer", position: "relative", ...lift(kpiLabel) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` }, { top: r.top, right: r.right }); }}>
+          <div style={{ cursor: "pointer", position: "relative", ...lift(kpiLabel) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` }, { top: r.top, right: r.right }, e.currentTarget); }}>
             {ck.has(commentKey("매출분석", kpiLabel)) && <CommentDot inquiryId={ck.get(commentKey("매출분석", kpiLabel))!} />}
             <KpiCard
               label={kpiLabel} unit="백만"
@@ -452,7 +457,7 @@ export default function PLSales() {
               isDark={isDark}
             />
           </div>
-          <div style={{ cursor: "pointer", position: "relative", ...lift("거래처수") }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) }, { top: r.top, right: r.right }); }}>
+          <div style={{ cursor: "pointer", position: "relative", ...lift("거래처수") }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: "거래처수", value: String(cnt.current) }, { top: r.top, right: r.right }, e.currentTarget); }}>
             {ck.has(commentKey("매출분석", "거래처수")) && <CommentDot inquiryId={ck.get(commentKey("매출분석", "거래처수"))!} />}
             <KpiCard
               label="거래처수" unit="개"
@@ -733,7 +738,7 @@ export default function PLSales() {
       {/* ── 전표 내역 ─────────────────────────────────────────── */}
       {vouchers && (
         <>
-          <VoucherTable rows={vouchers.current} title="당기 전표 내역" isDark={isDark} onRowClick={(r, rect) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") }, rect)} />
+          <VoucherTable rows={vouchers.current} title="당기 전표 내역" isDark={isDark} onRowClick={(r, rect, el) => triggerComment({ page: "매출분석", label: r.counterparty, value: r.amount.toLocaleString("ko-KR") }, rect, el)} />
           <VoucherTable rows={vouchers.prior}   title="전기 전표 내역" isDark={isDark} />
         </>
       )}

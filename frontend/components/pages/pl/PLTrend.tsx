@@ -341,10 +341,15 @@ export default function PLTrend() {
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const lift = (label: string): React.CSSProperties => {
-    const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "PL 추이분석" && cmtTarget.label === label;
-    return on
-      ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
-      : { transition: "box-shadow 0.25s, transform 0.25s" };
+    const viewingInquiry = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "PL 추이분석" && cmtTarget.label === label;
+    const isSelected = !!cmtTarget && !cmtTarget.inquiryId && cmtTarget.page === "PL 추이분석" && cmtTarget.label === label;
+    if (viewingInquiry) {
+      return { boxShadow: "0 8px 24px rgba(232,119,34,0.14), 0 0 0 2px rgba(232,119,34,0.28), 0 0 0 10px rgba(232,119,34,0.04)", borderRadius: 10, transform: "translateY(-4px)", zIndex: 10, transition: "all 0.25s" };
+    }
+    if (isSelected) {
+      return { boxShadow: "0 4px 14px rgba(232,119,34,0.1), 0 0 0 1.5px rgba(232,119,34,0.22), 0 0 0 8px rgba(232,119,34,0.05)", borderRadius: 10, zIndex: 10, transition: "all 0.25s" };
+    }
+    return { transition: "all 0.25s" };
   };
   const [accounts,      setAccounts]      = useState<AccountTrend[] | null>(null);
   const [selected,      setSelected]      = useState<string | null>(null);
@@ -554,7 +559,8 @@ export default function PLTrend() {
                                   value: `일자: ${v.date} | 전표번호: ${v.voucher_no} | 거래처: ${v.counterparty ?? "-"} | 적요: ${v.description ?? "-"} | 금액: ${fmt(v.amount)}`,
                                   sub: detail.mgmt_acct,
                                 },
-                                { top: r.top, right: r.right }
+                                { top: r.top, right: r.right },
+                                e.currentTarget
                               );
                             }}
                           >

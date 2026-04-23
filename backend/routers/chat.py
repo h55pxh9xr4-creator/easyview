@@ -507,6 +507,7 @@ class ChatRequest(BaseModel):
     period_type: Optional[str] = "cumulative"
     page: Optional[str] = None  # 현재 보고 있는 페이지 (summary, pl-sum, bs-sum 등)
     history: Optional[list] = None  # 이전 대화 기록
+    attachments: Optional[list] = None  # 사용자가 리포트에서 첨부한 데이터
 
 
 class ChatResponse(BaseModel):
@@ -535,8 +536,21 @@ async def chat_message(req: ChatRequest, db: Session = Depends(get_db)):
             page_label = page_names.get(req.page, req.page)
             page_context = f"\n\n[현재 사용자가 보고 있는 페이지: {page_label}]\n[기준 연월: {req.base_ym}, 기간: {req.period_type}]"
 
+        # 첨부 데이터 (사용자가 'Add to Chat'으로 보낸 리포트 데이터)
+        attachment_context = ""
+        if req.attachments:
+            lines = ["\n\n[사용자가 첨부한 리포트 데이터 — 이 항목을 우선적으로 참고해서 답변하세요]"]
+            for i, att in enumerate(req.attachments, 1):
+                label = att.get("label", "") if isinstance(att, dict) else ""
+                summary = att.get("summary", "") if isinstance(att, dict) else ""
+                source = att.get("source", "") if isinstance(att, dict) else ""
+                lines.append(f"\n{i}. {label}" + (f" (출처: {source})" if source else ""))
+                if summary:
+                    lines.append(f"   데이터: {summary}")
+            attachment_context = "\n".join(lines)
+
         # 대화 기록 구성
-        messages = [{"role": "system", "content": SYSTEM_PROMPT + page_context}]
+        messages = [{"role": "system", "content": SYSTEM_PROMPT + page_context + attachment_context}]
 
         if req.history:
             for h in req.history[-10:]:

@@ -480,7 +480,7 @@ export default function BSTrend() {
                         <tbody>
                           {detail.counter_accounts.map((r, i) => (
                             <tr key={i} style={{ cursor:"pointer" }}
-                              onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:r.account_name, value:r.dr ? `${fmtAmt(r.dr)}만원` : r.cr ? `${fmtAmt(r.cr)}만원` : "-", sub:selDisclosure }, { top:rect.top, right:rect.right }); }}>
+                              onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:r.account_name, value:r.dr ? `${fmtAmt(r.dr)}만원` : r.cr ? `${fmtAmt(r.cr)}만원` : "-", sub:selDisclosure }, { top:rect.top, right:rect.right }, e.currentTarget); }}>
                               <td>{r.account_name}</td>
                               <td style={{ color: subTxt }}>{r.disclosure_acct}</td>
                               <td style={{ textAlign:"right", color: r.dr ? BLUE : zeroClr }}>{r.dr ? fmtAmt(r.dr) : "-"}</td>
@@ -520,7 +520,7 @@ export default function BSTrend() {
                     <tbody>
                       {detail.vouchers.map((v, i) => (
                         <tr key={i} style={{ cursor:"pointer" }}
-                          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:v.counterparty || v.account_name, value:`${fmtAmt(v.amount)}만원`, bodyTemplate:`페이지: BS 추이분석\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtAmt(v.amount)}만원\n\n문의내용:\n` }, { top:r.top, right:r.right }); }}>
+                          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:v.counterparty || v.account_name, value:`${fmtAmt(v.amount)}만원`, bodyTemplate:`페이지: BS 추이분석\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtAmt(v.amount)}만원\n\n문의내용:\n` }, { top:r.top, right:r.right }, e.currentTarget); }}>
                           <td style={{ whiteSpace:"nowrap" }}>{v.date}</td>
                           <td style={{ color: subTxt, fontSize:11 }}>{v.voucher_no}</td>
                           <td>{v.account_name}</td>

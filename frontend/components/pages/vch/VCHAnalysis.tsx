@@ -492,7 +492,8 @@ export default function VCHAnalysis() {
                             page: PAGE, label: v.voucher_no, value: `${fmtN(v.amount)}원`,
                             bodyTemplate: `페이지: ${PAGE}\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtN(v.amount)}원\n\n문의내용:\n`,
                           },
-                          { top: rect.top, right: rect.right }
+                          { top: rect.top, right: rect.right },
+                          e.currentTarget
                         );
                       }}
                       style={{ cursor: "pointer", ...(isHighlighted && cpColor ? { background: cpColor + "22" } : {}) }}>

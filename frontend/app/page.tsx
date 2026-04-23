@@ -16,6 +16,7 @@ import Settings, { applyTheme } from "@/components/pages/Settings";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
+import { useChatAttachment } from "@/hooks/useChatAttachment";
 import { adminAuthApi } from "@/lib/admin-api";
 
 const AdminAccounts  = dynamic(() => import("@/app/admin/accounts/page"),  { ssr: false });
@@ -67,6 +68,7 @@ function PageInner() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
   const loadCommentedItems = useCommentedItems(state => state.load);
+  const addToChat = useChatAttachment(s => s.add);
   const pendingInquiryId   = usePendingInquiry(state => state.pendingId);
 
   useEffect(() => {
@@ -228,15 +230,39 @@ function PageInner() {
           <div style={{ flex: 1, overflow: "hidden" }}><ResourceRoom /></div>
         )}
 
-        {topTab === "리포트" && commentTarget && !panelOpen && (
-          <button className="comment-badge" onClick={openPanel}
-            style={commentRect ? { position: "fixed", top: commentRect.top - 14, left: commentRect.right - 10, transform: "translateX(-100%)" } : undefined}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-            </svg>
-            Comment
-          </button>
-        )}
+        {topTab === "리포트" && commentTarget && !panelOpen && (() => {
+          // chatAttachment가 없으면 commentTarget 정보로 자동 생성
+          const attachment = commentTarget.chatAttachment ?? {
+            label: commentTarget.value
+              ? `${commentTarget.label} ${commentTarget.value}`
+              : commentTarget.label,
+            summary: [
+              `페이지: ${commentTarget.page}`,
+              `항목: ${commentTarget.label}`,
+              commentTarget.value ? `값: ${commentTarget.value}` : "",
+              commentTarget.sub ? commentTarget.sub : "",
+            ].filter(Boolean).join(" | "),
+            source: `${commentTarget.page} - ${commentTarget.label}`,
+          };
+          return (
+            <div className="feedback-toolbar"
+              style={commentRect ? { position: "fixed", top: commentRect.top - 42, left: commentRect.right - 10, transform: "translateX(-100%)" } : undefined}>
+              <button className="comment-badge" onClick={openPanel}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+                Comment
+              </button>
+              <button className="add-to-chat-badge" onClick={() => {
+                addToChat(attachment);
+                closeAll();
+              }}>
+                <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/samilkim_nobg2_Faceonly.png`} alt="김삼일" className="samilkim-face-only" />
+                <span className="a2c-tooltip">김삼일에게 질문하기</span>
+              </button>
+            </div>
+          );
+        })()}
         {topTab === "리포트" && panelOpen && (
           <CommentPanel key={`${commentTarget?.page ?? ""}-${commentTarget?.label ?? ""}-${commentTarget?.inquiryId ?? ""}`} />
         )}
