@@ -351,10 +351,10 @@ function PageInner() {
 
         {topTab === "리포트" && panelOpen && <CommentPanel key={`${commentTarget?.page ?? ""}-${commentTarget?.label ?? ""}-${commentTarget?.inquiryId ?? ""}`} />}
 
-        {topTab === "리포트" && <ChatBot />}
+        {topTab === "리포트" && <ChatBot activePage={activeSub} />}
       </div>
 
-      {topTab !== "서비스 소개" && topTab !== "리포트" && <ChatBot />}
+      {topTab !== "서비스 소개" && topTab !== "리포트" && <ChatBot activePage={topTab === "자료실" ? "resource" : topTab === "문의게시판" ? "inquiry" : "admin"} />}
     </>
   );
 }
