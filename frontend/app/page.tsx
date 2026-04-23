@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header, { type TopTab } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -18,13 +18,8 @@ import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 import { adminAuthApi } from "@/lib/admin-api";
 
-const AdminDashboard   = dynamic(() => import("@/app/admin/page"),             { ssr: false });
-const AdminAccounts    = dynamic(() => import("@/app/admin/accounts/page"),    { ssr: false });
-const AdminCompanies   = dynamic(() => import("@/app/admin/companies/page"),   { ssr: false });
-const AdminRequests    = dynamic(() => import("@/app/admin/requests/page"),    { ssr: false });
-const AdminLogs        = dynamic(() => import("@/app/admin/logs/page"),        { ssr: false });
-const AdminPermissions = dynamic(() => import("@/app/admin/permissions/page"), { ssr: false });
-const AdminRoles       = dynamic(() => import("@/app/admin/roles/page"),       { ssr: false });
+const AdminAccounts  = dynamic(() => import("@/app/admin/accounts/page"),  { ssr: false });
+const AdminCompanies = dynamic(() => import("@/app/admin/companies/page"), { ssr: false });
 
 const Summary      = dynamic(() => import("@/components/pages/Summary"),         { ssr: false });
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
@@ -46,116 +41,99 @@ const SC6          = dynamic(() => import("@/components/pages/sc/SC6"),         
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PAGE_MAP: Record<string, React.ComponentType<any>> = {
-  summary:        Summary,
-  settings:       Settings,
-  inquiry:        Inquiry,
-  "pl-sum":       PLSummary,
-  "pl-trend":     PLTrend,
-  "pl-acct":      PLAccount,
-  "pl-sale":      PLSales,
-  "pl-item":      PLItems,
-  "bs-sum":       BSSummary,
-  "bs-trend":     BSTrend,
-  "bs-acct":      BSAccount,
-  "vch-analysis": VCHAnalysis,
-  "vch-search":   VCHSearch,
-  "sc-dup":       SC1,
-  "sc-cash":      SC2,
-  "sc-wknd":      SC3,
-  "sc-big":       SC4,
-  "sc-sc5":       SC5,
-  "sc-sc6":       SC6,
+  summary: Summary, settings: Settings, inquiry: Inquiry,
+  "pl-sum": PLSummary, "pl-trend": PLTrend, "pl-acct": PLAccount, "pl-sale": PLSales, "pl-item": PLItems,
+  "bs-sum": BSSummary, "bs-trend": BSTrend, "bs-acct": BSAccount,
+  "vch-analysis": VCHAnalysis, "vch-search": VCHSearch,
+  "sc-dup": SC1, "sc-cash": SC2, "sc-wknd": SC3, "sc-big": SC4, "sc-sc5": SC5, "sc-sc6": SC6,
+};
+
+const PAGE_TO_TAB: Record<string, TopTab> = {
+  service: "서비스 소개", report: "리포트", resource: "자료실", inquiry: "문의게시판", admin: "관리자",
+};
+const TAB_TO_PAGE: Record<TopTab, string> = {
+  "서비스 소개": "service", "리포트": "report", "자료실": "resource", "문의게시판": "inquiry", "관리자": "admin",
 };
 
 function PageInner() {
-  const searchParams = useSearchParams();
-  const [authed, setAuthed] = useState<boolean | null>(null);
-  const [topTab, setTopTab] = useState<TopTab>("서비스 소개");
+  const router = useRouter();
+  const [authed, setAuthed]             = useState<boolean | null>(null);
+  const [topTab, setTopTab]             = useState<TopTab>("서비스 소개");
   const [adminSubPage, setAdminSubPage] = useState("accounts");
-  const [adminAuthed, setAdminAuthed] = useState(false);
-  const [adminLoginEmail, setAdminLoginEmail] = useState("");
-  const [adminLoginPassword, setAdminLoginPassword] = useState("");
-  const [adminLoginError, setAdminLoginError] = useState("");
-  const [adminLoginLoading, setAdminLoginLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
-  const [user, setUser] = useState("");
+  const [user, setUser]           = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
   const loadCommentedItems = useCommentedItems(state => state.load);
-  const pendingInquiryId = usePendingInquiry(state => state.pendingId);
-  const clearPendingId   = usePendingInquiry(state => state.setPendingId);
-
-  // mount 시점의 params를 ref에 고정 — effect 재실행으로 인한 루프 방지
-  const initParams = useRef({
-    tab:   searchParams.get("tab"),
-    sub:   searchParams.get("sub"),
-    label: searchParams.get("label"),
-  });
+  const pendingInquiryId   = usePendingInquiry(state => state.pendingId);
 
   useEffect(() => {
-    // 이미 토큰 있으면 바로 인증 처리, 없으면 백그라운드 자동 로그인 시도
-    if (localStorage.getItem("admin_token")) {
-      setAdminAuthed(true);
-    } else {
-      adminAuthApi.login("admin@pwc.com", "admin1234!")
-        .then((res) => {
-          localStorage.setItem("admin_token", res.access_token);
-          setAdminAuthed(true);
-        })
-        .catch(() => {
-          // 백엔드 미연결 시 메인 앱 로그인 상태로 대체
-          setAdminAuthed(true);
-        });
-    }
-  }, []);
-
-  useEffect(() => {
-    // 자동 로그인
     if (localStorage.getItem("ev_auto_auth") === "1") {
       sessionStorage.setItem("ev_auth", "1");
       sessionStorage.setItem("ev_user", localStorage.getItem("ev_auto_user") ?? "");
     }
-
-    const ok  = sessionStorage.getItem("ev_auth") === "1";
-    const { tab, sub, label } = initParams.current;
+    const ok = sessionStorage.getItem("ev_auth") === "1";
+    const hash = window.location.hash.slice(1);
+    const hp = new URLSearchParams(hash);
+    const page = hp.get("page");
+    const sub = hp.get("sub");
+    const label = hp.get("label");
     setUser(sessionStorage.getItem("ev_user") ?? "");
-
     if (ok) loadCommentedItems();
-
-    // 저장된 테마 복원
     const savedTheme = localStorage.getItem("ev_theme") as "light" | "dark" | null;
     if (savedTheme) applyTheme(savedTheme);
 
-    if (ok && tab && sub && label) {
-      setActiveTab(tab);
-      setActiveSub(sub);
-      setPageLabel(decodeURIComponent(label));
-      window.history.replaceState(null, "", window.location.pathname);
+    if (ok && page) {
+      const tab = PAGE_TO_TAB[page];
+      if (tab) setTopTab(tab);
+      if (sub) {
+        setActiveSub(sub);
+        setActiveTab(sub.split("-")[0]);
+        setPageLabel(label ? decodeURIComponent(label) : sub);
+      }
     }
-    if (ok) {
-      setAuthed(true);
-    } else {
-      setAuthed(false);
-    }
+    setAuthed(ok ? true : false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // URL 동기화 헬퍼 — location.hash 직접 할당 (pushState 우회)
+  const pushUrl = (tab: TopTab, sub?: string, label?: string) => {
+    const params = new URLSearchParams({ page: TAB_TO_PAGE[tab] });
+    if (sub)   params.set("sub", sub);
+    if (label) params.set("label", encodeURIComponent(label));
+    window.location.hash = params.toString();
+  };
+
+  const handleTopTabChange = (tab: TopTab) => {
+    closeAll();
+    setTopTab(tab);
+    pushUrl(tab);
+  };
 
   const handleNavigate = (tab: string, sub: string, label: string, keepComment = false) => {
     if (!keepComment) closeAll();
     setActiveTab(tab);
     setActiveSub(sub);
     setPageLabel(label);
+    const topTabFor: TopTab = tab === "inquiry" ? "문의게시판" : "리포트";
+    setTopTab(topTabFor);
+    pushUrl(topTabFor, sub, label);
   };
 
-  // CommentDot 클릭 시 → Inquiry 페이지로 이동
   useEffect(() => {
     if (pendingInquiryId !== null && authed) {
       handleNavigate("inquiry", "inquiry", "문의");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingInquiryId]);
+  // mount 시마다 admin token 갱신 — 만료 토큰으로 인한 빈 화면 방지
+  useEffect(() => {
+    adminAuthApi.login("admin@pwc.com", "admin1234!")
+      .then((res) => { localStorage.setItem("admin_token", res.access_token); })
+      .catch(() => {});
+  }, []);
 
   if (authed === null) return null;
 
@@ -166,6 +144,7 @@ function PageInner() {
     localStorage.removeItem("ev_auto_user");
     setAuthed(false);
     setUser("");
+    router.push("/");
   };
 
   if (!authed) {
@@ -174,21 +153,14 @@ function PageInner() {
       loadCommentedItems();
       setTopTab("서비스 소개");
       setAuthed(true);
+      pushUrl("서비스 소개");
       adminAuthApi.login("admin@pwc.com", "admin1234!")
-        .then((res) => {
-          localStorage.setItem("admin_token", res.access_token);
-          setAdminAuthed(true);
-        })
+        .then((res) => { localStorage.setItem("admin_token", res.access_token); })
         .catch(() => {});
     }} />;
   }
 
   const ActivePage = PAGE_MAP[activeSub] ?? Summary;
-
-  const handleTopTabChange = (tab: TopTab) => {
-    setTopTab(tab);
-    closeAll();
-  };
 
   return (
     <>
@@ -197,67 +169,21 @@ function PageInner() {
         activeTopTab={topTab}
         onTopTabChange={handleTopTabChange}
         onLogout={handleLogout}
-        onSettings={() => { handleNavigate("settings", "settings", "설정"); setTopTab("리포트"); }}
+        onSettings={() => { handleNavigate("settings", "settings", "설정"); }}
       />
-      {/* ── 서비스 소개 ── */}
+
       {topTab === "서비스 소개" && (
-        <ServiceIntro onNavigateToReport={() => { handleNavigate("summary", "summary", "Summary"); setTopTab("리포트"); }} />
+        <ServiceIntro onNavigateToReport={() => handleNavigate("summary", "summary", "Summary")} />
       )}
 
-      {/* ── 문의게시판 ── */}
       {topTab === "문의게시판" && (
         <div className="app-body">
-          <div className="main-content">
-            <Inquiry onNavigate={handleNavigate} />
-          </div>
+          <div className="main-content"><Inquiry onNavigate={handleNavigate} /></div>
+          <ChatBot activePage="inquiry" />
         </div>
       )}
 
-      {/* ── 관리자 ── */}
       {topTab === "관리자" && (() => {
-        if (!adminAuthed) {
-          const handleAdminLogin = async (e: React.FormEvent) => {
-            e.preventDefault();
-            setAdminLoginError(""); setAdminLoginLoading(true);
-            try {
-              const res = await adminAuthApi.login(adminLoginEmail, adminLoginPassword);
-              localStorage.setItem("admin_token", res.access_token);
-              localStorage.setItem("admin_user", res.user?.name ?? "");
-              setAdminAuthed(true);
-              setAdminLoginEmail(""); setAdminLoginPassword("");
-            } catch {
-              setAdminLoginError("이메일 또는 비밀번호가 올바르지 않습니다.");
-            } finally { setAdminLoginLoading(false); }
-          };
-          return (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#f3f4f6" }}>
-              <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.08)", padding: "48px 40px", width: 380 }}>
-                <div style={{ marginBottom: 28 }}>
-                  <p style={{ fontSize: 12, color: "#d04a02", fontWeight: 600, marginBottom: 6 }}>ADMIN</p>
-                  <h2 style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a" }}>관리자 로그인</h2>
-                </div>
-                <form onSubmit={handleAdminLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 5 }}>이메일</label>
-                    <input type="email" value={adminLoginEmail} onChange={e => setAdminLoginEmail(e.target.value)} placeholder="admin@pwc.com" required
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 5 }}>비밀번호</label>
-                    <input type="password" value={adminLoginPassword} onChange={e => setAdminLoginPassword(e.target.value)} placeholder="••••••••" required
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-                  </div>
-                  {adminLoginError && <p style={{ fontSize: 12, color: "#e53e3e", margin: 0 }}>{adminLoginError}</p>}
-                  <button type="submit" disabled={adminLoginLoading}
-                    style={{ marginTop: 8, padding: "12px", background: "#d04a02", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-                    {adminLoginLoading ? "로그인 중..." : "로그인"}
-                  </button>
-                </form>
-              </div>
-            </div>
-          );
-        }
-
         const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
         const ADMIN_NAV = [
           { key: "accounts",  label: "계정 관리",   icon: `${BASE}/icons/icon-building.svg` },
@@ -268,33 +194,22 @@ function PageInner() {
           <div className="app-body">
             <aside className="sidebar" style={{ position: "sticky", top: 52, height: "calc(100vh - 52px)", alignSelf: "flex-start" }}>
               <div className="sb-list">
-                {ADMIN_NAV.map(item => {
-                  const isActive = adminSubPage === item.key;
-                  return (
-                    <button key={item.key} onClick={() => setAdminSubPage(item.key)} className={`sb-item${isActive ? " active" : ""}`}>
-                      <span className="sb-icon">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.icon} alt="" width={22} height={22} style={{ display: "block", opacity: 1 }} />
-                      </span>
-                      <span className="sb-label">{item.label}</span>
-                    </button>
-                  );
-                })}
-                <div style={{ position: "absolute", bottom: 16, left: 0, right: 0, padding: "0 12px" }}>
-                  <button onClick={() => { localStorage.removeItem("admin_token"); localStorage.removeItem("admin_user"); setAdminAuthed(false); }}
-                    style={{ width: "100%", padding: "8px 12px", fontSize: 12, color: "#9ca3af", background: "none", border: "1px solid #e5e7eb", borderRadius: 8, cursor: "pointer" }}>
-                    로그아웃
+                {ADMIN_NAV.map(item => (
+                  <button key={item.key} onClick={() => setAdminSubPage(item.key)} className={`sb-item${adminSubPage === item.key ? " active" : ""}`}>
+                    <span className="sb-icon">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.icon} alt="" width={22} height={22} style={{ display: "block" }} />
+                    </span>
+                    <span className="sb-label">{item.label}</span>
                   </button>
-                </div>
+                ))}
               </div>
             </aside>
             <div className="main-content" style={{ background: "#f3f4f6", padding: 24 }}>
               <Suspense fallback={<div style={{ color: "#9ca3af" }}>로딩 중...</div>}>
                 {adminSubPage === "accounts"  && <AdminAccounts />}
                 {adminSubPage === "companies" && <AdminCompanies />}
-                {adminSubPage === "reports"   && (
-                  <div style={{ color: "#9ca3af", padding: 40, textAlign: "center" }}>준비 중입니다.</div>
-                )}
+                {adminSubPage === "reports"   && <div style={{ color: "#9ca3af", padding: 40, textAlign: "center" }}>준비 중입니다.</div>}
               </Suspense>
             </div>
           </div>
@@ -302,17 +217,9 @@ function PageInner() {
       })()}
 
       <div className="app-body" style={{ display: topTab !== "리포트" && topTab !== "자료실" ? "none" : undefined }}>
-
-        {/* ── 리포트 ── */}
         {topTab === "리포트" && (
           <>
-            <Sidebar
-              activeTab={activeTab}
-              activeSub={activeSub}
-              onNavigate={handleNavigate}
-              collapsed={sidebarCollapsed}
-              onToggleCollapse={() => setSidebarCollapsed(p => !p)}
-            />
+            <Sidebar activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(p => !p)} />
             <div className={`main-content${panelOpen ? " panel-open" : ""}`}>
               <div className="ptb">
                 <span className="ptb-sub">{pageLabel}</span>
@@ -323,38 +230,28 @@ function PageInner() {
           </>
         )}
 
-        {/* ── 자료실 ── */}
         {topTab === "자료실" && (
-          <div style={{ flex: 1, overflow: "hidden" }}>
-            <ResourceRoom />
-          </div>
+          <div style={{ flex: 1, overflow: "hidden" }}><ResourceRoom /></div>
         )}
 
-        {/* Comment 배지 — 리포트 탭에서만 */}
         {topTab === "리포트" && commentTarget && !panelOpen && (
-          <button
-            className="comment-badge"
-            onClick={openPanel}
-            style={commentRect ? {
-              position: "fixed",
-              top: commentRect.top - 14,
-              left: commentRect.right - 10,
-              transform: "translateX(-100%)",
-            } : undefined}
-          >
+          <button className="comment-badge" onClick={openPanel}
+            style={commentRect ? { position: "fixed", top: commentRect.top - 14, left: commentRect.right - 10, transform: "translateX(-100%)" } : undefined}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
             </svg>
             Comment
           </button>
         )}
-
-        {topTab === "리포트" && panelOpen && <CommentPanel key={`${commentTarget?.page ?? ""}-${commentTarget?.label ?? ""}-${commentTarget?.inquiryId ?? ""}`} />}
-
+        {topTab === "리포트" && panelOpen && (
+          <CommentPanel key={`${commentTarget?.page ?? ""}-${commentTarget?.label ?? ""}-${commentTarget?.inquiryId ?? ""}`} />
+        )}
         {topTab === "리포트" && <ChatBot activePage={activeSub} />}
       </div>
 
-      {topTab !== "서비스 소개" && topTab !== "리포트" && <ChatBot activePage={topTab === "자료실" ? "resource" : topTab === "문의게시판" ? "inquiry" : "admin"} />}
+      {topTab !== "서비스 소개" && topTab !== "리포트" && topTab !== "문의게시판" && topTab !== "관리자" && (
+        <ChatBot activePage="resource" />
+      )}
     </>
   );
 }
