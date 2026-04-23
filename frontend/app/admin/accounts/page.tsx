@@ -20,9 +20,9 @@ type View = "list" | "register";
 type RegisterTab = "individual" | "bulk";
 
 const ROLE_LABELS: Record<string, string> = {
-  viewer:          "User (viewer)",
-  uploader:        "User (uploader)",
-  viewer_uploader: "User (viewer & Uploader)",
+  viewer:          "User (Viewer)",
+  uploader:        "User (Uploader)",
+  viewer_uploader: "User (Viewer & Uploader)",
   admin:           "Manager",
 };
 const ROLE_COLORS: Record<string, string> = {
@@ -262,9 +262,9 @@ export default function AccountsPage() {
                     <div>
                       <label className="block text-sm font-medium text-pwc-gray-700 mb-1">역할</label>
                       <select value={regRole} onChange={(e) => setRegRole(e.target.value)} className="input-field">
-                        <option value="viewer">User (viewer)</option>
-                        <option value="uploader">User (uploader)</option>
-                        <option value="viewer_uploader">User (viewer &amp; Uploader)</option>
+                        <option value="viewer">User (Viewer)</option>
+                        <option value="uploader">User (Uploader)</option>
+                        <option value="viewer_uploader">User (Viewer &amp; Uploader)</option>
                         <option value="admin">Manager</option>
                       </select>
                     </div>
@@ -543,10 +543,16 @@ export default function AccountsPage() {
                     <tr key={row.menu} className="border-b border-pwc-gray-100">
                       <td className="py-3 pr-4 font-medium text-pwc-gray-800">{row.menu}</td>
                       {([row.uploader, row.viewer, row.viewer_uploader, row.admin] as boolean[]).map((ok, i) => (
-                        <td key={i} className="py-3 px-3 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${ok ? "bg-orange-50 text-pwc-orange" : "bg-gray-100 text-gray-400"}`}>
-                            {ok ? "접근 가능" : "접근 불가"}
+                        <td key={i} className="py-3 px-3">
+                          <div className="flex justify-center">
+                          <span className={`inline-flex items-center justify-center w-5 h-5 rounded border-2 ${ok ? "bg-pwc-orange border-pwc-orange" : "bg-white border-gray-300"}`}>
+                            {ok && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
                           </span>
+                          </div>
                         </td>
                       ))}
                     </tr>
@@ -557,7 +563,7 @@ export default function AccountsPage() {
               {/* 안내 박스 */}
               <div className="mt-5 bg-pwc-gray-50 rounded-lg px-4 py-3 border border-pwc-gray-200">
                 <p className="text-xs text-pwc-gray-600">
-                  <span className="font-semibold">페이지 설정 안내</span> — 관리자는 모든 메뉴에 접근 가능합니다.
+                  <span className="font-semibold">페이지 설정 안내</span> <br /> 관리자는 모든 메뉴에 접근 가능합니다.<br />
                   고객사 역할은 계정 등록 시 지정하며, 이후 계정 수정에서 변경할 수 있습니다.
                 </p>
               </div>

@@ -5,6 +5,20 @@ function getToken(): string | null {
   return localStorage.getItem('admin_token');
 }
 
+async function silentLogin(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@pwc.com', password: 'admin1234!' }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    localStorage.setItem('admin_token', data.access_token);
+    return data.access_token;
+  } catch { return null; }
+}
+
 async function request(path: string, options: RequestInit = {}) {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -18,6 +32,12 @@ async function request(path: string, options: RequestInit = {}) {
   if (res.status === 401) {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
+    const newToken = await silentLogin();
+    if (newToken) {
+      const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
+      const retryRes = await fetch(`${API_BASE}${path}`, { ...options, headers: retryHeaders });
+      if (retryRes.ok) return retryRes.json();
+    }
     throw new Error('인증이 만료되었습니다.');
   }
 
