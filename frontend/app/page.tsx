@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import Header, { type TopTab } from "@/components/layout/Header";
+import Header, { type TopTab, ROLE_TABS } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import ResourceRoom from "@/components/layout/ResourceRoom";
 import ServiceIntro from "@/components/pages/ServiceIntro";
@@ -64,6 +64,7 @@ function PageInner() {
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
   const [user, setUser]           = useState("");
+  const [role, setRole]           = useState("admin");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
   const loadCommentedItems = useCommentedItems(state => state.load);
@@ -81,6 +82,7 @@ function PageInner() {
     const sub = hp.get("sub");
     const label = hp.get("label");
     setUser(sessionStorage.getItem("ev_user") ?? "");
+    setRole(sessionStorage.getItem("ev_role") ?? "admin");
     if (ok) loadCommentedItems();
     const savedTheme = localStorage.getItem("ev_theme") as "light" | "dark" | null;
     if (savedTheme) applyTheme(savedTheme);
@@ -150,6 +152,7 @@ function PageInner() {
   if (!authed) {
     return <LoginPage onLogin={() => {
       setUser(sessionStorage.getItem("ev_user") ?? "");
+      setRole(sessionStorage.getItem("ev_role") ?? "admin");
       loadCommentedItems();
       setTopTab("서비스 소개");
       setAuthed(true);
@@ -164,12 +167,13 @@ function PageInner() {
 
   return (
     <>
-      <Header
+<Header
         user={user}
         activeTopTab={topTab}
         onTopTabChange={handleTopTabChange}
         onLogout={handleLogout}
         onSettings={() => { handleNavigate("settings", "settings", "설정"); }}
+        allowedTabs={ROLE_TABS[role] ?? ROLE_TABS["admin"]}
       />
 
       {topTab === "서비스 소개" && (
