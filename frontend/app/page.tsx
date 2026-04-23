@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header, { type TopTab } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -56,8 +56,7 @@ const TAB_TO_PAGE: Record<TopTab, string> = {
 };
 
 function PageInner() {
-  const searchParams = useSearchParams();
-  const router       = useRouter();
+  const router = useRouter();
   const [authed, setAuthed]             = useState<boolean | null>(null);
   const [topTab, setTopTab]             = useState<TopTab>("서비스 소개");
   const [adminSubPage, setAdminSubPage] = useState("accounts");
@@ -75,12 +74,6 @@ function PageInner() {
   const loadCommentedItems = useCommentedItems(state => state.load);
   const pendingInquiryId   = usePendingInquiry(state => state.pendingId);
 
-  const initParams = useRef({
-    page:  searchParams.get("page"),
-    sub:   searchParams.get("sub"),
-    label: searchParams.get("label"),
-  });
-
   useEffect(() => {
     if (localStorage.getItem("admin_token")) setAdminAuthed(true);
   }, []);
@@ -91,7 +84,11 @@ function PageInner() {
       sessionStorage.setItem("ev_user", localStorage.getItem("ev_auto_user") ?? "");
     }
     const ok = sessionStorage.getItem("ev_auth") === "1";
-    const { page, sub, label } = initParams.current;
+    const hash = window.location.hash.slice(1);
+    const hp = new URLSearchParams(hash);
+    const page = hp.get("page");
+    const sub = hp.get("sub");
+    const label = hp.get("label");
     setUser(sessionStorage.getItem("ev_user") ?? "");
     if (ok) loadCommentedItems();
     const savedTheme = localStorage.getItem("ev_theme") as "light" | "dark" | null;
@@ -110,12 +107,12 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // URL 동기화 헬퍼 — window.history 직접 사용 (static export 호환)
+  // URL 동기화 헬퍼 — hash 사용 (Next.js 라우터 간섭 없음)
   const pushUrl = (tab: TopTab, sub?: string, label?: string) => {
     const params = new URLSearchParams({ page: TAB_TO_PAGE[tab] });
     if (sub)   params.set("sub", sub);
     if (label) params.set("label", encodeURIComponent(label));
-    window.history.pushState({}, "", `?${params.toString()}`);
+    window.history.pushState({}, "", `${window.location.pathname}#${params.toString()}`);
   };
 
   const handleTopTabChange = (tab: TopTab) => {
