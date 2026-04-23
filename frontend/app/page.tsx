@@ -66,6 +66,7 @@ function PageInner() {
   const [user, setUser]           = useState("");
   const [role, setRole]           = useState("admin");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
   const loadCommentedItems = useCommentedItems(state => state.load);
   const pendingInquiryId   = usePendingInquiry(state => state.pendingId);
@@ -172,7 +173,7 @@ function PageInner() {
         activeTopTab={topTab}
         onTopTabChange={handleTopTabChange}
         onLogout={handleLogout}
-        onSettings={() => { handleNavigate("settings", "settings", "설정"); }}
+        onSettings={() => setShowSettings(true)}
         allowedTabs={ROLE_TABS[role] ?? ROLE_TABS["admin"]}
       />
 
@@ -255,6 +256,17 @@ function PageInner() {
 
       {topTab !== "서비스 소개" && topTab !== "리포트" && topTab !== "문의게시판" && topTab !== "관리자" && (
         <ChatBot activePage="resource" />
+      )}
+      {showSettings && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "var(--bg, #f8f9fb)", overflowY: "auto" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 40px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: "var(--txt, #1a1a2e)" }}>설정</span>
+              <button onClick={() => setShowSettings(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#888", lineHeight: 1 }}>✕</button>
+            </div>
+            <Settings />
+          </div>
+        </div>
       )}
     </>
   );
