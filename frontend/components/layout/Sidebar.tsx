@@ -26,10 +26,12 @@ interface NavGroup {
   dividerAfter?: boolean;
 }
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const NAV: NavGroup[] = [
-  { tab: "summary", label: "Summary", directSub: "summary", icon: "/easyview/icons/icon-dashboard.svg" },
+  { tab: "summary", label: "Summary", directSub: "summary", icon: `${BASE}/icons/icon-dashboard.svg` },
   {
-    tab: "pl", label: "손익분석", icon: "/easyview/icons/icon-pl.svg",
+    tab: "pl", label: "손익분석", icon: `${BASE}/icons/icon-pl.svg`,
     sub: [
       { id: "pl-sum",   label: "PL 요약" },
       { id: "pl-trend", label: "PL 추이분석" },
@@ -39,7 +41,7 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    tab: "bs", label: "재무상태분석", icon: "/easyview/icons/icon-balance.svg",
+    tab: "bs", label: "재무상태분석", icon: `${BASE}/icons/icon-balance.svg`,
     sub: [
       { id: "bs-sum",   label: "BS 요약" },
       { id: "bs-trend", label: "BS 추이분석" },
@@ -47,14 +49,14 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    tab: "vch", label: "전표분석", icon: "/easyview/icons/icon-journal.svg",
+    tab: "vch", label: "전표분석", icon: `${BASE}/icons/icon-journal.svg`,
     sub: [
       { id: "vch-analysis", label: "전표분석내역" },
       { id: "vch-search",   label: "전표검색" },
     ],
   },
   {
-    tab: "sc", label: "시나리오분석", icon: "/easyview/icons/icon-scenario.svg",
+    tab: "sc", label: "시나리오분석", icon: `${BASE}/icons/icon-scenario.svg`,
     dividerAfter: true,
     sub: [
       { id: "sc-dup",  label: "동일금액 중복 전표" },
@@ -65,7 +67,7 @@ const NAV: NavGroup[] = [
       { id: "sc-sc6",  label: "Seldom Used Customer" },
     ],
   },
-  { tab: "inquiry", label: "문의게시판", directSub: "inquiry", icon: "/easyview/icons/icon-email.svg" },
+  { tab: "inquiry", label: "문의게시판", directSub: "inquiry", icon: `${BASE}/icons/icon-email.svg` },
 ];
 
 interface Props {

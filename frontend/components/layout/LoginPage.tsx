@@ -8,9 +8,42 @@ interface Props {
   onLogin: () => void;
 }
 
+// TODO: DB 연결 후 아래 하드코딩 제거 → authenticateUser() 내부를 API 호출로 교체
+// POST /api/users/login { username, password } → { role, company }
 const CREDENTIALS: Record<string, string> = {
   admin: "easyview123",
+  test_v: "test1234",
+  test_u: "test1234",
+  test_vu: "test1234",
 };
+
+const USER_ROLES: Record<string, string> = {
+  admin: "admin",
+  test_v: "viewer",
+  test_u: "uploader",
+  test_vu: "viewer_uploader",
+};
+
+// manager(admin) = "PwC" → 자료실 전체 법인 접근
+// 일반 user = 자기 회사명 → 해당 회사 법인만 접근
+const USER_COMPANIES: Record<string, string> = {
+  admin: "PwC",
+  test_v: "test",
+  test_u: "test",
+  test_vu: "test",
+};
+
+// DB 연결 후 이 함수 내부를 API 호출로 교체하면 됨
+async function authenticateUser(id: string, pw: string): Promise<{ role: string; company: string } | null> {
+  // Future: const res = await fetch("/api/users/login", { method:"POST", body: JSON.stringify({username:id, password:pw}) });
+  //         if (!res.ok) return null;
+  //         const { role, company } = await res.json();
+  //         return { role, company };
+  if (CREDENTIALS[id] && CREDENTIALS[id] === pw) {
+    return { role: USER_ROLES[id] ?? "viewer", company: USER_COMPANIES[id] ?? "PwC" };
+  }
+  return null;
+}
 
 export default function LoginPage({ onLogin }: Props) {
   const [id, setId] = useState("");
@@ -53,27 +86,28 @@ export default function LoginPage({ onLogin }: Props) {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setTimeout(() => {
-      if (CREDENTIALS[id] && CREDENTIALS[id] === pw) {
-        sessionStorage.setItem("ev_auth", "1");
-        sessionStorage.setItem("ev_user", id);
-        if (autoLogin) {
-          localStorage.setItem("ev_auto_auth", "1");
-          localStorage.setItem("ev_auto_user", id);
-        } else {
-          localStorage.removeItem("ev_auto_auth");
-          localStorage.removeItem("ev_auto_user");
-        }
-        onLogin();
+    const result = await authenticateUser(id, pw);
+    if (result) {
+      sessionStorage.setItem("ev_auth", "1");
+      sessionStorage.setItem("ev_user", id);
+      sessionStorage.setItem("ev_role", result.role);
+      sessionStorage.setItem("ev_company", result.company);
+      if (autoLogin) {
+        localStorage.setItem("ev_auto_auth", "1");
+        localStorage.setItem("ev_auto_user", id);
       } else {
-        setError("아이디 또는 비밀번호가 올바르지 않습니다.");
-        setLoading(false);
+        localStorage.removeItem("ev_auto_auth");
+        localStorage.removeItem("ev_auto_user");
       }
-    }, 400);
+      onLogin();
+    } else {
+      setError("아이디 또는 비밀번호가 올바르지 않습니다.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -115,7 +149,7 @@ export default function LoginPage({ onLogin }: Props) {
           {/* 브랜드 헤더 */}
           <div style={{ background: "rgba(44,44,44,0.92)", padding: "20px 24px 16px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
-              <Image src="/easyview/logo.png" alt="logo" width={28} height={28} style={{ height: "28px", width: "auto" }} />
+              <Image src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" width={28} height={28} style={{ height: "28px", width: "auto" }} />
               <span style={{ fontSize: "22px", fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
                 Easy <span style={{ color: "#E87722" }}>View</span>
               </span>

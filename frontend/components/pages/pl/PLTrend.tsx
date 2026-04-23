@@ -52,7 +52,7 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
   const option = {
     animation: false,
     backgroundColor: "transparent",
-    grid: { top: expanded ? 16 : 4, bottom: expanded ? 44 : 4, left: expanded ? 40 : 4, right: expanded ? 16 : 4 },
+    grid: { top: expanded ? 16 : 4, bottom: expanded ? 8 : 4, left: expanded ? 40 : 4, right: expanded ? 16 : 4 },
     xAxis: {
       type: "category" as const,
       data: months,
@@ -132,13 +132,7 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
         return `<span style="font-size:10px;color:${axisColor}">${mo}</span><br/>${lines.join("<br/>")}`;
       },
     },
-    legend: expanded ? {
-      show: true,
-      bottom: 0,
-      left: "center",
-      textStyle: { color: isDark ? "#9198A8" : "#888", fontSize: 10 },
-      itemWidth: 16, itemHeight: 8,
-    } : { show: false },
+    legend: { show: false },
   };
   return (
     <ReactECharts
@@ -189,6 +183,7 @@ function AccountCard({
   return (
     <div
       onClick={onClick}
+      className="acct-card"
       style={{
         background: bg,
         borderRadius: 10,
@@ -198,7 +193,7 @@ function AccountCard({
         boxShadow: isSelected
           ? "0 4px 16px rgba(232,119,34,.18)"
           : isDark ? "0 1px 4px rgba(0,0,0,.25)" : "0 1px 4px rgba(0,0,0,.05)",
-        transition: "all .15s",
+        transition: "transform .15s, box-shadow .15s",
       }}
     >
       {showDisc && (
@@ -213,7 +208,7 @@ function AccountCard({
         <span style={{ fontSize: 18, fontWeight: 800, color: txtPri, letterSpacing: "-0.5px" }}>
           {fmtM(total)}
         </span>
-        <span style={{ fontSize: 10, color: txtDim }}>백만</span>
+        <span style={{ fontSize: 12, color: txtSec }}>백만</span>
         <span style={{ fontSize: 10, color: chg >= 0 ? "#EF4444" : BLUE, marginLeft: 2 }}>
           {chg >= 0 ? "▲" : "▼"}{fmtM(Math.abs(chg))}
         </span>
@@ -251,7 +246,7 @@ function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx, i
   const btnTxt = isDark ? "#9198A8" : "#aaa";
 
   return (
-    <div className="card">
+    <div className="card" style={{ paddingBottom: 6 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 11, color: txtDim, marginBottom: 2 }}>{acct.disclosure_acct}</div>
@@ -277,14 +272,6 @@ function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx, i
         selectedMonthIdx={selectedMonthIdx}
         isDark={isDark}
       />
-      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: isDark ? "#9198A8" : "#aaa" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ display: "inline-block", width: 14, height: 2, background: ORANGE }} />당기
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ display: "inline-block", width: 14, height: 2, background: isDark ? "#5A6070" : "#ccc", borderTop: `1px dashed ${isDark ? "#5A6070" : "#ccc"}` }} />전기
-        </span>
-      </div>
     </div>
   );
 }
@@ -298,6 +285,12 @@ function CounterpartyBar({ data, isDark = false }: { data: Detail["counterparty"
   const labelClr  = isDark ? "#9198A8" : "#555";
   const valClr    = isDark ? "#7A8295" : "#777";
   const legendClr = isDark ? "#9198A8" : "#888";
+
+  if (data.length === 0) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 80, fontSize: 13, color: isDark ? "#5A6070" : "#ccc" }}>
+      거래처 없음
+    </div>
+  );
 
   return (
     <div>
@@ -357,7 +350,9 @@ export default function PLTrend() {
   const [loadingD,      setLoadingD]      = useState(false);
   const [discFilter,    setDiscFilter]    = useState("전체");
   const [chartMonthIdx, setChartMonthIdx] = useState<number | null>(null);
+  const [expandOrigin,  setExpandOrigin]  = useState("50% 100%");
   const detailRef = useRef<HTMLDivElement>(null);
+  const gridRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setAccounts(null); setSelected(null); setDetail(null); setChartMonthIdx(null);
@@ -436,7 +431,7 @@ export default function PLTrend() {
 
       {/* ── 확대 차트 (선택 시) ── */}
       {selectedAcct && (
-        <div style={{ marginBottom: 14 }}>
+        <div key={selectedAcct?.mgmt_acct} className="card-expand" style={{ marginBottom: 2, transformOrigin: expandOrigin }}>
           <ExpandedCard
             acct={selectedAcct}
             months={allMonths}
@@ -449,7 +444,7 @@ export default function PLTrend() {
       )}
 
       {/* ── 계정 카드 그리드 (선택 시 숨김) ── */}
-      <div style={{
+      <div ref={gridRef} style={{
         display: selected ? "none" : "grid",
         gridTemplateColumns: "repeat(4, 1fr)",
         gap: 10,
@@ -465,7 +460,13 @@ export default function PLTrend() {
               showDisc={discFilter === "전체"}
               isSelected={selected === a.mgmt_acct}
               isDark={isDark}
-              onClick={() => {
+              onClick={(e) => {
+                const cardRect = e.currentTarget.getBoundingClientRect();
+                const gridRect = gridRef.current?.getBoundingClientRect();
+                if (gridRect) {
+                  const xPct = ((cardRect.left + cardRect.width / 2 - gridRect.left) / gridRect.width) * 100;
+                  setExpandOrigin(`${xPct.toFixed(1)}% 100%`);
+                }
                 setSelected(prev => prev === a.mgmt_acct ? null : a.mgmt_acct);
               }}
             />
@@ -481,7 +482,7 @@ export default function PLTrend() {
           maxHeight: selected ? 2000 : 0,
           opacity: selected ? 1 : 0,
           transition: "max-height 0.45s ease, opacity 0.3s ease",
-          marginTop: selected ? 14 : 0,
+          marginTop: selected ? 2 : 0,
         }}
       >
         {loadingD && (

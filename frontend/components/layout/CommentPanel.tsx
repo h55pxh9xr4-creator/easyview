@@ -25,7 +25,7 @@ export default function CommentPanel() {
   };
 
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
-  const isAdmin = currentUser === "admin";
+  const isAdmin = typeof window !== "undefined" ? (sessionStorage.getItem("ev_role") === "admin") : false;
 
   // ── 원문 보기 모드 (inquiryId 있을 때) ─────────────────────
   const isViewMode = !!target?.inquiryId;

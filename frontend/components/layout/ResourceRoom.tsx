@@ -28,6 +28,10 @@ const FALLBACK_REQUESTS: Request[] = [
   { id: 8,  reqCode: "REQ-008", title: "차입금 및 사채 명세서",          entity: "SeAH Global India (SGIN)",    assignee: "Sathis Gopinath", requester: "HyungGeun Jung",status: "Draft",     priority: "보통", dueDate: "2026-04-05", createdDate: "2026-02-12", description: "2025.12.31 기준 단기/장기 차입금, 사채 명세 및 이자비용 내역 제출" },
   { id: 9,  reqCode: "REQ-009", title: "특수관계자 거래 명세",           entity: "SeAH Besteel Holdings",       assignee: "SeungCheol Kim",  requester: "Chaehyeon Song",status: "Recall",    priority: "높음", dueDate: "2026-03-01", createdDate: "2026-01-28", description: "2025년 특수관계자 거래 명세(매출/매입/대여/차입 등) — 양식 불일치로 반려, 재제출 요망" },
   { id: 10, reqCode: "REQ-010", title: "계약서 사본 (주요 거래처)",      entity: "SeAH Global Vina (SGV)",      assignee: "Chanwoo Lee",     requester: "Sumin Jung",    status: "Submitted", priority: "낮음", dueDate: "2026-03-30", createdDate: "2026-02-15", description: "매출액 상위 5개 거래처 계약서 사본 및 거래조건 요약표 제출" },
+  { id: 11, reqCode: "REQ-011", title: "재무제표 원본 제출",            entity: "test Korea",    assignee: "test_v",  requester: "admin", status: "Requested", priority: "높음", dueDate: "2026-04-30", createdDate: "2026-03-01", description: "2025 회계연도 감사를 위한 test Korea 법인 재무제표 원본 제출 요청" },
+  { id: 12, reqCode: "REQ-012", title: "고정자산 목록 제출",               entity: "test Korea",    assignee: "test_u",  requester: "admin", status: "Draft",     priority: "보통", dueDate: "2026-05-10", createdDate: "2026-03-05", description: "2025년 말 기준 고정자산 목록 및 감가상각 일정표 제출 요청" },
+  { id: 13, reqCode: "REQ-013", title: "매출채권 연령분석표",               entity: "test Global",   assignee: "test_vu", requester: "admin", status: "Submitted", priority: "보통", dueDate: "2026-05-15", createdDate: "2026-03-10", description: "2025.12.31 기준 매출채권 연령분석표 제출 요청" },
+  { id: 14, reqCode: "REQ-014", title: "법인세 신고 자료",                  entity: "test Global",   assignee: "test_v",  requester: "admin", status: "Requested", priority: "낮음", dueDate: "2026-05-20", createdDate: "2026-03-15", description: "2025 회계연도 법인세 신고서 및 세무조정 계산서 제출 요청" },
 ];
 
 /* ── theme ── */
@@ -83,7 +87,7 @@ const CLIENT_USERS = [
   { name: "obuchi Yositaka",  email: "y_obuchi@seah.co.kr",          org: "SeAH Global Japan",               country: "Japan",              status: "Active",   role: "Client - View Assignments Only",                          last: "09 Apr 2026" },
 ];
 
-const ENTITIES = ["SeAH Global Vina (SGV)", "SeAH Global Inc (SGI)", "SeAH CTC", "SeAH Global Japan (SGJ)", "SeAH Global Thailand (SGT)", "PT SeAH (인니)", "SeAH Global India (SGIN)", "SeAH Besteel Holdings"];
+const ENTITIES = ["SeAH Global Vina (SGV)", "SeAH Global Inc (SGI)", "SeAH CTC", "SeAH Global Japan (SGJ)", "SeAH Global Thailand (SGT)", "PT SeAH (인니)", "SeAH Global India (SGIN)", "SeAH Besteel Holdings", "test Korea", "test Global"];
 
 const PARENT_COMPANIES = ["세아베스틸지주", "세아홀딩스"];
 
@@ -101,6 +105,8 @@ const ENTITY_CLIENTS: Record<string, string[]> = {
   "PT SeAH (인니)":              ["Erli na"],
   "SeAH Global India (SGIN)":   ["Sathis Gopinath"],
   "SeAH Besteel Holdings":      ["Inseon Choi", "SeungCheol Kim", "younha nam", "Jaesin Ha", "Ki-hyeon Lee"],
+  "test Korea":                 ["test_v", "test_u", "test_vu"],
+  "test Global":                ["test_v", "test_u", "test_vu"],
 };
 
 const STATUS_TRANSITIONS: Record<ReqStatus, ReqStatus[]> = {
@@ -419,19 +425,28 @@ export default function ResourceRoom() {
     try {
       setReqLoading(true);
       const data = await fetchRequests();
+      // API 응답에 없는 법인의 FALLBACK 요청은 항상 병합 (test 법인 등 DB 미등록 법인 지원)
+      const mergeWithFallback = (apiReqs: Request[]): Request[] => {
+        const apiEntities = new Set(apiReqs.map(r => r.entity));
+        const fallbackOnly = FALLBACK_REQUESTS.filter(r => !apiEntities.has(r.entity));
+        return [...apiReqs, ...fallbackOnly];
+      };
       if (data.length > 0) {
-        const reqs = data as Request[];
+        const reqs = mergeWithFallback(data as Request[]);
         setRequests(reqs);
         saveCache(reqs);
       } else {
         const cached = loadCache();
-        const reqs = cached ?? FALLBACK_REQUESTS;
+        const reqs = cached ? mergeWithFallback(cached) : FALLBACK_REQUESTS;
         setRequests(reqs);
         if (!cached) saveCache(reqs);
       }
     } catch {
       const cached = loadCache();
-      setRequests(cached ?? FALLBACK_REQUESTS);
+      setRequests(cached ? (() => {
+        const apiEntities = new Set(cached.map((r: Request) => r.entity));
+        return [...cached, ...FALLBACK_REQUESTS.filter(r => !apiEntities.has(r.entity))];
+      })() : FALLBACK_REQUESTS);
     } finally { setReqLoading(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -633,17 +648,24 @@ export default function ResourceRoom() {
 
   /* ── Requests ── */
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
+  const userCompany = typeof window !== "undefined" ? (sessionStorage.getItem("ev_company") ?? "PwC") : "PwC";
+  const isAdmin     = typeof window !== "undefined" ? (sessionStorage.getItem("ev_role") === "admin") : true;
+  // PwC 또는 admin → 전체 법인. 그 외 → 소속 회사 이름이 포함된 법인만
+  const allowedEntities = (isAdmin || userCompany === "PwC" || userCompany === "전체")
+    ? ENTITIES
+    : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
   const filteredReqs = requests.filter(r => {
-    if (myOnly && currentUser && r.requester !== currentUser) return false;
+    if (myOnly && currentUser && r.assignee !== currentUser) return false;
     if (reqFilter !== "전체" && r.status !== reqFilter) return false;
     if (entityFilter !== "전체" && r.entity !== entityFilter) return false;
+    if (!allowedEntities.includes(r.entity)) return false;
     return true;
   });
 
   /* 법인별 그룹핑 */
   const grouped: Record<string, Request[]> = {};
   filteredReqs.forEach(r => { (grouped[r.entity] ??= []).push(r); });
-  const groupedEntities = ENTITIES.filter(e => grouped[e]);
+  const groupedEntities = allowedEntities.filter(e => grouped[e]);
 
   const toggleCollapse = (entity: string) =>
     setCollapsed(p => ({ ...p, [entity]: !p[entity] }));
@@ -816,7 +838,7 @@ export default function ResourceRoom() {
                 <div style={divider}>
                   <div style={fLabel}>법인</div>
                   <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={fSelect}>
-                    {ENTITIES.map(en => <option key={en}>{en}</option>)}
+                    {allowedEntities.map(en => <option key={en}>{en}</option>)}
                   </select>
                 </div>
                 <div style={divider}>
@@ -1349,21 +1371,23 @@ export default function ResourceRoom() {
             </svg>
             법인별
           </button>
-          <button onClick={() => setShowCreate(true)}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              padding: "7px 14px", borderRadius: 6, border: "none",
-              background: C.primary, color: "#fff",
-              fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-            }}>
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> 자료 요청
-          </button>
+          {isAdmin && (
+            <button onClick={() => setShowCreate(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "7px 14px", borderRadius: 6, border: "none",
+                background: C.primary, color: "#fff",
+                fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+              }}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> 자료 요청
+            </button>
+          )}
         </div>
       </div>
 
       {/* Header – row 2: 모회사 + 법인 + 토글 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        {/* 모회사 드롭다운 (관리자용) */}
+        {isAdmin && (<>
         <select
           value={parentFilter}
           onChange={e => setParentFilter(e.target.value)}
@@ -1378,6 +1402,7 @@ export default function ResourceRoom() {
           <option value="전체">전체 모회사</option>
           {PARENT_COMPANIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
+        </>)}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <select
@@ -1392,7 +1417,7 @@ export default function ResourceRoom() {
             }}
           >
             <option value="전체">전체 법인</option>
-            {ENTITIES.map(e => <option key={e} value={e}>{e}</option>)}
+            {allowedEntities.map(e => <option key={e} value={e}>{e}</option>)}
           </select>
 
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>

@@ -288,7 +288,7 @@ export default function SC3() {
                       const isSel = selVch === r.voucher_no;
                       return (
                         <tr key={i} onClick={(e) => { if (isSel) { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: PAGE, label: r.voucher_no, value: `${fmtN(r.total_amount)}원` }, { top: rect.top, right: rect.right }, e.currentTarget); } else { handleSelectVch(r.voucher_no); } }}
-                          style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: isSel ? `3px solid ${ORANGE}` : "3px solid transparent" }}>
+                          style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: "3px solid transparent" }}>
                           <td style={{ textAlign: "center", color: subTxt, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {r.voucher_no}
                             {ck.has(commentKey(PAGE, r.voucher_no)) && <CommentDot inline inquiryId={ck.get(commentKey(PAGE, r.voucher_no))!} />}

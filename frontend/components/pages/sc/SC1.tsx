@@ -217,7 +217,7 @@ export default function SC1() {
                                        selected?.amount === r.amount;
                     return (
                       <tr key={i} onClick={() => handleSelect(r)}
-                        style={{ cursor: "pointer", background: isSelected ? selRowBg : undefined, borderLeft: isSelected ? `3px solid ${ORANGE}` : "3px solid transparent" }}>
+                        style={{ cursor: "pointer", background: isSelected ? selRowBg : undefined, borderLeft: "3px solid transparent" }}>
                         <td style={{ textAlign: "center", color: subTxt, fontSize: 11, whiteSpace: "nowrap" }}>
                           {r.year_month.slice(2, 4)}-{r.year_month.slice(5, 7)}
                         </td>

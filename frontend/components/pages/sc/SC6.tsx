@@ -208,7 +208,7 @@ export default function SC6() {
                     const isSel = selCP?.counterparty === r.counterparty;
                     return (
                       <tr key={i} onClick={() => handleSelectCP(r)}
-                        style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: isSel ? `3px solid ${ORANGE}` : "3px solid transparent" }}>
+                        style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: "3px solid transparent" }}>
                         <td style={{ textAlign: "left", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.counterparty}</td>
                         <td style={{ textAlign: "center" }}>
                           <RareBadge count={r.vch_cnt} maxCount={maxCnt} />
@@ -266,7 +266,7 @@ export default function SC6() {
                       const isSel = selVch === r.voucher_no;
                       return (
                         <tr key={i} onClick={(e) => { if (isSel) { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: PAGE, label: r.voucher_no, value: `${fmtN(r.dr_amount || r.cr_amount)}원` }, { top: rect.top, right: rect.right }, e.currentTarget); } else { handleSelectVch(r.voucher_no); } }}
-                          style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: isSel ? `3px solid ${ORANGE}` : "3px solid transparent" }}>
+                          style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: "3px solid transparent" }}>
                           <td style={{ textAlign: "center", color: subTxt, fontSize: 11, whiteSpace: "nowrap" }}>{r.date}</td>
                           <td style={{ textAlign: "center", color: subTxt, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {r.voucher_no}

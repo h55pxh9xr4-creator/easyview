@@ -1043,7 +1043,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
               </svg>
             </button>
             <video
-              src="http://localhost:8000/media/Worldwide_Easy_View_Manual.mp4"
+              src={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/media/Worldwide_Easy_View_Manual.mp4`}
               controls
               autoPlay
               className="w-full rounded-xl shadow-2xl"
@@ -1072,7 +1072,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
               </svg>
             </button>
             <video
-              src="http://localhost:8000/media/Worldwide_Easy_View_Manual_Eng.mp4"
+              src={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/media/Worldwide_Easy_View_Manual_Eng.mp4`}
               controls
               autoPlay
               className="w-full rounded-xl shadow-2xl"

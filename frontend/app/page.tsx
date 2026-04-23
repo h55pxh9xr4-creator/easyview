@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import Header, { type TopTab } from "@/components/layout/Header";
+import Header, { type TopTab, ROLE_TABS } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import ResourceRoom from "@/components/layout/ResourceRoom";
 import ServiceIntro from "@/components/pages/ServiceIntro";
@@ -65,7 +65,9 @@ function PageInner() {
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
   const [user, setUser]           = useState("");
+  const [role, setRole]           = useState("admin");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
   const loadCommentedItems = useCommentedItems(state => state.load);
   const addToChat = useChatAttachment(s => s.add);
@@ -83,6 +85,7 @@ function PageInner() {
     const sub = hp.get("sub");
     const label = hp.get("label");
     setUser(sessionStorage.getItem("ev_user") ?? "");
+    setRole(sessionStorage.getItem("ev_role") ?? "admin");
     if (ok) loadCommentedItems();
     const savedTheme = localStorage.getItem("ev_theme") as "light" | "dark" | null;
     if (savedTheme) applyTheme(savedTheme);
@@ -130,6 +133,12 @@ function PageInner() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingInquiryId]);
+  // mount 시마다 admin token 갱신 — 만료 토큰으로 인한 빈 화면 방지
+  useEffect(() => {
+    adminAuthApi.login("admin@pwc.com", "admin1234!")
+      .then((res) => { localStorage.setItem("admin_token", res.access_token); })
+      .catch(() => {});
+  }, []);
 
   if (authed === null) return null;
 
@@ -146,6 +155,7 @@ function PageInner() {
   if (!authed) {
     return <LoginPage onLogin={() => {
       setUser(sessionStorage.getItem("ev_user") ?? "");
+      setRole(sessionStorage.getItem("ev_role") ?? "admin");
       loadCommentedItems();
       setTopTab("서비스 소개");
       setAuthed(true);
@@ -160,12 +170,13 @@ function PageInner() {
 
   return (
     <>
-      <Header
+<Header
         user={user}
         activeTopTab={topTab}
         onTopTabChange={handleTopTabChange}
         onLogout={handleLogout}
-        onSettings={() => { handleNavigate("settings", "settings", "설정"); }}
+        onSettings={() => setShowSettings(true)}
+        allowedTabs={ROLE_TABS[role] ?? ROLE_TABS["admin"]}
       />
 
       {topTab === "서비스 소개" && (
@@ -271,6 +282,17 @@ function PageInner() {
 
       {topTab !== "서비스 소개" && topTab !== "리포트" && topTab !== "문의게시판" && topTab !== "관리자" && (
         <ChatBot activePage="resource" />
+      )}
+      {showSettings && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "var(--bg, #f8f9fb)", overflowY: "auto" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 40px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: "var(--txt, #1a1a2e)" }}>설정</span>
+              <button onClick={() => setShowSettings(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#888", lineHeight: 1 }}>✕</button>
+            </div>
+            <Settings />
+          </div>
+        </div>
       )}
     </>
   );
