@@ -208,7 +208,7 @@ function AccountCard({
         <span style={{ fontSize: 18, fontWeight: 800, color: txtPri, letterSpacing: "-0.5px" }}>
           {fmtM(total)}
         </span>
-        <span style={{ fontSize: 10, color: txtDim }}>백만</span>
+        <span style={{ fontSize: 10, color: txtSec }}>백만</span>
         <span style={{ fontSize: 10, color: chg >= 0 ? "#EF4444" : BLUE, marginLeft: 2 }}>
           {chg >= 0 ? "▲" : "▼"}{fmtM(Math.abs(chg))}
         </span>
