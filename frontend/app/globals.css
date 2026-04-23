@@ -340,7 +340,7 @@ tbody td:first-child{text-align:left;font-weight:600;color:#2C2C2C}
 
 /* ── Expanded card animation ── */
 @keyframes card-expand{from{transform:scale(0.72) translateY(32px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
-.card-expand{animation:card-expand .35s cubic-bezier(0.22,1,0.36,1)}
+.card-expand{animation:card-expand .6s cubic-bezier(0.22,1,0.36,1)}
 
 /* ── Voucher search table ── */
 .search-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
