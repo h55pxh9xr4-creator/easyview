@@ -7,6 +7,7 @@ import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
 import { fetchPLSummary, fetchPLTrend, fetchPLWaterfall } from "@/lib/api";
+import { useAmountFormat } from "@/lib/fmtAmount";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarController, LineController, DoughnutController,
@@ -22,7 +23,6 @@ ChartJS.register(
   Tooltip, Legend,
 );
 
-const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
 
 function useDark() {
@@ -82,6 +82,7 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
   onBarClick: (idx: number | null) => void;
   dark: boolean;
 }) {
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const tickColor = dark ? "#9198A8" : "#bbb";
   const legendColor = dark ? "#9198A8" : "#888";
   const chartData = {
@@ -89,13 +90,13 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
     datasets: [
       {
         type: "bar" as const, label: "당기",
-        data: curData.map(v => Math.round(v / 1_000_000)),
+        data: curData,
         backgroundColor: curData.map((_, i) => i === selectedIdx ? "#2563EB" : color),
         barPercentage: 0.65, categoryPercentage: 0.75,
       },
       {
         type: "bar" as const, label: "전기",
-        data: priData.map(v => Math.round(v / 1_000_000)),
+        data: priData,
         backgroundColor: dark ? "rgba(150,160,180,0.35)" : "rgba(180,180,180,0.4)",
         barPercentage: 0.65, categoryPercentage: 0.75,
       },
@@ -108,7 +109,7 @@ function MiniBarChart({ curData, priData, labels, color, selectedIdx, onBarClick
       tooltip: {
         callbacks: {
           label: (ctx: {dataset: {label: string}; parsed: {y: number}}) =>
-            `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString("ko-KR")}백만`,
+            `${ctx.dataset.label}: ${fmtAmt(ctx.parsed.y)}${unitLabel}`,
         },
       },
     },
@@ -174,6 +175,8 @@ function StatRow({ label, value, cls, dark }: { label: string; value: string; cl
 export default function PLSummary() {
   const dark = useDark();
   const filter = useFilter();
+  const { fmtAmt, unitLabel, amountUnit } = useAmountFormat();
+  const unitDivisor = { "원": 1, "천": 1_000, "백만": 1_000_000, "억": 100_000_000 }[amountUnit];
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const lift = (label: string): React.CSSProperties => {
@@ -239,7 +242,7 @@ export default function PLSummary() {
     : waterfall;
 
   for (const m of wfFiltered) {
-    const M   = 1_000_000;
+    const M   = unitDivisor;
     const wRev = Math.round(m.revenue           / M);
     const wGr  = Math.round(m.gross_profit      / M);
     const wOp  = Math.round(m.operating_income  / M);
@@ -336,8 +339,8 @@ export default function PLSummary() {
         callbacks: { label: (ctx: any) => {
           const v = ctx.raw;
           if (!v) return "";
-          const val = Math.abs(v[1] - v[0]).toLocaleString("ko-KR");
-          return `${ctx.dataset.label}: ${val}백만`;
+          const val = Math.abs(v[1] - v[0]);
+          return `${ctx.dataset.label}: ${fmtAmt(val * unitDivisor)}${unitLabel}`;
         }},
       },
     },
@@ -348,7 +351,7 @@ export default function PLSummary() {
         ticks: {
           color: wfTickColor, font: { size: 10 },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          callback: (v: any) => `${Number(v).toLocaleString()}백만`,
+          callback: (v: any) => `${fmtAmt(Number(v) * unitDivisor)}${unitLabel}`,
         },
         grid: { color: wfGridColor },
       },
@@ -429,7 +432,7 @@ export default function PLSummary() {
           const margin = isRev ? null : cur / curRev;
 
           return (
-            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer", position: "relative", ...lift(`${card.title} 추이`) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: `${card.title} 추이`, value: `${fmtB(cur)}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }, e.currentTarget); }}>
+            <div key={card.key} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer", position: "relative", ...lift(`${card.title} 추이`) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 요약", label: `${card.title} 추이`, value: `${fmtAmt(cur)}${unitLabel}`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }, e.currentTarget); }}>
               {ck.has(commentKey("PL 요약", `${card.title} 추이`)) && <CommentDot inquiryId={ck.get(commentKey("PL 요약", `${card.title} 추이`))!} />}
               <div style={{ display: "grid", gridTemplateColumns: "190px minmax(0, 1fr)" }}>
 
@@ -444,15 +447,15 @@ export default function PLSummary() {
                     )}
                   </div>
                   <div style={{ fontSize: 26, fontWeight: 800, color: card.color, letterSpacing: "-1px", lineHeight: 1 }}>
-                    {fmtB(cur)}
-                    <span style={{ fontSize: 12, fontWeight: 400, color: dark ? "#5A6070" : "#bbb", marginLeft: 3 }}>백만</span>
+                    {fmtAmt(cur)}
+                    <span style={{ fontSize: 12, fontWeight: 400, color: dark ? "#5A6070" : "#bbb", marginLeft: 3 }}>{unitLabel}</span>
                   </div>
                   {margin !== null && margin !== undefined && (
                     <MarginGauge value={margin} label={card.marginLabel} color={card.color} dark={dark} />
                   )}
                   <div style={{ marginTop: margin !== null ? 0 : 12, flex: 1 }}>
-                    <StatRow label="전기" value={`${fmtB(pri)}백만`} dark={dark} />
-                    <StatRow label="증감" value={`${fmtB(diff)}백만`} cls={diff >= 0 ? "up-t" : "dn-t"} dark={dark} />
+                    <StatRow label="전기" value={`${fmtAmt(pri)}${unitLabel}`} dark={dark} />
+                    <StatRow label="증감" value={`${fmtAmt(diff)}${unitLabel}`} cls={diff >= 0 ? "up-t" : "dn-t"} dark={dark} />
                     <StatRow
                       label="△%"
                       value={chg >= 0 ? `▲${Math.abs(chg * 100).toFixed(1)}%` : `▼${Math.abs(chg * 100).toFixed(1)}%`}
@@ -461,7 +464,7 @@ export default function PLSummary() {
                     {isRev && (
                       <StatRow
                         label="전월대비증감"
-                        value={`${fmtB(data.prev_month_rev_diff)}백만`}
+                        value={`${fmtAmt(data.prev_month_rev_diff)}${unitLabel}`}
                         cls={data.prev_month_rev_diff >= 0 ? "up-t" : "dn-t"} dark={dark}
                       />
                     )}

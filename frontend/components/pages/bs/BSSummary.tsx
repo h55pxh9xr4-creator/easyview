@@ -7,6 +7,7 @@ import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { fetchBSKPI, fetchBSTrendDetail, fetchBSRatios, fetchBSActivity } from "@/lib/api";
+import { useAmountFormat } from "@/lib/fmtAmount";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   LineController, BarController,
@@ -23,7 +24,6 @@ ChartJS.register(
   Filler, Tooltip, Legend,
 );
 
-const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmtPct = (p: number) => `${p >= 0 ? "▲" : "▼"}${Math.abs(p * 100).toFixed(1)}%`;
 const ORANGE = "rgba(232,119,34,0.9)";
 const BLUE   = "rgba(37,99,235,0.9)";
@@ -252,6 +252,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent, isDark = fal
   cat: string; data: KPICat; selectedLabel?: string | null;
   current?: number; noncurrent?: number; isDark?: boolean;
 }) {
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const color = CAT_COLOR[cat] ?? "#E87722";
   const prefix = cat === "자산" ? "자산" : cat === "부채" ? "부채" : null;
   const labelClr = isDark ? "#9198A8" : "#999";
@@ -268,27 +269,27 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent, isDark = fal
           )}
         </div>
         <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1, letterSpacing: "-0.5px" }}>
-          {fmtB(data.ending)}<span style={{ fontSize: 14, color, fontWeight: 700, marginLeft: 4 }}>백만</span>
+          {fmtAmt(data.ending)}<span style={{ fontSize: 14, color, fontWeight: 700, marginLeft: 4 }}>{unitLabel}</span>
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: labelClr }}>
         {prefix && current !== undefined && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>유동{prefix}</span>
-            <span style={{ color: valClr }}>{fmtB(current)}백만</span>
+            <span style={{ color: valClr }}>{fmtAmt(current)}{unitLabel}</span>
           </div>
         )}
         {prefix && noncurrent !== undefined && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>비유동{prefix}</span>
-            <span style={{ color: valClr }}>{fmtB(noncurrent)}백만</span>
+            <span style={{ color: valClr }}>{fmtAmt(noncurrent)}{unitLabel}</span>
           </div>
         )}
         <div style={{ borderTop: `1px solid ${divClr}`, margin: "2px 0" }} />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>당기기초 금액</span>
           <span style={{ color: valClr }}>
-            {fmtB(data.yr_start)}백만&nbsp;
+            {fmtAmt(data.yr_start)}{unitLabel}&nbsp;
             <span className={data.yr_chg_pct >= 0 ? "up-t" : "dn-t"} style={{ fontSize: 10 }}>
               {fmtPct(data.yr_chg_pct)}
             </span>
@@ -297,7 +298,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent, isDark = fal
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>당월 기초 금액</span>
           <span style={{ color: valClr }}>
-            {fmtB(data.mo_start)}백만&nbsp;
+            {fmtAmt(data.mo_start)}{unitLabel}&nbsp;
             <span className={data.mo_chg_pct >= 0 ? "up-t" : "dn-t"} style={{ fontSize: 10 }}>
               {fmtPct(data.mo_chg_pct)}
             </span>
@@ -312,6 +313,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent, isDark = fal
 export default function BSSummary() {
   const isDark = useDarkMode();
   const filter = useFilter();
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const lift = (label: string): React.CSSProperties => {
@@ -379,23 +381,23 @@ export default function BSSummary() {
           cat: "자산" as const,
           title: "자산추이",
           datasets: [
-            { label: "유동",   data: trend.map(r => Math.round(r.유동자산   / 1_000_000)), color: ORANGE, fill: true },
-            { label: "비유동", data: trend.map(r => Math.round(r.비유동자산 / 1_000_000)), color: BLUE,   fill: true },
+            { label: "유동",   data: trend.map(r => r.유동자산),   color: ORANGE, fill: true },
+            { label: "비유동", data: trend.map(r => r.비유동자산), color: BLUE,   fill: true },
           ],
         },
         {
           cat: "부채" as const,
           title: "부채추이",
           datasets: [
-            { label: "유동",   data: trend.map(r => Math.round(r.유동부채   / 1_000_000)), color: RED,  fill: true },
-            { label: "비유동", data: trend.map(r => Math.round(r.비유동부채 / 1_000_000)), color: GRAY, fill: true },
+            { label: "유동",   data: trend.map(r => r.유동부채),   color: RED,  fill: true },
+            { label: "비유동", data: trend.map(r => r.비유동부채), color: GRAY, fill: true },
           ],
         },
         {
           cat: "자본" as const,
           title: "자본추이",
           datasets: [
-            { label: "자본", data: trend.map(r => Math.round(r.자본 / 1_000_000)), color: GREEN, fill: true },
+            { label: "자본", data: trend.map(r => r.자본), color: GREEN, fill: true },
           ],
         },
       ].map(({ cat, title, datasets }) => {
@@ -424,7 +426,7 @@ export default function BSSummary() {
           <div key={cat} style={{ display: "grid", gridTemplateColumns: "min(420px, 40%) 1fr", gap: 14, alignItems: "stretch", minWidth: 0 }}>
             {kpiLoading || !kpiForIdx ? <KpiSkeleton /> : (
               <div style={{ cursor: "pointer", position: "relative", display: "flex", flexDirection: "column", ...lift(cat) }}
-                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: cat, value: `${fmtB(kpiForIdx.ending)}백만`, sub: selectedLabel ? `선택 월: ${selectedLabel}` : undefined }, { top: r.top, right: r.right }, e.currentTarget); }}>
+                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 요약", label: cat, value: `${fmtAmt(kpiForIdx.ending)}${unitLabel}`, sub: selectedLabel ? `선택 월: ${selectedLabel}` : undefined }, { top: r.top, right: r.right }, e.currentTarget); }}>
                 {ck.has(commentKey("BS 요약", cat)) && <CommentDot inquiryId={ck.get(commentKey("BS 요약", cat))!} />}
                 <BSKpiCard cat={cat} data={kpiForIdx} selectedLabel={selectedLabel} current={currentVal} noncurrent={noncurrentVal} isDark={isDark} />
               </div>
@@ -435,7 +437,7 @@ export default function BSSummary() {
                 ? <ChartLoading height={120} isDark={isDark} />
                 : <MiniAreaChart
                     labels={labels} height={120} datasets={datasets}
-                    yFmt={v => `${v.toLocaleString("ko-KR")}백만`}
+                    yFmt={v => `${fmtAmt(v)}${unitLabel}`}
                     selectedIdx={idx}
                     onClickPoint={i => setSelIdx(prev => ({ ...prev, [cat]: i }))}
                     showLegend={datasets.length > 1}

@@ -1,7 +1,7 @@
 "use client";
 
 import Loading from "@/components/ui/Loading";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import { useAmountFormat } from "@/lib/fmtAmount";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarController, LineController,
@@ -29,11 +30,8 @@ ChartJS.register(
   Tooltip, Legend,
 );
 
-const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
-const fmtM   = (n: number) => Math.round(n / 10_000).toLocaleString("ko-KR");
 const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
 const sign   = (n: number) => n >= 0 ? "▲" : "▼";
-const absFmtB = (n: number) => `${sign(n)}${fmtB(Math.abs(n))}백만`;
 
 const ORANGE = "#E87722";
 const ORANGE_L = "rgba(232,119,34,0.15)";
@@ -125,6 +123,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap, isDark = false
   }
 
   const sorted = [...items].reverse();
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const gridClr  = isDark ? "#2E3039" : "#f5f5f5";
   const axisClr  = isDark ? "#9198A8" : "#555";
   const xAxisClr = isDark ? "#9198A8" : "#bbb";
@@ -135,7 +134,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap, isDark = false
     xAxis: {
       max: "dataMax",
       axisLabel: {
-        formatter: (n: number) => `${Math.round(n / 1_000_000).toLocaleString("ko-KR")}백만`,
+        formatter: (n: number) => `${fmtAmt(n)}${unitLabel}`,
         fontSize: 10, color: xAxisClr,
       },
       splitLine: { lineStyle: { color: gridClr } },
@@ -159,7 +158,7 @@ function MonthlyRaceBar({ barRace, selectedMonth, topN, colorMap, isDark = false
       })),
       label: {
         show: true, position: "right",
-        formatter: (p: { value: number }) => `${Math.round(p.value / 1_000_000).toLocaleString("ko-KR")}백만`,
+        formatter: (p: { value: number }) => `${fmtAmt(p.value)}${unitLabel}`,
         fontSize: 10, color: axisClr,
       },
       barMaxWidth: 28,
@@ -237,6 +236,8 @@ function VoucherTable({ rows, title, onRowClick, isDark = false }: {
 // ── 메인 ──────────────────────────────────────────────────────
 export default function PLSales() {
   const isDark = useDarkMode();
+  const { fmtAmt, unitLabel, amountUnit } = useAmountFormat();
+  const unitDivisor = { "원": 1, "천": 1_000, "백만": 1_000_000, "억": 100_000_000 }[amountUnit];
   const filter = useFilter();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
@@ -267,6 +268,9 @@ export default function PLSales() {
   const [barRace, setBarRace] = useState<BarRaceData | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [monthlyKpi, setMonthlyKpi] = useState<KPIData | null>(null);
+  const [hoverDonut, setHoverDonut] = useState<{ name: string; value: number; percent: number } | null>(null);
+  const [selectedDonutInfo, setSelectedDonutInfo] = useState<{ name: string; value: number; percent: number } | null>(null);
+  const selectedDonutRef = useRef<{ name: string; value: number; percent: number } | null>(null);
 
   // 기본 데이터 로드
   useEffect(() => {
@@ -322,11 +326,11 @@ export default function PLSales() {
   const trendLabels = Array.from({ length: 12 }, (_, i) => `${i + 1}`);
   const trendCur = trendLabels.map(m => {
     const row = trend.find(r => r.month === parseInt(m));
-    return row ? Math.round(row.current / 1_000_000) : 0;
+    return row ? row.current : 0;
   });
   const trendPri = trendLabels.map(m => {
     const row = trend.find(r => r.month === parseInt(m));
-    return row ? Math.round(row.prior / 1_000_000) : 0;
+    return row ? row.prior : 0;
   });
 
   // ── 도넛 차트 데이터 ─────────────────────────────────────────
@@ -353,7 +357,7 @@ export default function PLSales() {
       backgroundColor: tooltipBg, borderColor: tooltipBdr,
       textStyle: { color: tooltipTxt, fontSize: 11 },
       formatter: (params: { seriesName: string; value: number }[]) =>
-        params.map(p => `${p.seriesName}: ${(p.value ?? 0).toLocaleString("ko-KR")}만`).join("<br/>"),
+        params.map(p => `${p.seriesName}: ${fmtAmt(p.value ?? 0)}${unitLabel}`).join("<br/>"),
     },
     legend: {
       data: [cp1 || "거래처1", cp2 || "거래처2"],
@@ -371,7 +375,7 @@ export default function PLSales() {
     },
     yAxis: {
       type: "value",
-      axisLabel: { color: axisLblClr, fontSize: 10 },
+      axisLabel: { color: axisLblClr, fontSize: 10, formatter: (v: number) => `${fmtAmt(v)}${unitLabel}` },
       splitLine: { lineStyle: { color: gridClr } },
     },
     series: [
@@ -382,7 +386,7 @@ export default function PLSales() {
         color: ORANGE,
         data: cpLabels.map((_, i) => {
           const row = cpTrend.cp1.find(r => r.month === i + 1);
-          return row ? Math.round(row.amount / 10_000) : null;
+          return row ? row.amount : null;
         }),
         connectNulls: true,
         markPoint: {
@@ -391,8 +395,7 @@ export default function PLSales() {
           itemStyle: { color: ORANGE },
           label: {
             fontSize: 10, color: "#fff", fontWeight: 700,
-            formatter: (p: { value: number }) =>
-              `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+            formatter: (p: { value: number }) => fmtAmt(p.value),
           },
           data: [{ type: "max", name: "최대" }, { type: "min", name: "최소" }],
         },
@@ -404,7 +407,7 @@ export default function PLSales() {
         color: RED,
         data: cpLabels.map((_, i) => {
           const row = cpTrend.cp2.find(r => r.month === i + 1);
-          return row ? Math.round(row.amount / 10_000) : null;
+          return row ? row.amount : null;
         }),
         connectNulls: true,
         markPoint: {
@@ -413,8 +416,7 @@ export default function PLSales() {
           itemStyle: { color: RED },
           label: {
             fontSize: 10, color: "#fff", fontWeight: 700,
-            formatter: (p: { value: number }) =>
-              `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+            formatter: (p: { value: number }) => fmtAmt(p.value),
           },
           data: [{ type: "max", name: "최대" }, { type: "min", name: "최소" }],
         },
@@ -433,9 +435,22 @@ export default function PLSales() {
 
   // 월 선택 시 monthlyKpi 사용, 미선택 시 전체 KPI
   const activeKpi = (selectedMonth !== null && monthlyKpi) ? monthlyKpi : kpi;
-  const rev = activeKpi.revenue;
   const cnt = activeKpi.counterparty_count;
-  const kpiLabel = selectedMonth !== null ? `${selectedMonth}월 매출액` : "매출액";
+  const kpiLabel = selectedCp ? `${selectedCp} 매출액` : selectedMonth !== null ? `${selectedMonth}월 매출액` : "매출액";
+
+  // 거래처 선택 시 해당 거래처 KPI로 오버라이드
+  const cpChangeItem = selectedCp && change
+    ? [...(change.increased ?? []), ...(change.decreased ?? [])].find(c => c.counterparty === selectedCp)
+    : null;
+  const rev = cpChangeItem
+    ? {
+        current:      cpChangeItem.current,
+        prior:        cpChangeItem.prior,
+        change:       cpChangeItem.change,
+        change_pct:   cpChangeItem.prior !== 0 ? cpChangeItem.change / Math.abs(cpChangeItem.prior) * 100 : 0,
+        vs_prev_month: 0,
+      }
+    : activeKpi.revenue;
 
   return (
     <div className="wrap">
@@ -446,14 +461,14 @@ export default function PLSales() {
 
         {/* [1,1] KPI 카드 2개 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, gridColumn: "1", gridRow: "1", alignSelf: "stretch" }}>
-          <div style={{ cursor: "pointer", position: "relative", ...lift(kpiLabel) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtB(rev.current)}백만` }, { top: r.top, right: r.right }, e.currentTarget); }}>
+          <div style={{ cursor: "pointer", position: "relative", ...lift(kpiLabel) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "매출분석", label: kpiLabel, value: `${fmtAmt(rev.current)}${unitLabel}` }, { top: r.top, right: r.right }, e.currentTarget); }}>
             {ck.has(commentKey("매출분석", kpiLabel)) && <CommentDot inquiryId={ck.get(commentKey("매출분석", kpiLabel))!} />}
             <KpiCard
-              label={kpiLabel} unit="백만"
-              value={fmtB(rev.current)} prior={fmtB(rev.prior)}
-              change={Math.round(rev.change / 1_000_000)}
+              label={kpiLabel} unit={unitLabel}
+              value={fmtAmt(rev.current)} prior={fmtAmt(rev.prior)}
+              change={Math.round(rev.change / unitDivisor)}
               changePct={rev.change_pct}
-              vsPrevMonth={Math.round(rev.vs_prev_month / 1_000_000)}
+              vsPrevMonth={Math.round(rev.vs_prev_month / unitDivisor)}
               isDark={isDark}
             />
           </div>
@@ -502,13 +517,13 @@ export default function PLSales() {
               const curData = selectedCp && selectedCpTrend
                 ? trendLabels.map((_, i) => {
                     const row = selectedCpTrend.cur.find(r => r.month === i + 1);
-                    return row ? Math.round(row.amount / 1_000_000) : 0;
+                    return row ? row.amount : 0;
                   })
                 : trendCur;
               const priData = selectedCp && selectedCpTrend
                 ? trendLabels.map((_, i) => {
                     const row = selectedCpTrend.pri.find(r => r.month === i + 1);
-                    return row ? Math.round(row.amount / 1_000_000) : 0;
+                    return row ? row.amount : 0;
                   })
                 : trendPri;
 
@@ -520,7 +535,7 @@ export default function PLSales() {
                   backgroundColor: tooltipBg, borderColor: tooltipBdr,
                   textStyle: { color: tooltipTxt, fontSize: 11 },
                   formatter: (params: {seriesName: string; value: number}[]) =>
-                    params.map(p => `${p.seriesName}: ${p.value.toLocaleString("ko-KR")}백만`).join("<br/>"),
+                    params.map(p => `${p.seriesName}: ${fmtAmt(p.value)}${unitLabel}`).join("<br/>"),
                 },
                 legend: {
                   data: ["당기", "전기"],
@@ -538,7 +553,7 @@ export default function PLSales() {
                 },
                 yAxis: {
                   type: "value",
-                  axisLabel: { color: axisLblClr, fontSize: 10 },
+                  axisLabel: { color: axisLblClr, fontSize: 10, formatter: (v: number) => `${fmtAmt(v)}${unitLabel}` },
                   splitLine: { lineStyle: { color: gridClr } },
                 },
                 series: [
@@ -557,7 +572,7 @@ export default function PLSales() {
                       itemStyle: { color: ORANGE },
                       label: {
                         fontSize: 10, color: "#fff", fontWeight: 700,
-                        formatter: (p: {value: number}) => `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+                        formatter: (p: {value: number}) => `${fmtAmt(p.value)}`,
                       },
                       data: [
                         { type: "max", name: "최대" },
@@ -580,7 +595,7 @@ export default function PLSales() {
                       itemStyle: { color: "#999" },
                       label: {
                         fontSize: 10, color: "#fff", fontWeight: 700,
-                        formatter: (p: {value: number}) => `${Math.round(p.value / 1000) >= 1 ? Math.round(p.value / 1000) + "k" : p.value}`,
+                        formatter: (p: {value: number}) => `${fmtAmt(p.value)}`,
                       },
                       data: [
                         { type: "max", name: "최대" },
@@ -642,42 +657,45 @@ export default function PLSales() {
                     return [x - w / 2, isTop ? y - h - 16 : y + 16];
                   },
                   formatter: (p: { name: string; value: number; percent: number }) =>
-                    `${p.name}<br/>${fmtB(p.value * 1_000_000)}백만 (${p.percent.toFixed(1)}%)`,
+                    `${p.name}<br/>${fmtAmt(p.value)}${unitLabel} (${p.percent.toFixed(1)}%)`,
                 },
                 legend: { show: false },
+                graphic: hoverDonut ? [{
+                  type: "group",
+                  left: "center",
+                  top: "center",
+                  children: [
+                    { type: "text", z: 100, left: "center", top: -22, style: { text: hoverDonut.name.length > 10 ? hoverDonut.name.slice(0, 10) + "…" : hoverDonut.name, font: `700 12px sans-serif`, fill: isDark ? "#E2E5EC" : "#222", textAlign: "center" } },
+                    { type: "text", z: 100, left: "center", top: 2,   style: { text: `${fmtAmt(hoverDonut.value)}${unitLabel}`, font: `800 15px sans-serif`, fill: ORANGE, textAlign: "center" } },
+                    { type: "text", z: 100, left: "center", top: 24,  style: { text: `(${hoverDonut.percent.toFixed(1)}%)`, font: `400 11px sans-serif`, fill: isDark ? "#9198A8" : "#888", textAlign: "center" } },
+                  ],
+                }] : [],
                 series: [{
                   name: "거래처 비중",
                   type: "pie",
-                  radius: ["33%", "58%"],
+                  radius: ["38%", "55%"],
                   center: ["50%", "50%"],
                   avoidLabelOverlap: true,
-                  minShowLabelAngle: 5,
+                  minShowLabelAngle: 20,
                   itemStyle: { borderRadius: 6, borderColor: donutBdr, borderWidth: 2 },
                   label: {
                     show: true,
                     position: "outside",
                     formatter: (p: { name: string; value: number; percent: number }) => {
-                      const n = p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name;
-                      return `${n}\n${p.value}M (${p.percent.toFixed(1)}%)`;
+                      const n = p.name.length > 14 ? p.name.slice(0, 14) + "…" : p.name;
+                      return `${n}\n${p.percent.toFixed(1)}%`;
                     },
-                    fontSize: 11,
-                    lineHeight: 16,
+                    fontSize: 10,
+                    lineHeight: 15,
                     color: isDark ? "#C8CDD8" : "#444",
                   },
                   emphasis: {
-                    label: {
-                      show: true,
-                      fontSize: 14,
-                      fontWeight: "bold",
-                      color: isDark ? "#E2E5EC" : "#333",
-                      formatter: (p: { name: string; percent: number }) =>
-                        `${p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name}\n${p.percent.toFixed(1)}%`,
-                    },
+                    label: { show: false },
                     itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.28)" },
                   },
                   labelLine: { show: true, length: 8, length2: 12 },
                   data: donut.items.map((item, i) => ({
-                    value: Math.round(item.amount / 1_000_000),
+                    value: item.amount,
                     name: item.counterparty,
                     itemStyle: {
                       color: item.counterparty === selectedCp
@@ -692,10 +710,19 @@ export default function PLSales() {
               style={{ height: 430, cursor: "pointer" }}
               notMerge={true}
               onEvents={{
-                click: (p: { name: string }) => {
+                click: (p: { name: string; value: number; percent: number }) => {
                   if (!p.name || p.name === "기타") return;
+                  const isDeselecting = selectedCp === p.name;
                   setSelectedCp(prev => prev === p.name ? null : p.name);
+                  const info = isDeselecting ? null : { name: p.name, value: p.value, percent: p.percent };
+                  setSelectedDonutInfo(info);
+                  selectedDonutRef.current = info;
+                  setHoverDonut(info);
                 },
+                mouseover: (p: { name: string; value: number; percent: number }) => {
+                  if (p.name) setHoverDonut({ name: p.name, value: p.value, percent: p.percent });
+                },
+                mouseout: () => setHoverDonut(selectedDonutRef.current),
               }}
             />
           )}

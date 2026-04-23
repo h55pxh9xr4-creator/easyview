@@ -38,13 +38,13 @@ const FALLBACK_REQUESTS: Request[] = [
 const C = {
   primary:   "#E87722",
   primaryDk: "#D06010",
-  primaryBg: "#FFF5EE",
-  rowHover:  "#FFF8F3",
-  border:    "#EDEDED",
-  text:      "#2C2C2C",
-  sub:       "#555",
-  muted:     "#aaa",
-  bg:        "#F5F5F5",
+  primaryBg: "var(--rr-primary-bg)",
+  rowHover:  "var(--rr-row-hover)",
+  border:    "var(--rr-border)",
+  text:      "var(--rr-text)",
+  sub:       "var(--rr-sub)",
+  muted:     "var(--rr-muted)",
+  bg:        "var(--rr-bg)",
 };
 
 const PWC_USERS = [
@@ -156,9 +156,9 @@ function IconBtn({ title, children, onClick }: { title: string; children: React.
       style={{
         width: 32, height: 32,
         border: `1px solid ${hov ? C.primary : "#ddd"}`,
-        background: "#fff", borderRadius: 6,
+        background: "var(--rr-bg)", borderRadius: 6,
         cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 15, color: hov ? C.primary : "#666",
+        fontSize: 15, color: hov ? C.primary : "var(--rr-sub)",
         transition: "all 0.15s", flexShrink: 0,
       }}
     >
@@ -189,7 +189,7 @@ function GrayBtn({ label, onClick }: { label: string; onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
-      style={{ padding: "7px 18px", borderRadius: 6, border: "1px solid #ccc", background: "#fff", color: "#666", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+      style={{ padding: "7px 18px", borderRadius: 6, border: "1px solid var(--rr-border)", background: "var(--rr-bg)", color: "var(--rr-sub)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
     >
       {label}
     </button>
@@ -200,7 +200,7 @@ function TH({ children }: { children: React.ReactNode }) {
   return (
     <th style={{
       padding: "8px 12px", fontSize: 11, fontWeight: 700,
-      color: C.primary, background: "#FFF8F3",
+      color: C.primary, background: "var(--rr-th-bg)",
       borderBottom: `2px solid ${C.primary}`,
       textAlign: "center", whiteSpace: "nowrap",
       textTransform: "uppercase", letterSpacing: "0.3px",
@@ -213,7 +213,7 @@ function TH({ children }: { children: React.ReactNode }) {
 
 function TD({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <td style={{ padding: "11px 12px", fontSize: 13, borderBottom: "1px solid #f5f5f5", color: C.sub, verticalAlign: "middle", ...style }}>
+    <td style={{ padding: "11px 12px", fontSize: 13, borderBottom: "1px solid var(--rr-row-divider)", color: C.sub, verticalAlign: "middle", ...style }}>
       {children}
     </td>
   );
@@ -221,7 +221,7 @@ function TD({ children, style }: { children?: React.ReactNode; style?: React.CSS
 
 function CheckTH({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <th style={{ padding: "8px 12px", width: 40, textAlign: "center", background: "#FFF8F3", borderBottom: `2px solid ${C.primary}`, position: "sticky", top: 0 }}>
+    <th style={{ padding: "8px 12px", width: 40, textAlign: "center", background: "var(--rr-th-bg)", borderBottom: `2px solid ${C.primary}`, position: "sticky", top: 0 }}>
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ accentColor: C.primary, width: 14, height: 14, cursor: "pointer" }} />
     </th>
   );
@@ -229,7 +229,7 @@ function CheckTH({ checked, onChange }: { checked: boolean; onChange: (v: boolea
 
 function CheckTD({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <td style={{ padding: "11px 12px", textAlign: "center", borderBottom: "1px solid #f5f5f5" }}>
+    <td style={{ padding: "11px 12px", textAlign: "center", borderBottom: "1px solid var(--rr-row-divider)" }}>
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ accentColor: C.primary, width: 14, height: 14, cursor: "pointer" }} />
     </td>
   );
@@ -239,7 +239,7 @@ function CheckTD({ checked, onChange }: { checked: boolean; onChange: (v: boolea
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ padding: "20px 24px" }}>
-      <div style={{ background: "#fff", borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)", padding: "20px 24px" }}>
+      <div style={{ background: "var(--rr-bg)", borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)", padding: "20px 24px" }}>
         {children}
       </div>
     </div>
@@ -272,7 +272,7 @@ function Modal({ title, onClose, onConfirm, confirmLabel, onSecondary, secondary
       onClick={onClose}
     >
       <div
-        style={{ background: "#fff", width, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderRadius: 8 }}
+        style={{ background: "var(--rr-bg)", width, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", borderRadius: 8 }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ padding: "22px 28px 14px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
@@ -280,7 +280,7 @@ function Modal({ title, onClose, onConfirm, confirmLabel, onSecondary, secondary
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, color: C.muted, cursor: "pointer", lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: "20px 28px" }}>{children}</div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 28px", background: "#fafafa", borderTop: `1px solid ${C.border}` }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 28px", background: "var(--rr-surface)", borderTop: `1px solid ${C.border}` }}>
           <OrangeBtn label={confirmLabel} onClick={onConfirm} />
           {onSecondary && secondaryLabel && <GrayBtn label={secondaryLabel} onClick={onSecondary} />}
           <GrayBtn label="Cancel" onClick={onClose} />
@@ -296,7 +296,7 @@ function FRow({ children }: { children: React.ReactNode }) {
 function FGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div style={{ flex: 1, marginBottom: 16 }}>
-      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#444", marginBottom: 6 }}>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--rr-text)", marginBottom: 6 }}>
         {label}{required && <span style={{ color: "#E53E3E", marginLeft: 2 }}>*</span>}
       </label>
       {children}
@@ -306,9 +306,9 @@ function FGroup({ label, required, children }: { label: string; required?: boole
 function FInput({ placeholder }: { placeholder: string }) {
   return (
     <input type="text" placeholder={placeholder}
-      style={{ width: "100%", padding: "9px 12px", border: "1px solid #ddd", borderRadius: 6, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+      style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--rr-border)", borderRadius: 6, fontSize: 13, outline: "none", boxSizing: "border-box", background: "var(--rr-input-bg)", color: "var(--rr-text)" }}
       onFocus={e => (e.target.style.borderColor = C.primary)}
-      onBlur={e => (e.target.style.borderColor = "#ddd")}
+      onBlur={e => (e.target.style.borderColor = C.border)}
     />
   );
 }
@@ -316,7 +316,7 @@ function FSelect({ options, defaultIdx }: { options: string[]; defaultIdx?: numb
   return (
     <select defaultValue={options[defaultIdx ?? 0]} style={{
       width: "100%", padding: "9px 32px 9px 12px", border: `1px solid ${C.primary}`, borderRadius: 6,
-      fontSize: 13, appearance: "none", background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 12px center`,
+      fontSize: 13, appearance: "none", background: `var(--rr-input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 12px center`, color: "var(--rr-text)",
       cursor: "pointer", boxSizing: "border-box",
     }}>
       {options.map(o => <option key={o}>{o}</option>)}
@@ -328,9 +328,9 @@ function FTextarea({ placeholder }: { placeholder: string }) {
   return (
     <>
       <textarea placeholder={placeholder} maxLength={650} onChange={e => setRem(650 - e.target.value.length)}
-        style={{ width: "100%", minHeight: 90, resize: "vertical", padding: "9px 12px", border: "1px solid #ddd", borderRadius: 6, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }}
+        style={{ width: "100%", minHeight: 90, resize: "vertical", padding: "9px 12px", border: "1px solid var(--rr-border)", borderRadius: 6, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", background: "var(--rr-input-bg)", color: "var(--rr-text)" }}
         onFocus={e => (e.target.style.borderColor = C.primary)}
-        onBlur={e => (e.target.style.borderColor = "#ddd")}
+        onBlur={e => (e.target.style.borderColor = C.border)}
       />
       <p style={{ textAlign: "right", fontSize: 11, color: C.muted, marginTop: 3 }}>{rem} characters remaining</p>
     </>
@@ -615,7 +615,7 @@ export default function ResourceRoom() {
 
   /* ── Sidebar ── */
   const SidebarEl = () => (
-    <aside style={{ width: 250, flexShrink: 0, background: "#fff", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
+    <aside style={{ width: 250, flexShrink: 0, background: "var(--rr-bg)", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
       {SIDEBAR_ITEMS.map(item => {
         const active = page === item.key;
         return (
@@ -627,12 +627,12 @@ export default function ResourceRoom() {
               padding: "10px 20px", width: "100%", textAlign: "left",
               cursor: "pointer", fontSize: 14, fontFamily: "inherit",
               background: active ? C.primaryBg : "transparent",
-              color:      active ? C.primary   : "#444",
+              color:      active ? C.primary   : "var(--rr-text)",
               fontWeight: active ? 600 : 400,
               border: "none", transition: "all 0.12s",
             }}
-            onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "#F7F7F7"; (e.currentTarget as HTMLElement).style.color = "#333"; } }}
-            onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#444"; } }}
+            onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "var(--rr-row-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--rr-text)"; } }}
+            onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--rr-text)"; } }}
           >
             <img
               src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${item.icon}`}
@@ -766,7 +766,7 @@ export default function ResourceRoom() {
             );
           })()}
         </TD>
-        <td style={{ padding: "11px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "center" }}>
+        <td style={{ padding: "11px 8px", borderBottom: "1px solid var(--rr-row-divider)", textAlign: "center" }}>
           <button
             onClick={e => { e.stopPropagation(); setDeleteConfirmId(req.id); }}
             style={{ color: C.primary, opacity: 0.55, background: "none", border: "none", cursor: "pointer", padding: 4, display: "inline-flex", alignItems: "center" }}
@@ -802,8 +802,8 @@ export default function ResourceRoom() {
     /* ══════════ CREATE VIEW ══════════ */
     if (showCreate) {
       const fLabel: React.CSSProperties = { fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 5 };
-      const fInput: React.CSSProperties = { width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "#fff" };
-      const fSelect: React.CSSProperties = { ...fInput, appearance: "none", background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`, paddingRight: 28, cursor: "pointer" };
+      const fInput: React.CSSProperties = { width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: "var(--rr-input-bg)", color: "var(--rr-text)" };
+      const fSelect: React.CSSProperties = { ...fInput, appearance: "none", background: `var(--rr-input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`, paddingRight: 28, cursor: "pointer" };
       const divider: React.CSSProperties = { flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 };
       const cancelCreate = () => { setShowCreate(false); resetNewForm(); };
       return (
@@ -815,7 +815,7 @@ export default function ResourceRoom() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
                 <button
                   onClick={cancelCreate}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.border}`, background: "#fff", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.border}`, background: "var(--rr-bg)", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.primary; (e.currentTarget as HTMLElement).style.color = C.primary; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.sub; }}
                 >← 목록으로</button>
@@ -834,7 +834,7 @@ export default function ResourceRoom() {
               </div>
 
               {/* 1행 메타 */}
-              <div style={{ display: "flex", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24 }}>
+              <div style={{ display: "flex", background: "var(--rr-surface)", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24 }}>
                 <div style={divider}>
                   <div style={fLabel}>법인</div>
                   <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={fSelect}>
@@ -910,12 +910,12 @@ export default function ResourceRoom() {
       const fieldInput: React.CSSProperties = {
         width: "100%", padding: "7px 10px", border: `1px solid ${C.border}`,
         borderRadius: 6, fontSize: 13, fontFamily: "inherit",
-        outline: "none", boxSizing: "border-box", background: "#fff",
+        outline: "none", boxSizing: "border-box", background: "var(--rr-input-bg)", color: "var(--rr-text)",
       };
       const fieldSelect: React.CSSProperties = {
         ...fieldInput,
         appearance: "none",
-        background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`,
+        background: `var(--rr-input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center`,
         paddingRight: 28, cursor: "pointer",
       };
 
@@ -980,7 +980,7 @@ export default function ResourceRoom() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {detailFiles.map((f, i) => (
-                  <div key={f.id ?? f.filename ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
+                  <div key={f.id ?? f.filename ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "var(--rr-surface)" }}>
                     <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
@@ -1050,7 +1050,7 @@ export default function ResourceRoom() {
                       {/* 말풍선 */}
                       <div style={{
                         padding: "9px 13px", borderRadius: isMine ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
-                        background: "#F0F0F0",
+                        background: "var(--rr-surface)",
                         color: C.text,
                         fontSize: 13, lineHeight: 1.6,
                       }}>
@@ -1143,13 +1143,13 @@ export default function ResourceRoom() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
                 <button
                   onClick={() => setDetailReq(null)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.border}`, background: "#fff", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.border}`, background: "var(--rr-bg)", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.primary; (e.currentTarget as HTMLElement).style.color = C.primary; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.sub; }}
                 >← 목록으로</button>
                 <span style={{ fontSize: 12, color: C.muted }}>자료 요청 / {detailReq.reqCode}</span>
                 {isEditing && (
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, background: "#FFF5EE", color: C.primary, border: `1px solid ${C.primary}` }}>편집 중</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, background: "var(--rr-primary-bg)", color: C.primary, border: `1px solid ${C.primary}` }}>편집 중</span>
                 )}
                 {isEditing && editDraft && (
                   <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
@@ -1160,9 +1160,9 @@ export default function ResourceRoom() {
                 {canEdit && !isEditing && (
                   <button
                     onClick={startEditing}
-                    style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", padding: "5px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.primary}`, background: "#fff", color: C.primary, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+                    style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", padding: "5px 14px", borderRadius: 6, fontFamily: "inherit", border: `1px solid ${C.primary}`, background: "var(--rr-bg)", color: C.primary, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.primaryBg; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#fff"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--rr-bg)"; }}
                   >
                     편집
                   </button>
@@ -1183,7 +1183,7 @@ export default function ResourceRoom() {
                   </div>
 
                   {/* 메타 폼 – 1행 */}
-                  <div style={{ background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24, display: "flex", gap: 0 }}>
+                  <div style={{ background: "var(--rr-surface)", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24, display: "flex", gap: 0 }}>
                     {/* 법인 */}
                     <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
                       <div style={fieldLabel}>법인</div>
@@ -1260,7 +1260,7 @@ export default function ResourceRoom() {
                   </div>
 
                   {/* 메타 – 1행 */}
-                  <div style={{ display: "flex", gap: 0, marginBottom: 24, padding: "14px 20px", background: "#F9F9F9", borderRadius: 8, border: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 0, marginBottom: 24, padding: "14px 20px", background: "var(--rr-surface)", borderRadius: 8, border: `1px solid ${C.border}`, flexWrap: "wrap" }}>
                     {([
                       ["법인",      detailReq.entity],
                       ["자료요청자", detailReq.requester],
@@ -1302,7 +1302,7 @@ export default function ResourceRoom() {
                   {detailReq.description && (
                     <div style={{ marginBottom: 24 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: 8 }}>설명</div>
-                      <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.75, background: "#F9F9F9", padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.border}`, margin: 0 }}>{detailReq.description}</p>
+                      <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.75, background: "var(--rr-surface)", padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.border}`, margin: 0 }}>{detailReq.description}</p>
                     </div>
                   )}
 
@@ -1475,7 +1475,7 @@ export default function ResourceRoom() {
                   onClick={() => toggleCollapse(entity)}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", gap: 10,
-                    padding: "10px 16px", background: isOpen ? "#FFFAF6" : "#F9F9F9",
+                    padding: "10px 16px", background: isOpen ? "#FFFAF6" : "var(--rr-surface)",
                     borderBottom: isOpen ? `1px solid ${C.border}` : "none",
                     border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left",
                     transition: "background 0.15s",
@@ -1626,7 +1626,7 @@ export default function ResourceRoom() {
               <IconBtn title="Export"   onClick={() => showToast("Client 사용자 목록이 다운로드됩니다.")}>💾</IconBtn>
             </div>
           </div>
-          <div style={{ background: "#FFFBF5", border: `1px solid #FFE8D0`, borderLeft: `3px solid ${C.primary}`, padding: "8px 14px", borderRadius: 6, marginBottom: 14, fontSize: 12, color: "#777", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ background: "var(--rr-primary-bg)", border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.primary}`, padding: "8px 14px", borderRadius: 6, marginBottom: 14, fontSize: 12, color: C.sub, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <strong style={{ color: C.sub }}>Approved Domains:</strong>
             <span>irongrey.co · seah.co.kr · seah.global · seahctc.com · seahglobal.co.jp · seahgv.com</span>
             <button onClick={() => showToast("도메인 관리 화면으로 이동합니다.")}
@@ -1678,7 +1678,7 @@ export default function ResourceRoom() {
             <div style={{ fontSize: 38, marginBottom: 12 }}>👥</div>
             <p style={{ fontSize: 13 }}>No Third Party users have been added yet.</p>
             <button onClick={() => setModal("add-client")}
-              style={{ marginTop: 14, background: "#fff", color: C.primary, border: `1px solid ${C.primary}`, padding: "7px 18px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              style={{ marginTop: 14, background: "var(--rr-bg)", color: C.primary, border: `1px solid ${C.primary}`, padding: "7px 18px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               + Add User
             </button>
           </div>
@@ -1713,7 +1713,7 @@ export default function ResourceRoom() {
       <main style={{ flex: 1, overflow: "auto", background: C.bg }}>
         {/* Page title bar */}
         <div style={{
-          background: "#fff", borderBottom: `1px solid ${C.border}`,
+          background: "var(--rr-bg)", borderBottom: `1px solid ${C.border}`,
           padding: "0 24px", height: 48,
           display: "flex", alignItems: "center", gap: 10,
           position: "sticky", top: 0, zIndex: 100,
@@ -1786,7 +1786,7 @@ export default function ResourceRoom() {
           </div>
           <p style={{ fontSize: 13, fontWeight: 700, color: C.primary, marginBottom: 8 }}>Step 2: Upload File</p>
           <button onClick={() => showToast("파일 선택 대화상자가 열립니다.")}
-            style={{ background: "#f5f5f5", border: "1px solid #ddd", padding: "6px 16px", borderRadius: 6, fontSize: 13, cursor: "pointer", marginBottom: 6 }}>
+            style={{ background: "var(--rr-surface)", border: `1px solid ${C.border}`, padding: "6px 16px", borderRadius: 6, fontSize: 13, cursor: "pointer", marginBottom: 6, color: C.text }}>
             Select Files
           </button>
           <p style={{ fontSize: 11, color: C.muted, marginBottom: 18 }}>Select populated Import Users Template for upload.</p>
@@ -1807,7 +1807,7 @@ export default function ResourceRoom() {
       {deleteConfirmId !== null && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setDeleteConfirmId(null)}>
-          <div style={{ background: "#fff", borderRadius: 10, padding: "28px 32px", width: 340, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", textAlign: "center" }}
+          <div style={{ background: "var(--rr-bg)", borderRadius: 10, padding: "28px 32px", width: 340, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", textAlign: "center" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
             <p style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>정말 삭제하시겠습니까?</p>
@@ -1829,7 +1829,7 @@ export default function ResourceRoom() {
               >삭제</button>
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                style={{ padding: "8px 24px", borderRadius: 6, border: `1px solid ${C.border}`, background: "#fff", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                style={{ padding: "8px 24px", borderRadius: 6, border: `1px solid ${C.border}`, background: "var(--rr-bg)", color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
               >취소</button>
             </div>
           </div>

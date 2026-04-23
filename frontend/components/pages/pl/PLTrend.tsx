@@ -9,8 +9,8 @@ import { CommentDot } from "@/components/ui/CommentDot";
 import { fetchPLTrendByAccount, fetchPLAccountDetail } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import { useAmountFormat } from "@/lib/fmtAmount";
 
-const fmtM  = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmt   = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
 const ORANGE = "#E87722";
@@ -43,6 +43,7 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
   selectedMonthIdx?: number | null;
   isDark?: boolean;
 }) {
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const axisColor   = isDark ? "#5A6070" : "#bbb";
   const gridColor   = isDark ? "#2E3039" : "#f0f0f0";
   const tooltipBg   = isDark ? "#1C1F26" : "#fff";
@@ -64,7 +65,7 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
     yAxis: {
       type: "value" as const,
       show: expanded,
-      axisLabel: { fontSize: 9, color: axisColor, formatter: (v: number) => `${Math.round(v / 1_000_000)}백만` },
+      axisLabel: { fontSize: 9, color: axisColor, formatter: (v: number) => `${fmtAmt(v)}${unitLabel}` },
       splitLine: { lineStyle: { color: gridColor, width: 1 } },
     },
     series: [
@@ -116,7 +117,7 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
       formatter: (params: { seriesName: string; value: number; dataIndex: number }[]) => {
         const idx = params[0]?.dataIndex;
         const mo  = months[idx] ?? "";
-        const lines = params.filter(p => p.value !== 0).map(p => `${p.seriesName}: <b>${fmtM(p.value)}백만</b>`);
+        const lines = params.filter(p => p.value !== 0).map(p => `${p.seriesName}: <b>${fmtAmt(p.value)}${unitLabel}</b>`);
         return `<span style="font-size:10px;color:${axisColor}">${mo}</span><br/>${lines.join("<br/>")}`;
       },
     } : {
@@ -128,7 +129,7 @@ function SparkLine({ months, cur, pri, height = 60, expanded = false, onMonthCli
       formatter: (params: { seriesName: string; value: number; dataIndex: number }[]) => {
         const mo = months[params[0]?.dataIndex] ?? "";
         const lines = params.filter(p => p.value !== 0)
-          .map(p => `${p.seriesName}: <b>${fmtM(p.value)}백만</b>`);
+          .map(p => `${p.seriesName}: <b>${fmtAmt(p.value)}${unitLabel}</b>`);
         return `<span style="font-size:10px;color:${axisColor}">${mo}</span><br/>${lines.join("<br/>")}`;
       },
     },
@@ -167,6 +168,7 @@ function AccountCard({
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   isDark?: boolean;
 }) {
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const cur  = months.map(m => acct.cur[m] ?? 0);
   const pri  = months.map(m => acct.pri[toPriYm(m)] ?? 0);
   const total = cur.reduce((s, v) => s + v, 0);
@@ -206,11 +208,11 @@ function AccountCard({
       </div>
       <div style={{ marginTop: 4, display: "flex", alignItems: "baseline", gap: 6 }}>
         <span style={{ fontSize: 18, fontWeight: 800, color: txtPri, letterSpacing: "-0.5px" }}>
-          {fmtM(total)}
+          {fmtAmt(total)}
         </span>
-        <span style={{ fontSize: 12, color: txtSec }}>백만</span>
+        <span style={{ fontSize: 12, color: txtSec }}>{unitLabel}</span>
         <span style={{ fontSize: 10, color: chg >= 0 ? "#EF4444" : BLUE, marginLeft: 2 }}>
-          {chg >= 0 ? "▲" : "▼"}{fmtM(Math.abs(chg))}
+          {chg >= 0 ? "▲" : "▼"}{fmtAmt(Math.abs(chg))}
         </span>
       </div>
       <div style={{ marginTop: 6 }}>
@@ -278,6 +280,7 @@ function ExpandedCard({ acct, months, onClose, onMonthClick, selectedMonthIdx, i
 
 // ── 거래처 바 ─────────────────────────────────────────────────
 function CounterpartyBar({ data, isDark = false }: { data: Detail["counterparty"]; isDark?: boolean }) {
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const maxVal    = Math.max(...data.flatMap(d => [Math.abs(d.cur), Math.abs(d.pri)]), 1);
   const trackBg   = isDark ? "#252830" : "#F0F0F0";
   const priBarBg  = isDark ? "rgba(100,110,130,0.55)" : "rgba(160,160,160,0.4)";
@@ -317,8 +320,8 @@ function CounterpartyBar({ data, isDark = false }: { data: Detail["counterparty"
               </div>
             </div>
             <div style={{ width: 80, fontSize: 10, color: valClr, textAlign: "right", flexShrink: 0, lineHeight: 1.6 }}>
-              <div style={{ color: ORANGE, fontWeight: 700 }}>{fmtM(Math.abs(d.cur))}백만</div>
-              <div>{fmtM(Math.abs(d.pri))}백만</div>
+              <div style={{ color: ORANGE, fontWeight: 700 }}>{fmtAmt(Math.abs(d.cur))}{unitLabel}</div>
+              <div>{fmtAmt(Math.abs(d.pri))}{unitLabel}</div>
             </div>
           </div>
         );
@@ -331,6 +334,7 @@ function CounterpartyBar({ data, isDark = false }: { data: Detail["counterparty"
 export default function PLTrend() {
   const isDark = useDarkMode();
   const filter = useFilter();
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const lift = (label: string): React.CSSProperties => {
@@ -510,9 +514,9 @@ export default function PLTrend() {
               {/* KPI 카드 3개 */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
                 {[
-                  { label: "당기금액", value: fmtM(Math.abs(kpiCur)) + "백만", color: ORANGE },
-                  { label: "전기금액", value: fmtM(Math.abs(kpiPri)) + "백만", color: "#555" },
-                  { label: "증감액",   value: (kpiChg < 0 ? "-" : "") + fmtM(Math.abs(kpiChg)) + "백만", color: kpiChg >= 0 ? "#EF4444" : BLUE },
+                  { label: "당기금액", value: fmtAmt(Math.abs(kpiCur)) + unitLabel, color: ORANGE },
+                  { label: "전기금액", value: fmtAmt(Math.abs(kpiPri)) + unitLabel, color: "#555" },
+                  { label: "증감액",   value: (kpiChg < 0 ? "-" : "") + fmtAmt(Math.abs(kpiChg)) + unitLabel, color: kpiChg >= 0 ? "#EF4444" : BLUE },
                   { label: "증감률",   value: kpiChgPct !== null ? `${kpiChg >= 0 ? "▲" : "▼"}${Math.abs(kpiChgPct).toFixed(1)}%` : "-", color: kpiChg >= 0 ? "#EF4444" : BLUE },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="card">

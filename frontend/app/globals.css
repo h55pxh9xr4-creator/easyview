@@ -635,6 +635,76 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
 [data-theme="dark"] .chatbot-suggestion-btn{background:#252830;border-color:#3a3d45;color:#bbb;box-shadow:none}
 [data-theme="dark"] .chatbot-suggestion-btn:hover{background:#E87722;color:#fff;border-color:#E87722;box-shadow:0 2px 8px rgba(232,119,34,.3)}
 
+/* ── ResourceRoom CSS 변수 ── */
+:root {
+  --rr-bg: #fff;
+  --rr-surface: #fafafa;
+  --rr-input-bg: #fff;
+  --rr-th-bg: #FFF8F3;
+  --rr-row-divider: #f5f5f5;
+  --rr-row-hover: #FFF8F3;
+  --rr-primary-bg: #FFF5EE;
+  --rr-border: #EDEDED;
+  --rr-text: #2C2C2C;
+  --rr-sub: #555;
+  --rr-muted: #aaa;
+}
+[data-theme="dark"] {
+  --rr-bg: #1C1F26;
+  --rr-surface: #252830;
+  --rr-input-bg: #252830;
+  --rr-th-bg: rgba(232,119,34,.08);
+  --rr-row-divider: #2E3039;
+  --rr-row-hover: rgba(232,119,34,.06);
+  --rr-primary-bg: rgba(232,119,34,.1);
+  --rr-border: #2E3039;
+  --rr-text: #E2E5EC;
+  --rr-sub: #9198A8;
+  --rr-muted: #5A6070;
+}
+
+/* ── 관리자 페이지 ── */
+.admin-page { background: #f3f4f6; }
+[data-theme="dark"] .admin-page { background: #13151A; }
+[data-theme="dark"] .admin-page .bg-white { background-color: #1C1F26 !important; }
+[data-theme="dark"] .admin-page .bg-pwc-gray-50 { background-color: #252830 !important; }
+[data-theme="dark"] .admin-page .bg-pwc-gray-100 { background-color: #252830 !important; }
+[data-theme="dark"] .admin-page .text-pwc-black { color: #E2E5EC !important; }
+[data-theme="dark"] .admin-page .text-pwc-gray-400 { color: #5A6070 !important; }
+[data-theme="dark"] .admin-page .text-pwc-gray-500 { color: #9198A8 !important; }
+[data-theme="dark"] .admin-page .text-pwc-gray-600 { color: #9198A8 !important; }
+[data-theme="dark"] .admin-page .text-pwc-gray-700 { color: #C8CDD8 !important; }
+[data-theme="dark"] .admin-page .border-pwc-gray-100 { border-color: #252830 !important; }
+[data-theme="dark"] .admin-page .border-pwc-gray-200 { border-color: #2E3039 !important; }
+[data-theme="dark"] .admin-page .border-pwc-gray-300 { border-color: #3D4250 !important; }
+[data-theme="dark"] .admin-page .hover\:bg-pwc-gray-50:hover { background-color: #252830 !important; }
+[data-theme="dark"] .admin-page .hover\:bg-pwc-gray-100:hover { background-color: #2E3039 !important; }
+[data-theme="dark"] .admin-page .bg-orange-50 { background-color: rgba(232,119,34,.1) !important; }
+[data-theme="dark"] .admin-page .bg-red-50 { background-color: rgba(248,113,113,.08) !important; }
+[data-theme="dark"] .admin-page .bg-blue-100 { background-color: rgba(59,130,246,.15) !important; }
+[data-theme="dark"] .admin-page .bg-green-100 { background-color: rgba(34,197,94,.12) !important; }
+[data-theme="dark"] .admin-page .bg-purple-100 { background-color: rgba(168,85,247,.12) !important; }
+[data-theme="dark"] .admin-page .bg-gray-100 { background-color: #2E3039 !important; }
+[data-theme="dark"] .admin-page .text-blue-700 { color: #60A5FA !important; }
+[data-theme="dark"] .admin-page .text-green-800 { color: #4ADE80 !important; }
+[data-theme="dark"] .admin-page .text-purple-700 { color: #C084FC !important; }
+[data-theme="dark"] .admin-page .text-orange-700 { color: #FB923C !important; }
+[data-theme="dark"] .admin-page .text-gray-600 { color: #9198A8 !important; }
+[data-theme="dark"] .admin-page .input-field { background:#252830 !important; border-color:#2E3039 !important; color:#E2E5EC !important; }
+[data-theme="dark"] .admin-page .btn-secondary { background:#252830 !important; border-color:#2E3039 !important; color:#C8CDD8 !important; }
+[data-theme="dark"] .admin-page .btn-secondary:hover { background:#2E3039 !important; }
+[data-theme="dark"] .admin-page .badge-active { background-color:rgba(34,197,94,.15) !important; color:#4ADE80 !important; }
+[data-theme="dark"] .admin-page .badge-inactive { background-color:#2E3039 !important; color:#9198A8 !important; }
+[data-theme="dark"] .admin-page .badge-pending { background-color:rgba(234,179,8,.12) !important; color:#FDE047 !important; }
+[data-theme="dark"] .admin-page table { background: transparent !important; }
+[data-theme="dark"] .admin-page thead tr { border-bottom-color:#2E3039 !important; }
+[data-theme="dark"] .admin-page thead th { background:#252830 !important; color:#E87722 !important; }
+[data-theme="dark"] .admin-page tbody tr { border-bottom-color:#252830 !important; }
+[data-theme="dark"] .admin-page tbody tr:hover { background:#252830 !important; }
+[data-theme="dark"] .admin-page tbody td { color:#C8CDD8 !important; }
+[data-theme="dark"] .admin-page .fixed .bg-white { background:#1C1F26 !important; }
+[data-theme="dark"] .admin-page .fixed .border-pwc-gray-200 { border-color:#2E3039 !important; }
+
 /* ── ServiceIntro 애니메이션 ── */
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(24px); }

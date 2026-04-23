@@ -212,7 +212,7 @@ function PageInner() {
                 ))}
               </div>
             </aside>
-            <div className="main-content" style={{ background: "#f3f4f6", padding: 24 }}>
+            <div className="main-content admin-page" style={{ padding: 24 }}>
               <Suspense fallback={<div style={{ color: "#9ca3af" }}>로딩 중...</div>}>
                 {adminSubPage === "accounts"  && <AdminAccounts />}
                 {adminSubPage === "companies" && <AdminCompanies />}

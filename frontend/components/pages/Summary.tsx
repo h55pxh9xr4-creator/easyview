@@ -13,9 +13,8 @@ import {
   KPIData, Top3Data, IndicatorData, PLTableRow, BSTableRow, ScenarioCountData,
 } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
+import { useAmountFormat } from "@/lib/fmtAmount";
 
-const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
-const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
 const arrow  = (p: number) => p >= 0 ? "up" : "dn";
 const arrowTxt = (p: number) => p >= 0
@@ -31,6 +30,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
   onMonthClick: (idx: number | null) => void;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const { fmtAmt, unitLabel } = useAmountFormat();
 
   if (!data || data.length < 2) return null;
 
@@ -44,7 +44,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
       axisPointer: { type: "line" as const, lineStyle: { color: "#ddd", width: 1 } },
       formatter: (params: { dataIndex: number; value: number }[]) => {
         const p = params[0];
-        return `<span style="font-size:10px;color:#999">${months[p.dataIndex]}</span><br/><b>${fmtB(p.value)}백만</b>`;
+        return `<span style="font-size:10px;color:#999">${months[p.dataIndex]}</span><br/><b>${fmtAmt(p.value)}${unitLabel}</b>`;
       },
     },
     series: [{
@@ -98,6 +98,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
 export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
   const isDark = useDarkMode();
   const filter = useFilter();
+  const { fmtAmt, unitLabel, unitSuffix } = useAmountFormat();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const theadBg = isDark ? "#1C1F26" : "#FFF8F3";
@@ -211,19 +212,19 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           return (
             <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer", ...lift(label) }} onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
-              const selVal = idx !== null ? fmtB(sparkData[key][idx]) : fmtB(d.value);
+              const selVal = idx !== null ? fmtAmt(sparkData[key][idx]) : fmtAmt(d.value);
               const selLabel = idx !== null ? months[idx] : undefined;
               const selRaw = idx !== null ? sparkData[key][idx] : d.value;
               const chatSummary = idx !== null
-                ? `${label} ${selLabel}: ${fmt(selRaw)}원 (${fmtB(selRaw)}백만)`
-                : `${label}: 당기 ${fmt(d.value)}원, 전기 ${fmt(d.prior)}원, 증감률 ${fmtPct(d.change_pct)} (${d.vs})`;
+                ? `${label} ${selLabel}: ${fmtAmt(selRaw)}${unitLabel}`
+                : `${label}: 당기 ${fmtAmt(d.value)}${unitLabel}, 전기 ${fmtAmt(d.prior)}${unitLabel}, 증감률 ${fmtPct(d.change_pct)} (${d.vs})`;
               triggerComment({
                 page: "Summary",
                 label,
-                value: `${selVal}백만`,
+                value: `${selVal}${unitLabel}`,
                 sub: selLabel ? `선택 월: ${selLabel}` : undefined,
                 chatAttachment: {
-                  label: idx !== null ? `${label} ${selLabel} ${fmtB(selRaw)}백만` : `${label} ${fmtB(d.value)}백만`,
+                  label: idx !== null ? `${label} ${selLabel} ${fmtAmt(selRaw)}${unitLabel}` : `${label} ${fmtAmt(d.value)}${unitLabel}`,
                   summary: chatSummary,
                   source: `Summary - ${label} KPI`,
                 },
@@ -239,7 +240,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                 )}
               </div>
               <div className="kpi-val" style={{ color }}>
-                {fmtB(d.value)}<span className="u">백만</span>
+                {fmtAmt(d.value)}<span className="u">{unitLabel}</span>
               </div>
               <div className={`kpi-chg ${arrow(d.change_pct)}`}>
                 {arrowTxt(d.change_pct)}
@@ -279,7 +280,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               )}
             </div>
             {(activeTop3?.[key] ?? []).map((item) => (
-              <div key={item.rank} className="t3-item" style={{ cursor: "pointer", position: "relative", ...lift(item.name) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtB(item.value)}백만`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }, e.currentTarget); }}>
+              <div key={item.rank} className="t3-item" style={{ cursor: "pointer", position: "relative", ...lift(item.name) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtAmt(item.value)}${unitLabel}`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }, e.currentTarget); }}>
                 {ck.has(commentKey("Summary", item.name)) && <CommentDot inquiryId={ck.get(commentKey("Summary", item.name))!} />}
                 <div className={`t3-badge${item.rank === 1 ? " r1" : ""}`}>{item.rank}</div>
                 <div className="t3-name">
@@ -289,7 +290,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                   </div>
                 </div>
                 <div className="t3-val" style={item.rank === 3 ? { color: "#aaa" } : {}}>
-                  {fmtB(item.value)}<small> 백만</small>
+                  {fmtAmt(item.value)}<small> {unitLabel}</small>
                 </div>
               </div>
             ))}
@@ -339,7 +340,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">손익항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>공시용계정</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>당기</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>전기</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
+              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>공시용계정</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>당기({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>전기({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {plTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
@@ -359,8 +360,8 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                         {row.account}
                         {plDotId !== undefined && <CommentDot inquiryId={plDotId} inline />}
                       </td>
-                      <td style={cellBg("당기")} onClick={tc("당기", fmt(row.current))}>{fmt(row.current)}</td>
-                      <td style={cellBg("전기")} onClick={tc("전기", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td style={cellBg("당기")} onClick={tc("당기", fmtAmt(row.current))}>{fmtAmt(row.current)}</td>
+                      <td style={cellBg("전기")} onClick={tc("전기", fmtAmt(row.prior))}>{fmtAmt(row.prior)}</td>
                       <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={cellBg("증감률")} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
                     </tr>
                   );
@@ -373,7 +374,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">재무항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>재무항목</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기말</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기초</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
+              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>재무항목</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기말({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기초({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {bsTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
@@ -393,8 +394,8 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                         {row.account}
                         {bsDotId !== undefined && <CommentDot inquiryId={bsDotId} inline />}
                       </td>
-                      <td style={cellBg("기말")} onClick={tc("기말", fmt(row.current))}>{fmt(row.current)}</td>
-                      <td style={cellBg("기초")} onClick={tc("기초", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td style={cellBg("기말")} onClick={tc("기말", fmtAmt(row.current))}>{fmtAmt(row.current)}</td>
+                      <td style={cellBg("기초")} onClick={tc("기초", fmtAmt(row.prior))}>{fmtAmt(row.prior)}</td>
                       <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={cellBg("증감률")} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
                     </tr>
                   );
