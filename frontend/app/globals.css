@@ -244,6 +244,7 @@ thead th:last-child{border-radius:0 4px 0 0}
 tbody tr{border-bottom:1px solid #F5F5F5}
 tbody tr:hover{background:#FFF8F3}
 tbody td{padding:7px 10px;text-align:right;color:#555;white-space:nowrap;font-variant-numeric:tabular-nums}
+tfoot td{padding:7px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
 tbody td:first-child{text-align:left;font-weight:600;color:#2C2C2C}
 .td-s1{padding-left:18px!important;color:#888!important;font-weight:500!important}
 .td-s2{padding-left:30px!important;color:#aaa!important;font-weight:400!important}
@@ -332,6 +333,14 @@ tbody td:first-child{text-align:left;font-weight:600;color:#2C2C2C}
 .tbl-dark thead th.sort-col{cursor:pointer}
 .tbl-dark thead th.sort-col::after{content:' ▼';font-size:9px;opacity:.6}
 .tbl-dark tbody td{font-size:11px}
+
+/* ── Account card hover ── */
+.acct-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)!important}
+[data-theme="dark"] .acct-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.4)!important}
+
+/* ── Expanded card animation ── */
+@keyframes card-expand{from{transform:scale(0.72) translateY(32px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.card-expand{animation:card-expand .35s cubic-bezier(0.22,1,0.36,1)}
 
 /* ── Voucher search table ── */
 .search-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
@@ -477,6 +486,7 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
 [data-theme="dark"] tbody tr{border-bottom-color:#252830}
 [data-theme="dark"] tbody tr:hover{background:#252830}
 [data-theme="dark"] tbody td{color:#C8CDD8}
+[data-theme="dark"] tfoot td{color:#C8CDD8}
 [data-theme="dark"] tbody td:first-child{color:#E2E5EC}
 [data-theme="dark"] .td-s1{color:#9198A8!important}
 [data-theme="dark"] .td-s2{color:#5A6070!important}

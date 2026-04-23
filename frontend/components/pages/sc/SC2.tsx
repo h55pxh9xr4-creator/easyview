@@ -179,7 +179,7 @@ export default function SC2() {
                     const isSel = selected?.year_month === r.year_month && selected?.amount === r.amount;
                     return (
                       <tr key={i} onClick={() => handleSelect(r)}
-                        style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: isSel ? `3px solid ${ORANGE}` : "3px solid transparent" }}>
+                        style={{ cursor: "pointer", background: isSel ? selRowBg : undefined, borderLeft: "3px solid transparent" }}>
                         <td style={{ textAlign: "center", color: subTxt, fontSize: 11, whiteSpace: "nowrap" }}>
                           {r.year_month.slice(2, 4)}-{r.year_month.slice(5, 7)}
                         </td>

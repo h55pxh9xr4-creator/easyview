@@ -292,7 +292,7 @@ export default function PLAccount() {
                           key={mgmtKey}
                           style={{
                             background: isActive ? rowMgmtActive : rowMgmtBg,
-                            borderLeft: isActive ? "3px solid #E87722" : "3px solid transparent",
+                            borderLeft: "3px solid transparent",
                           }}
                         >
                           <td className="td-s1" style={{ color: isActive ? "#E87722" : undefined, fontWeight: isActive ? 700 : undefined, cursor: "pointer" }}

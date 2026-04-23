@@ -223,7 +223,7 @@ export default function BSAccount() {
                             <tr key={`${cat}-${sum}-${disc}`}
                               style={{
                                 background: isActive ? actRowBg : discRowBg,
-                                borderLeft: isActive ? `3px solid ${ORANGE}` : "3px solid transparent",
+                                borderLeft: "3px solid transparent",
                               }}
                             >
                               <td

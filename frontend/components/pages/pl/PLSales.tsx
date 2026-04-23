@@ -643,11 +643,22 @@ export default function PLSales() {
                 series: [{
                   name: "거래처 비중",
                   type: "pie",
-                  radius: ["38%", "68%"],
-                  center: ["50%", "55%"],
-                  avoidLabelOverlap: false,
+                  radius: ["33%", "58%"],
+                  center: ["50%", "50%"],
+                  avoidLabelOverlap: true,
+                  minShowLabelAngle: 5,
                   itemStyle: { borderRadius: 6, borderColor: donutBdr, borderWidth: 2 },
-                  label: { show: false, position: "center" },
+                  label: {
+                    show: true,
+                    position: "outside",
+                    formatter: (p: { name: string; value: number; percent: number }) => {
+                      const n = p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name;
+                      return `${n}\n${p.value}M (${p.percent.toFixed(1)}%)`;
+                    },
+                    fontSize: 11,
+                    lineHeight: 16,
+                    color: isDark ? "#C8CDD8" : "#444",
+                  },
                   emphasis: {
                     label: {
                       show: true,
@@ -659,7 +670,7 @@ export default function PLSales() {
                     },
                     itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.28)" },
                   },
-                  labelLine: { show: false },
+                  labelLine: { show: true, length: 8, length2: 12 },
                   data: donut.items.map((item, i) => ({
                     value: Math.round(item.amount / 1_000_000),
                     name: item.counterparty,
@@ -673,7 +684,7 @@ export default function PLSales() {
                   })),
                 }],
               }}
-              style={{ height: 380, cursor: "pointer" }}
+              style={{ height: 430, cursor: "pointer" }}
               notMerge={true}
               onEvents={{
                 click: (p: { name: string }) => {
