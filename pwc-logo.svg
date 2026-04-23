@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 32" fill="none">
+  <!-- Left chevron -->
+  <polygon points="0,32 28,32 44,0 16,0" fill="#E8451A"/>
+  <!-- Right chevron -->
+  <polygon points="56,32 84,32 100,0 72,0" fill="#E8451A"/>
+  <!-- Gap is white (transparent) -->
+</svg>

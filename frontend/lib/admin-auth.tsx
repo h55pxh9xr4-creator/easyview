@@ -60,8 +60,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
     setUser(null);
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-    window.location.href = `${basePath}/admin/login`;
   };
 
   return (

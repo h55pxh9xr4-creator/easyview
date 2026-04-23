@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Header, { type TopTab } from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -56,16 +56,10 @@ const TAB_TO_PAGE: Record<TopTab, string> = {
 };
 
 function PageInner() {
-  const searchParams = useSearchParams();
-  const router       = useRouter();
+  const router = useRouter();
   const [authed, setAuthed]             = useState<boolean | null>(null);
   const [topTab, setTopTab]             = useState<TopTab>("서비스 소개");
   const [adminSubPage, setAdminSubPage] = useState("accounts");
-  const [adminAuthed, setAdminAuthed]   = useState(false);
-  const [adminLoginEmail, setAdminLoginEmail]       = useState("");
-  const [adminLoginPassword, setAdminLoginPassword] = useState("");
-  const [adminLoginError, setAdminLoginError]       = useState("");
-  const [adminLoginLoading, setAdminLoginLoading]   = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
@@ -75,23 +69,17 @@ function PageInner() {
   const loadCommentedItems = useCommentedItems(state => state.load);
   const pendingInquiryId   = usePendingInquiry(state => state.pendingId);
 
-  const initParams = useRef({
-    page:  searchParams.get("page"),
-    sub:   searchParams.get("sub"),
-    label: searchParams.get("label"),
-  });
-
-  useEffect(() => {
-    if (localStorage.getItem("admin_token")) setAdminAuthed(true);
-  }, []);
-
   useEffect(() => {
     if (localStorage.getItem("ev_auto_auth") === "1") {
       sessionStorage.setItem("ev_auth", "1");
       sessionStorage.setItem("ev_user", localStorage.getItem("ev_auto_user") ?? "");
     }
     const ok = sessionStorage.getItem("ev_auth") === "1";
-    const { page, sub, label } = initParams.current;
+    const hash = window.location.hash.slice(1);
+    const hp = new URLSearchParams(hash);
+    const page = hp.get("page");
+    const sub = hp.get("sub");
+    const label = hp.get("label");
     setUser(sessionStorage.getItem("ev_user") ?? "");
     if (ok) loadCommentedItems();
     const savedTheme = localStorage.getItem("ev_theme") as "light" | "dark" | null;
@@ -110,12 +98,12 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // URL 동기화 헬퍼 — window.history 직접 사용 (static export 호환)
+  // URL 동기화 헬퍼 — location.hash 직접 할당 (pushState 우회)
   const pushUrl = (tab: TopTab, sub?: string, label?: string) => {
     const params = new URLSearchParams({ page: TAB_TO_PAGE[tab] });
     if (sub)   params.set("sub", sub);
     if (label) params.set("label", encodeURIComponent(label));
-    window.history.pushState({}, "", `?${params.toString()}`);
+    window.location.hash = params.toString();
   };
 
   const handleTopTabChange = (tab: TopTab) => {
@@ -161,7 +149,7 @@ function PageInner() {
       setAuthed(true);
       pushUrl("서비스 소개");
       adminAuthApi.login("admin@pwc.com", "admin1234!")
-        .then((res) => { localStorage.setItem("admin_token", res.access_token); setAdminAuthed(true); })
+        .then((res) => { localStorage.setItem("admin_token", res.access_token); })
         .catch(() => {});
     }} />;
   }
@@ -190,48 +178,6 @@ function PageInner() {
       )}
 
       {topTab === "관리자" && (() => {
-        if (!adminAuthed) {
-          const handleAdminLogin = async (e: React.FormEvent) => {
-            e.preventDefault();
-            setAdminLoginError(""); setAdminLoginLoading(true);
-            try {
-              const res = await adminAuthApi.login(adminLoginEmail, adminLoginPassword);
-              localStorage.setItem("admin_token", res.access_token);
-              localStorage.setItem("admin_user", res.user?.name ?? "");
-              setAdminAuthed(true);
-              setAdminLoginEmail(""); setAdminLoginPassword("");
-            } catch {
-              setAdminLoginError("이메일 또는 비밀번호가 올바르지 않습니다.");
-            } finally { setAdminLoginLoading(false); }
-          };
-          return (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#f3f4f6" }}>
-              <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.08)", padding: "48px 40px", width: 380 }}>
-                <div style={{ marginBottom: 28 }}>
-                  <p style={{ fontSize: 12, color: "#d04a02", fontWeight: 600, marginBottom: 6 }}>ADMIN</p>
-                  <h2 style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a" }}>관리자 로그인</h2>
-                </div>
-                <form onSubmit={handleAdminLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 5 }}>이메일</label>
-                    <input type="email" value={adminLoginEmail} onChange={e => setAdminLoginEmail(e.target.value)} placeholder="admin@pwc.com" required
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 5 }}>비밀번호</label>
-                    <input type="password" value={adminLoginPassword} onChange={e => setAdminLoginPassword(e.target.value)} placeholder="••••••••" required
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-                  </div>
-                  {adminLoginError && <p style={{ fontSize: 12, color: "#e53e3e", margin: 0 }}>{adminLoginError}</p>}
-                  <button type="submit" disabled={adminLoginLoading}
-                    style={{ marginTop: 8, padding: "12px", background: "#d04a02", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-                    {adminLoginLoading ? "로그인 중..." : "로그인"}
-                  </button>
-                </form>
-              </div>
-            </div>
-          );
-        }
         const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
         const ADMIN_NAV = [
           { key: "accounts",  label: "계정 관리",   icon: `${BASE}/icons/icon-building.svg` },
@@ -246,17 +192,11 @@ function PageInner() {
                   <button key={item.key} onClick={() => setAdminSubPage(item.key)} className={`sb-item${adminSubPage === item.key ? " active" : ""}`}>
                     <span className="sb-icon">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.icon} alt="" width={22} height={22} style={{ display: "block", opacity: 1 }} />
+                      <img src={item.icon} alt="" width={22} height={22} style={{ display: "block" }} />
                     </span>
                     <span className="sb-label">{item.label}</span>
                   </button>
                 ))}
-                <div style={{ position: "absolute", bottom: 16, left: 0, right: 0, padding: "0 12px" }}>
-                  <button onClick={() => { localStorage.removeItem("admin_token"); localStorage.removeItem("admin_user"); setAdminAuthed(false); }}
-                    style={{ width: "100%", padding: "8px 12px", fontSize: 12, color: "#9ca3af", background: "none", border: "1px solid #e5e7eb", borderRadius: 8, cursor: "pointer" }}>
-                    로그아웃
-                  </button>
-                </div>
               </div>
             </aside>
             <div className="main-content" style={{ background: "#f3f4f6", padding: 24 }}>
@@ -303,8 +243,8 @@ function PageInner() {
         {topTab === "리포트" && <ChatBot activePage={activeSub} />}
       </div>
 
-      {topTab !== "서비스 소개" && topTab !== "리포트" && topTab !== "문의게시판" && (
-        <ChatBot activePage={topTab === "자료실" ? "resource" : "admin"} />
+      {topTab !== "서비스 소개" && topTab !== "리포트" && topTab !== "문의게시판" && topTab !== "관리자" && (
+        <ChatBot activePage="resource" />
       )}
     </>
   );

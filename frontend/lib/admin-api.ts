@@ -1,6 +1,4 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-const ADMIN_LOGIN_PATH = `${BASE_PATH}/admin/login`;
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -20,7 +18,6 @@ async function request(path: string, options: RequestInit = {}) {
   if (res.status === 401) {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
-    window.location.href = ADMIN_LOGIN_PATH;
     throw new Error('인증이 만료되었습니다.');
   }
 
