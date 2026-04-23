@@ -149,7 +149,7 @@ export default function LoginPage({ onLogin }: Props) {
           {/* 브랜드 헤더 */}
           <div style={{ background: "rgba(44,44,44,0.92)", padding: "20px 24px 16px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
-              <Image src="/easyview/logo.png" alt="logo" width={28} height={28} style={{ height: "28px", width: "auto" }} />
+              <Image src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" width={28} height={28} style={{ height: "28px", width: "auto" }} />
               <span style={{ fontSize: "22px", fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
                 Easy <span style={{ color: "#E87722" }}>View</span>
               </span>

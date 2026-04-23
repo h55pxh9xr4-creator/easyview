@@ -55,7 +55,7 @@ export default function Header({ user, activeTopTab = "리포트", onTopTabChang
     <header className="hdr">
       {/* 로고 + 포털명 */}
       <div className="hdr-brand">
-        <img src={isDark ? "/easyview/Logo_reverse.png" : "/easyview/logo2.png"} alt="PwC" className="logo-img" />
+        <img src={isDark ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/Logo_reverse.png` : `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo2.png`} alt="PwC" className="logo-img" />
         <span className="hdr-portal-name">Easyview</span>
       </div>
 
