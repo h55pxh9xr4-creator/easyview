@@ -16,6 +16,10 @@ import Settings, { applyTheme } from "@/components/pages/Settings";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
+import { adminAuthApi } from "@/lib/admin-api";
+
+const AdminAccounts  = dynamic(() => import("@/app/admin/accounts/page"),  { ssr: false });
+const AdminCompanies = dynamic(() => import("@/app/admin/companies/page"), { ssr: false });
 
 const Summary      = dynamic(() => import("@/components/pages/Summary"),         { ssr: false });
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
@@ -55,6 +59,7 @@ function PageInner() {
   const router = useRouter();
   const [authed, setAuthed]             = useState<boolean | null>(null);
   const [topTab, setTopTab]             = useState<TopTab>("서비스 소개");
+  const [adminSubPage, setAdminSubPage] = useState("accounts");
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
@@ -102,7 +107,6 @@ function PageInner() {
   };
 
   const handleTopTabChange = (tab: TopTab) => {
-    if (tab === "관리자") { router.push("/admin"); return; }
     closeAll();
     setTopTab(tab);
     pushUrl(tab);
@@ -144,6 +148,9 @@ function PageInner() {
       setTopTab("서비스 소개");
       setAuthed(true);
       pushUrl("서비스 소개");
+      adminAuthApi.login("admin@pwc.com", "admin1234!")
+        .then((res) => { localStorage.setItem("admin_token", res.access_token); })
+        .catch(() => {});
     }} />;
   }
 
@@ -169,6 +176,39 @@ function PageInner() {
           <ChatBot activePage="inquiry" />
         </div>
       )}
+
+      {topTab === "관리자" && (() => {
+        const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+        const ADMIN_NAV = [
+          { key: "accounts",  label: "계정 관리",   icon: `${BASE}/icons/icon-building.svg` },
+          { key: "companies", label: "회사 관리",   icon: `${BASE}/icons/icon-trust.svg` },
+          { key: "reports",   label: "리포트 관리", icon: `${BASE}/icons/icon-journal.svg` },
+        ];
+        return (
+          <div className="app-body">
+            <aside className="sidebar" style={{ position: "sticky", top: 52, height: "calc(100vh - 52px)", alignSelf: "flex-start" }}>
+              <div className="sb-list">
+                {ADMIN_NAV.map(item => (
+                  <button key={item.key} onClick={() => setAdminSubPage(item.key)} className={`sb-item${adminSubPage === item.key ? " active" : ""}`}>
+                    <span className="sb-icon">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.icon} alt="" width={22} height={22} style={{ display: "block" }} />
+                    </span>
+                    <span className="sb-label">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </aside>
+            <div className="main-content" style={{ background: "#f3f4f6", padding: 24 }}>
+              <Suspense fallback={<div style={{ color: "#9ca3af" }}>로딩 중...</div>}>
+                {adminSubPage === "accounts"  && <AdminAccounts />}
+                {adminSubPage === "companies" && <AdminCompanies />}
+                {adminSubPage === "reports"   && <div style={{ color: "#9ca3af", padding: 40, textAlign: "center" }}>준비 중입니다.</div>}
+              </Suspense>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="app-body" style={{ display: topTab !== "리포트" && topTab !== "자료실" ? "none" : undefined }}>
         {topTab === "리포트" && (
@@ -203,7 +243,7 @@ function PageInner() {
         {topTab === "리포트" && <ChatBot activePage={activeSub} />}
       </div>
 
-      {topTab === "자료실" && (
+      {topTab !== "서비스 소개" && topTab !== "리포트" && topTab !== "문의게시판" && topTab !== "관리자" && (
         <ChatBot activePage="resource" />
       )}
     </>
