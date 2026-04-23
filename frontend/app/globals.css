@@ -616,8 +616,10 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
 /* Feedback 툴바 (Comment + Add to Chat) */
 .feedback-toolbar{display:flex;align-items:center;gap:6px;z-index:500;animation:badge-pop .2s ease}
 .feedback-toolbar .comment-badge{position:static !important;animation:none}
-.add-to-chat-badge{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;background:#fff;border:1px solid #E87722;border-radius:50%;cursor:pointer;box-shadow:0 4px 16px rgba(232,119,34,.2);transition:all .15s;font-family:inherit;flex-shrink:0;position:relative}
+.add-to-chat-badge{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;background:#fff;border:1px solid #E87722;border-radius:50%;cursor:pointer;box-shadow:0 4px 16px rgba(232,119,34,.2);transition:all .15s;font-family:inherit;flex-shrink:0;position:relative;overflow:hidden}
 .add-to-chat-badge .samilkim-face-only{width:24px;height:24px;border-radius:50%;object-fit:cover;background:#FFF3E8}
+.add-to-chat-badge .samilkim-face-crop{width:26px;height:26px;border-radius:50%;overflow:hidden;background:#FFF3E8;position:relative;flex-shrink:0}
+.add-to-chat-badge .samilkim-face-crop img{position:absolute;width:60px;height:auto;top:-4px;left:50%;transform:translateX(-50%)}
 .add-to-chat-badge:hover{background:#FFF3E8;box-shadow:0 6px 20px rgba(232,119,34,.45);transform:scale(1.1)}
 .a2c-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);background:linear-gradient(135deg,#2C2C2C 0%,#444 100%);color:#fff;font-size:11px;font-weight:500;padding:6px 12px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;letter-spacing:.3px;box-shadow:0 4px 12px rgba(0,0,0,.25);width:max-content;writing-mode:horizontal-tb;word-break:keep-all;line-height:1}
 .a2c-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#2C2C2C}

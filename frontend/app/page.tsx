@@ -268,7 +268,9 @@ function PageInner() {
                 addToChat(attachment);
                 closeAll();
               }}>
-                <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/samilkim_nobg2_Faceonly.png`} alt="김삼일" className="samilkim-face-only" />
+                <span className="samilkim-face-crop">
+                  <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/samilkim_nobg.png`} alt="김삼일" />
+                </span>
                 <span className="a2c-tooltip">김삼일에게 질문하기</span>
               </button>
             </div>
