@@ -633,17 +633,21 @@ export default function ResourceRoom() {
 
   /* ── Requests ── */
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
+  const userCompany = typeof window !== "undefined" ? (sessionStorage.getItem("ev_company") ?? "전체") : "전체";
+  const isAdmin     = typeof window !== "undefined" ? (sessionStorage.getItem("ev_role") === "admin") : true;
+  const allowedEntities = isAdmin ? ENTITIES : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
   const filteredReqs = requests.filter(r => {
     if (myOnly && currentUser && r.requester !== currentUser) return false;
     if (reqFilter !== "전체" && r.status !== reqFilter) return false;
     if (entityFilter !== "전체" && r.entity !== entityFilter) return false;
+    if (!allowedEntities.includes(r.entity)) return false;
     return true;
   });
 
   /* 법인별 그룹핑 */
   const grouped: Record<string, Request[]> = {};
   filteredReqs.forEach(r => { (grouped[r.entity] ??= []).push(r); });
-  const groupedEntities = ENTITIES.filter(e => grouped[e]);
+  const groupedEntities = allowedEntities.filter(e => grouped[e]);
 
   const toggleCollapse = (entity: string) =>
     setCollapsed(p => ({ ...p, [entity]: !p[entity] }));
@@ -1363,7 +1367,7 @@ export default function ResourceRoom() {
 
       {/* Header – row 2: 모회사 + 법인 + 토글 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        {/* 모회사 드롭다운 (관리자용) */}
+        {isAdmin && (<>
         <select
           value={parentFilter}
           onChange={e => setParentFilter(e.target.value)}
@@ -1378,6 +1382,7 @@ export default function ResourceRoom() {
           <option value="전체">전체 모회사</option>
           {PARENT_COMPANIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
+        </>)}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <select

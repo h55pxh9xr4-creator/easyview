@@ -22,6 +22,13 @@ const USER_ROLES: Record<string, string> = {
   test_vu: "viewer_uploader",
 };
 
+const USER_COMPANIES: Record<string, string> = {
+  admin: "전체",
+  test_v: "test",
+  test_u: "test",
+  test_vu: "test",
+};
+
 export default function LoginPage({ onLogin }: Props) {
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
@@ -72,6 +79,7 @@ export default function LoginPage({ onLogin }: Props) {
         sessionStorage.setItem("ev_auth", "1");
         sessionStorage.setItem("ev_user", id);
         sessionStorage.setItem("ev_role", USER_ROLES[id] ?? "viewer");
+        sessionStorage.setItem("ev_company", USER_COMPANIES[id] ?? "전체");
         if (autoLogin) {
           localStorage.setItem("ev_auto_auth", "1");
           localStorage.setItem("ev_auto_user", id);
