@@ -575,9 +575,14 @@ def get_pl_items(
 def get_pl_items_table(
     base_ym: str = Query(...),
     view_type: str = Query("quarter"),  # month | quarter | year
+    level: str = Query("mgmt"),          # disclosure | mgmt | account
     db: Session = Depends(get_db),
 ):
-    """손익계산서 테이블 — 월/분기/연도별 컬럼, 공시용계정>관리계정 2단계"""
+    """손익계산서 테이블 — 월/분기/연도별 컬럼
+    - disclosure: 공시용계정까지
+    - mgmt: 공시용계정 + 관리계정 (기본)
+    - account: 공시 + 관리 + 계정과목(account_name) 3단계
+    """
 
     DISCLOSURE_ORDER = [
         "매출액", "제조원가", "매출원가", "판매비와관리비",
@@ -612,16 +617,25 @@ def get_pl_items_table(
 
     col_labels = [col_label(y, p) for y, p in cols]
 
-    # 원시 집계: disclosure_acct, mgmt_acct, 컬럼별 합계
+    # 원시 집계: disclosure_acct, mgmt_acct, (account_name), 컬럼별 합계
     case_parts = ", ".join(
         f"-ROUND(SUM(CASE WHEN {col_filter(y,p)} THEN signed_amount ELSE 0 END),0) AS c{i}"
         for i, (y, p) in enumerate(cols)
     )
+    include_account = (level == "account")
+    select_cols = "disclosure_acct, mgmt_acct"
+    group_cols = "disclosure_acct, mgmt_acct"
+    order_cols = "disclosure_acct, mgmt_acct"
+    if include_account:
+        select_cols += ", account_name"
+        group_cols += ", account_name"
+        order_cols += ", account_name"
+
     rows = db.execute(text(f"""
-        SELECT disclosure_acct, mgmt_acct, {case_parts}
+        SELECT {select_cols}, {case_parts}
         FROM je WHERE section='PL'
-        GROUP BY disclosure_acct, mgmt_acct
-        ORDER BY disclosure_acct, mgmt_acct
+        GROUP BY {group_cols}
+        ORDER BY {order_cols}
     """)).fetchall()
 
     # disclosure_acct → sign
@@ -631,16 +645,21 @@ def get_pl_items_table(
         if da not in sign_map:
             sign_map[da] = 1 if da in INCOME_ACCT else -1
 
-    # 집계: {disclosure_acct: {mgmt_acct: [col값...]}}
+    # 집계: {disclosure_acct: {mgmt_acct: {account_name: [col값...]}}}
     from collections import defaultdict
+    da_mgmt_acct: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [0.0] * len(cols))))
     da_mgmt: dict = defaultdict(lambda: defaultdict(lambda: [0.0] * len(cols)))
     da_total: dict = defaultdict(lambda: [0.0] * len(cols))
 
+    val_start = 3 if include_account else 2
     for r in rows:
         da, ma = r[0], r[1]
+        an = r[2] if include_account else None
         sgn = sign_map.get(da, -1)
         for i in range(len(cols)):
-            val = float(r[2 + i] or 0) * sgn
+            val = float(r[val_start + i] or 0) * sgn
+            if include_account:
+                da_mgmt_acct[da][ma][an][i] += val
             da_mgmt[da][ma][i] += val
             da_total[da][i]    += val
 
@@ -672,9 +691,16 @@ def get_pl_items_table(
 
         result_rows.append({"type": "disclosure", "label": da,
                              "values": [round(v) for v in da_total[da]]})
+        if level == "disclosure":
+            continue  # 공시용계정만 요청 시 하위 생략
         for ma, vals in sorted(da_mgmt[da].items()):
             result_rows.append({"type": "mgmt", "label": ma,
                                  "values": [round(v) for v in vals]})
+            if include_account:
+                # 관리계정 하위의 계정과목(account_name) 행 삽입
+                for an, avals in sorted(da_mgmt_acct[da][ma].items()):
+                    result_rows.append({"type": "account", "label": an or "(미지정)",
+                                         "values": [round(v) for v in avals]})
 
     # 맨 마지막 당기순이익
     result_rows.append({"type": "subtotal", "label": "당기순이익",

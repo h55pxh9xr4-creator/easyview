@@ -106,8 +106,9 @@ export const fetchPLItems = (f: FilterState) =>
   get("/api/pl/items", { base_ym: f.baseYm, period_type: f.periodType });
 
 export type ViewType = "month" | "quarter" | "year";
-export const fetchPLItemsTable = (f: FilterState, view_type: ViewType) =>
-  get("/api/pl/items/table", { base_ym: f.baseYm, view_type });
+export type PLItemsLevel = "disclosure" | "mgmt" | "account";
+export const fetchPLItemsTable = (f: FilterState, view_type: ViewType, level: PLItemsLevel = "mgmt") =>
+  get("/api/pl/items/table", { base_ym: f.baseYm, view_type, level });
 
 // ── BS ───────────────────────────────────────────────────────
 export const fetchBSSummary = (f: FilterState) =>

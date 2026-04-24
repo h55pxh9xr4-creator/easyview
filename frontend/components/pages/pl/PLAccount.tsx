@@ -173,7 +173,7 @@ function CounterpartyChangeBar({ data, isDark = false, selectedCp = null }: { da
                 <div style={{ width: `${curPct}%`, height: "100%", background: "#E87722", borderRadius: 3 }} />
               </div>
             </div>
-            <div style={{ width: 70, fontSize: 10, color: valClr, textAlign: "right", flexShrink: 0, lineHeight: 1.6 }}>
+            <div style={{ minWidth: 120, fontSize: 10, color: valClr, textAlign: "right", flexShrink: 0, lineHeight: 1.6, whiteSpace: "nowrap" }}>
               <div style={{ color: "#E87722", fontWeight: 700 }}>{fmtAmt(Math.abs(d.cur))}{unitLabel}</div>
               <div>{fmtAmt(Math.abs(d.pri))}{unitLabel}</div>
             </div>

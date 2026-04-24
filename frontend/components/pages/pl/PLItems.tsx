@@ -5,14 +5,14 @@ import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
-import { fetchPLItemsTable, ViewType } from "@/lib/api";
+import { fetchPLItemsTable, ViewType, PLItemsLevel } from "@/lib/api";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 const fmt = (n: number) =>
   n === 0 ? "-" : Math.round(n).toLocaleString("ko-KR");
 
 interface TableRow {
-  type: "disclosure" | "mgmt" | "subtotal";
+  type: "disclosure" | "mgmt" | "account" | "subtotal";
   label: string;
   values: number[];
 }
@@ -21,7 +21,7 @@ interface TableData {
   rows: TableRow[];
 }
 
-type LevelType = "disclosure" | "all";
+type LevelType = PLItemsLevel;
 
 const ORANGE     = "#E87722";
 const ORANGE_BG  = "#FFF8F3";
@@ -35,22 +35,20 @@ export default function PLItems() {
   const isHighlighted = (label: string) =>
     !!cmtTarget && cmtTarget.page === "손익항목" && cmtTarget.label === label;
   const [viewType,  setViewType]  = useState<ViewType>("quarter");
-  const [levelType, setLevelType] = useState<LevelType>("all");
+  const [levelType, setLevelType] = useState<LevelType>("mgmt");
   const [data,    setData]    = useState<TableData | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    fetchPLItemsTable(filter, viewType)
+    fetchPLItemsTable(filter, viewType, levelType)
       .then(d => setData(d as TableData))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [filter.baseYm, viewType]);
+  }, [filter.baseYm, viewType, levelType]);
 
-  // 레벨 필터 적용
-  const visibleRows = data?.rows.filter(r =>
-    levelType === "disclosure" ? r.type !== "mgmt" : true
-  ) ?? [];
+  // 서버가 level에 맞춰 rows를 주므로 추가 필터 불필요
+  const visibleRows = data?.rows ?? [];
 
   // 연도 그룹 계산
   const colGroups: { label: string; indices: number[] }[] = [];
@@ -118,7 +116,7 @@ export default function PLItems() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, color: isDark ? "#9198A8" : "#999", fontWeight: 600 }}>계정 단계</span>
           <div style={toggleWrap}>
-            {([["disclosure", "공시용계정"], ["all", "관리계정"]] as [LevelType, string][]).map(([v, label]) => (
+            {([["disclosure", "공시용계정"], ["mgmt", "관리계정"], ["account", "계정과목"]] as [LevelType, string][]).map(([v, label]) => (
               <button key={v} onClick={() => setLevelType(v)} style={toggleBtn(levelType === v)}>{label}</button>
             ))}
           </div>
@@ -180,6 +178,7 @@ export default function PLItems() {
                   const isSubtotal   = row.type === "subtotal";
                   const isDisclosure = row.type === "disclosure";
                   const isMgmt       = row.type === "mgmt";
+                  const isAccount    = row.type === "account";
 
                   const rowBg = isSubtotal
                     ? ORANGE_L
@@ -197,15 +196,16 @@ export default function PLItems() {
                     }}>
                       {/* 계정명 셀 — 클릭 없음 */}
                       <td style={{
-                        padding: isMgmt ? "5px 16px 5px 32px" : isSubtotal ? "8px 16px" : "6px 16px",
+                        padding: isAccount ? "4px 16px 4px 48px" : isMgmt ? "5px 16px 5px 32px" : isSubtotal ? "8px 16px" : "6px 16px",
                         position: "sticky", left: 0, zIndex: 1,
                         background: rowBg, color: labelColor, fontWeight: rowFw,
                         borderRight: `1px solid ${bdrStrong}`,
-                        fontSize: isMgmt ? 11 : 12,
+                        fontSize: isAccount ? 10.5 : isMgmt ? 11 : 12,
                         whiteSpace: "nowrap",
                         borderLeft: isSubtotal ? `3px solid ${ORANGE}` : "3px solid transparent",
                       }}>
                         {isMgmt && <span style={{ color: arrowClr, marginRight: 6, fontSize: 10 }}>└</span>}
+                        {isAccount && <span style={{ color: arrowClr, marginRight: 6, fontSize: 10 }}>└</span>}
                         {row.label}
                       </td>
 
@@ -224,7 +224,7 @@ export default function PLItems() {
                             key={ci}
                             style={{
                               textAlign: "right",
-                              fontSize: 12,
+                              fontSize: isAccount ? 10.5 : 12,
                               padding: "5px 12px",
                               color: valColor,
                               fontWeight: isSubtotal ? 700 : isDisclosure ? 600 : 400,
