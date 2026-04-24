@@ -132,6 +132,7 @@ export const adminCompaniesApi = {
   update: (id: number, data: Record<string, unknown>) => api.put(`/api/admin/companies/${id}`, data),
   delete: (id: number) => api.delete(`/api/admin/companies/${id}`),
   createSubsidiary: (data: Record<string, unknown>) => api.post('/api/admin/companies/subsidiaries', data),
+  deleteSubsidiary: (subId: number) => api.delete(`/api/admin/companies/subsidiaries/${subId}`),
   names: () => api.get('/api/admin/companies/names'),
 };
 

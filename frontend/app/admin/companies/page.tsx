@@ -8,7 +8,6 @@ interface Subsidiary { id: number; name: string; }
 interface Company {
   id: number;
   name: string;
-  subsidiary_name?: string;
   subsidiaries?: Subsidiary[];
   biz_start?: string;
   biz_end?: string;
@@ -20,10 +19,13 @@ interface Company {
   base_period?: string;
 }
 
+// 자회사 항목 (id 없으면 새로 추가, _delete=true면 삭제 대상)
+interface SubEntry { id?: number; name: string; _delete?: boolean; }
+
 type View = "list" | "register" | "edit";
 
 const EMPTY_FORM = {
-  name: "", subsidiary_name: "", biz_start: "", biz_end: "",
+  name: "", biz_start: "", biz_end: "",
   country: "", company_type: "", contract_start: "", contract_end: "",
   base_currency: "", base_period: "",
 };
@@ -36,6 +38,8 @@ export default function CompaniesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editTarget, setEditTarget] = useState<Company | null>(null);
   const [saving, setSaving] = useState(false);
+  const [subEntries, setSubEntries] = useState<SubEntry[]>([]);
+  const [subInputVal, setSubInputVal] = useState("");
 
   const fetchCompanies = useCallback(async () => {
     try {
@@ -48,21 +52,43 @@ export default function CompaniesPage() {
   useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
 
   const filtered = companies.filter((c) =>
-    !search || c.name.includes(search) || (c.subsidiary_name ?? "").includes(search) || (c.country ?? "").includes(search)
+    !search ||
+    c.name.includes(search) ||
+    (c.subsidiaries ?? []).some(s => s.name.includes(search)) ||
+    (c.country ?? "").includes(search)
   );
 
-  const openRegister = () => { setForm(EMPTY_FORM); setEditTarget(null); setView("register"); };
+  const openRegister = () => {
+    setForm(EMPTY_FORM);
+    setSubEntries([]);
+    setSubInputVal("");
+    setEditTarget(null);
+    setView("register");
+  };
 
   const openEdit = (c: Company) => {
     setEditTarget(c);
     setForm({
-      name: c.name, subsidiary_name: c.subsidiary_name ?? "",
+      name: c.name,
       biz_start: c.biz_start ?? "", biz_end: c.biz_end ?? "",
       country: c.country ?? "", company_type: c.company_type ?? "",
       contract_start: c.contract_start ?? "", contract_end: c.contract_end ?? "",
       base_currency: c.base_currency ?? "", base_period: c.base_period ?? "",
     });
+    setSubEntries((c.subsidiaries ?? []).map(s => ({ id: s.id, name: s.name })));
+    setSubInputVal("");
     setView("edit");
+  };
+
+  const addSub = () => {
+    const trimmed = subInputVal.trim();
+    if (!trimmed) return;
+    setSubEntries(prev => [...prev, { name: trimmed }]);
+    setSubInputVal("");
+  };
+
+  const removeSub = (idx: number) => {
+    setSubEntries(prev => prev.map((s, i) => i === idx ? { ...s, _delete: true } : s));
   };
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -70,14 +96,29 @@ export default function CompaniesPage() {
     if (!form.name) { showToast("회사명을 입력해주세요.", "error"); return; }
     setSaving(true);
     const dateFields = ["biz_start", "biz_end", "contract_start", "contract_end"] as const;
-    const payload = { ...form };
-    dateFields.forEach((k) => { if (!payload[k]) (payload as Record<string, unknown>)[k] = null; });
+    const payload: Record<string, unknown> = { ...form };
+    dateFields.forEach((k) => { if (!payload[k]) payload[k] = null; });
     try {
       if (view === "edit" && editTarget) {
         await adminCompaniesApi.update(editTarget.id, payload);
+        // 삭제 대상 자회사
+        for (const sub of subEntries) {
+          if (sub._delete && sub.id) {
+            await adminCompaniesApi.deleteSubsidiary(sub.id);
+          }
+        }
+        // 새 자회사 추가
+        for (const sub of subEntries) {
+          if (!sub.id && !sub._delete) {
+            await adminCompaniesApi.createSubsidiary({ name: sub.name, company_id: editTarget.id });
+          }
+        }
         showToast("수정 완료", "success");
       } else {
-        await adminCompaniesApi.create(payload);
+        const created = await adminCompaniesApi.create(payload);
+        for (const sub of subEntries.filter(s => !s._delete)) {
+          await adminCompaniesApi.createSubsidiary({ name: sub.name, company_id: created.id });
+        }
         showToast(`${form.name} 회사가 등록되었습니다.`, "success");
       }
       await fetchCompanies();
@@ -104,6 +145,8 @@ export default function CompaniesPage() {
   // ── 등록/수정 화면 ──
   if (view === "register" || view === "edit") {
     const isEdit = view === "edit";
+    const visibleSubs = subEntries.filter(s => !s._delete);
+
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
@@ -112,7 +155,7 @@ export default function CompaniesPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-pwc-black">{isEdit ? "회사 정보 수정" : "회사 등록"}</h1>
-            <p className="text-sm text-pwc-gray-500 mt-1">ERD 기준 회사 정보를 입력합니다.</p>
+            <p className="text-sm text-pwc-gray-500 mt-1">회사 정보와 자회사 목록을 관리합니다.</p>
           </div>
         </div>
 
@@ -129,10 +172,6 @@ export default function CompaniesPage() {
                     <input type="text" value={form.name} onChange={f("name")} className="input-field" placeholder="삼성전자" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-pwc-gray-700 mb-1">자회사명 *</label>
-                    <input type="text" value={form.subsidiary_name} onChange={f("subsidiary_name")} className="input-field" placeholder="삼성전자 반도체" />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-pwc-gray-700 mb-1">국가</label>
                     <input type="text" value={form.country} onChange={f("country")} className="input-field" placeholder="Korea" />
                   </div>
@@ -146,6 +185,54 @@ export default function CompaniesPage() {
                       <option value="스타트업">스타트업</option>
                     </select>
                   </div>
+                </div>
+              </div>
+
+              {/* 자회사 목록 */}
+              <div className="bg-white rounded-xl shadow-sm border border-pwc-gray-200 p-6">
+                <h3 className="text-sm font-semibold text-pwc-black mb-4">자회사 목록</h3>
+
+                {visibleSubs.length === 0 && (
+                  <p className="text-xs text-pwc-gray-400 mb-3">등록된 자회사가 없습니다.</p>
+                )}
+
+                <div className="space-y-2 mb-3">
+                  {subEntries.map((sub, idx) => sub._delete ? null : (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="flex-1 px-3 py-2 bg-pwc-gray-50 rounded border border-pwc-gray-200 text-sm text-pwc-black">
+                        {sub.name}
+                        {!sub.id && <span className="ml-2 text-xs text-pwc-orange font-medium">새로 추가</span>}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeSub(idx)}
+                        className="p-1.5 rounded hover:bg-red-50 text-pwc-gray-400 hover:text-red-500 cursor-pointer"
+                        title="삭제"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={subInputVal}
+                    onChange={e => setSubInputVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
+                    placeholder="자회사명 입력 후 + 버튼 또는 Enter"
+                    className="input-field flex-1 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addSub}
+                    className="btn-primary px-4 py-2 text-sm"
+                  >
+                    + 추가
+                  </button>
                 </div>
               </div>
 
@@ -207,7 +294,7 @@ export default function CompaniesPage() {
                 <h4 className="text-xs font-semibold text-pwc-gray-600 mb-3">입력 안내</h4>
                 <ul className="space-y-2 text-xs text-pwc-gray-500">
                   <li>· 회사명은 필수입니다.</li>
-                  <li>· 자회사명은 해당 법인의 세부 조직명입니다.</li>
+                  <li>· 자회사는 여러 개 추가할 수 있습니다.</li>
                   <li>· 계약 기간은 EasyView 서비스 계약 기간입니다.</li>
                   <li>· 기준 통화/분기는 리포트 기본값으로 사용됩니다.</li>
                 </ul>
@@ -254,7 +341,7 @@ export default function CompaniesPage() {
             <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
               <thead>
                 <tr className="border-b border-pwc-gray-200 bg-pwc-gray-50">
-                  {["회사명", "자회사명", "국가", "유형", "계약기간", "기준 통화/분기", "관리"].map((h) => (
+                  {["회사명", "자회사", "국가", "유형", "계약기간", "기준 통화/분기", "관리"].map((h) => (
                     <th key={h} className="text-left py-3 px-4 font-medium text-pwc-gray-500">{h}</th>
                   ))}
                 </tr>
@@ -263,7 +350,19 @@ export default function CompaniesPage() {
                 {filtered.map((c) => (
                   <tr key={c.id} className="border-b border-pwc-gray-100 hover:bg-pwc-gray-50 transition-colors">
                     <td className="py-3 px-4 font-medium text-pwc-black">{c.name}</td>
-                    <td className="py-3 px-4 text-pwc-gray-600">{c.subsidiary_name || "-"}</td>
+                    <td className="py-3 px-4 text-pwc-gray-600">
+                      {(c.subsidiaries ?? []).length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {(c.subsidiaries ?? []).map(s => (
+                            <span key={s.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-pwc-gray-100 text-pwc-gray-700">
+                              {s.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-pwc-gray-400">-</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-pwc-gray-600">{c.country || "-"}</td>
                     <td className="py-3 px-4">
                       {c.company_type

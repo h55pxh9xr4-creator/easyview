@@ -131,3 +131,13 @@ async def create_subsidiary(data: SubsidiaryCreate, db: Session = Depends(get_db
     db.commit()
     db.refresh(sub)
     return {"id": sub.id, "name": sub.name, "company_id": sub.company_id, "company_name": company.name}
+
+
+@router.delete("/subsidiaries/{sub_id}")
+async def delete_subsidiary(sub_id: int, db: Session = Depends(get_db), current_user: AdminUser = Depends(get_current_admin)):
+    sub = db.query(AdminSubsidiary).filter(AdminSubsidiary.id == sub_id).first()
+    if not sub:
+        raise HTTPException(404, "자회사를 찾을 수 없습니다.")
+    db.delete(sub)
+    db.commit()
+    return {"message": "삭제 완료"}
