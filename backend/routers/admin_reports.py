@@ -386,11 +386,12 @@ def update_status(
         raise HTTPException(404, "리포트를 찾을 수 없습니다.")
 
     ALLOWED = {
-        "generated": ["reviewing"],
-        "reviewing": ["active", "generated"],
-        "active":    ["archived"],
-        "archived":  ["active"],
-        "error":     ["upload"],
+        "generated":  ["reviewing"],
+        "reviewing":  ["active", "generated"],
+        "active":     ["archived"],
+        "archived":   ["active"],
+        "error":      ["upload"],
+        "generating": ["upload"],
     }
     if body.status not in ALLOWED.get(report.status, []):
         raise HTTPException(400, f"{report.status} 상태에서 {body.status}로 변경할 수 없습니다.")

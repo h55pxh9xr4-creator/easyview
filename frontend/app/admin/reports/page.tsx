@@ -406,10 +406,19 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       {r.status === "generating" && (
-                        <span className="text-xs text-orange-600 flex items-center gap-1.5">
-                          <span className="inline-block w-3 h-3 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
-                          생성 중...
-                        </span>
+                        <>
+                          <span className="text-xs text-orange-600 flex items-center gap-1.5">
+                            <span className="inline-block w-3 h-3 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                            생성 중...
+                          </span>
+                          <button
+                            onClick={() => changeStatus(r.id, "upload", "파일 대기")}
+                            disabled={acting === r.id}
+                            className="text-xs px-2.5 py-1 rounded border border-red-300 text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50"
+                          >
+                            재시도
+                          </button>
+                        </>
                       )}
                       {r.status === "generated" && (
                         <button
