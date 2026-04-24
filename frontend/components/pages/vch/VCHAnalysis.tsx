@@ -19,6 +19,7 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import ReactECharts from "echarts-for-react";
+import { useAmountFormat } from "@/lib/fmtAmount";
 
 ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip, Legend);
 
@@ -33,7 +34,6 @@ const TREEMAP_COLORS = [
 ];
 
 const fmtN = (n: number) => n.toLocaleString("ko-KR");
-const fmtB = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 
 interface Kpi     { total_cnt: number; dr_sum: number; cr_sum: number }
 interface Daily   { date: string; cnt: number }
@@ -45,6 +45,7 @@ const PAGE = "전표분석내역";
 export default function VCHAnalysis() {
   const isDark = useDarkMode();
   const filter = useFilter();
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const { triggerComment } = useComment();
   const ck = useCommentedItems(state => state.ck);
 
@@ -209,8 +210,8 @@ export default function VCHAnalysis() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
                 { label: "전표수",   value: fmtN(kpi.total_cnt), unit: "건",  color: kpiValClr },
-                { label: "차변합계", value: fmtB(kpi.dr_sum),    unit: "백만", color: BLUE },
-                { label: "대변합계", value: fmtB(kpi.cr_sum),    unit: "백만", color: RED },
+                { label: "차변합계", value: fmtAmt(kpi.dr_sum),    unit: unitLabel, color: BLUE },
+                { label: "대변합계", value: fmtAmt(kpi.cr_sum),    unit: unitLabel, color: RED },
               ].map(({ label, value, unit, color }) => (
                 <div key={label} style={{ background: kpiCardBg, borderRadius: 8, padding: "10px 16px", textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: subTxt, marginBottom: 4 }}>{label}</div>
@@ -492,7 +493,8 @@ export default function VCHAnalysis() {
                             page: PAGE, label: v.voucher_no, value: `${fmtN(v.amount)}원`,
                             bodyTemplate: `페이지: ${PAGE}\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtN(v.amount)}원\n\n문의내용:\n`,
                           },
-                          { top: rect.top, right: rect.right }
+                          { top: rect.top, right: rect.right },
+                          e.currentTarget
                         );
                       }}
                       style={{ cursor: "pointer", ...(isHighlighted && cpColor ? { background: cpColor + "22" } : {}) }}>

@@ -5,7 +5,7 @@ import CursorTrail from "@/components/layout/CursorTrail";
 export const metadata: Metadata = {
   title: "Easy View | PwC",
   description: "PwC EasyView Financial Analytics",
-  icons: { icon: "/easyview/favicon.png" },
+  icons: { icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/favicon.png` },
 };
 
 export default function RootLayout({

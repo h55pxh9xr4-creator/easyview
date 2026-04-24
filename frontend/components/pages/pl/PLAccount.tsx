@@ -6,11 +6,11 @@ import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { fetchPLAccount, fetchPLAccountDetail } from "@/lib/api";
+import { fmtByUnit, unitSuffix, useAmountFormat } from "@/lib/fmtAmount";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import ReactECharts from "echarts-for-react";
 
 const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
-const fmtM   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 
 const PL_ORDER = ["매출액","매출원가","판매비와관리비","기타수익","기타비용","금융수익","금융비용","법인세비용"];
 
@@ -40,11 +40,15 @@ function TopCounterpartyPie({
   selectedCp?: string | null;
   onCpClick?: (name: string | null) => void;
 }) {
-  const fmtB = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
+  const ORANGE = "#E87722";
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const tooltipBg  = isDark ? "#1C1F26" : "#fff";
   const tooltipBdr = isDark ? "#2E3039" : "#eee";
   const tooltipTxt = isDark ? "#E2E5EC" : "#333";
   const borderClr  = isDark ? "#1C1F26" : "#fff";
+
+  const [hoverDonut, setHoverDonut] = useState<{ name: string; value: number; percent: number } | null>(null);
+  const selectedDonutRef = useRef<{ name: string; value: number; percent: number } | null>(null);
 
   const option = {
     backgroundColor: "transparent",
@@ -60,30 +64,44 @@ function TopCounterpartyPie({
         return [x - w / 2, isTop ? y - h - 16 : y + 16];
       },
       formatter: (p: { name: string; value: number; percent: number }) =>
-        `${p.name}<br/>${fmtB(p.value)}백만 (${p.percent.toFixed(1)}%)`,
+        `${p.name}<br/>${fmtAmt(p.value)}${unitLabel} (${p.percent.toFixed(1)}%)`,
     },
     legend: { show: false },
+    graphic: hoverDonut ? [{
+      type: "group",
+      left: "center",
+      top: "center",
+      children: [
+        { type: "text", z: 100, left: "center", top: -22, style: { text: hoverDonut.name.length > 10 ? hoverDonut.name.slice(0, 10) + "…" : hoverDonut.name, font: `700 12px sans-serif`, fill: isDark ? "#E2E5EC" : "#222", textAlign: "center" } },
+        { type: "text", z: 100, left: "center", top: 2,   style: { text: `${fmtAmt(hoverDonut.value)}${unitLabel}`, font: `800 15px sans-serif`, fill: ORANGE, textAlign: "center" } },
+        { type: "text", z: 100, left: "center", top: 24,  style: { text: `(${hoverDonut.percent.toFixed(1)}%)`, font: `400 11px sans-serif`, fill: isDark ? "#9198A8" : "#888", textAlign: "center" } },
+      ],
+    }] : [],
     series: [{
       name: "당기 비중",
       type: "pie",
       selectedMode: "single",
-      radius: ["38%", "68%"],
-      center: ["50%", "55%"],
-      avoidLabelOverlap: false,
+      radius: ["38%", "55%"],
+      center: ["50%", "50%"],
+      avoidLabelOverlap: true,
+      minShowLabelAngle: 20,
       itemStyle: { borderRadius: 6, borderColor: borderClr, borderWidth: 2 },
-      label: { show: false, position: "center" },
-      emphasis: {
-        label: {
-          show: true,
-          fontSize: 14,
-          fontWeight: "bold",
-          color: isDark ? "#E2E5EC" : "#333",
-          formatter: (p: { name: string; percent: number }) =>
-            `${p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name}\n${p.percent.toFixed(1)}%`,
+      label: {
+        show: true,
+        position: "outside",
+        formatter: (p: { name: string; percent: number }) => {
+          const n = p.name.length > 14 ? p.name.slice(0, 14) + "…" : p.name;
+          return `${n}\n${p.percent.toFixed(1)}%`;
         },
+        fontSize: 10,
+        lineHeight: 15,
+        color: isDark ? "#C8CDD8" : "#444",
+      },
+      emphasis: {
+        label: { show: false },
         itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,0.28)" },
       },
-      labelLine: { show: false },
+      labelLine: { show: true, length: 8, length2: 12 },
       data: data.map((d, i) => ({
         value: Math.abs(d.cur),
         name: d.name,
@@ -102,16 +120,25 @@ function TopCounterpartyPie({
       style={{ width: "100%", height: 380 }}
       notMerge
       onEvents={{
-        click: (params: { name: string }) => {
-          onCpClick?.(params.name === selectedCp ? null : params.name);
+        click: (params: { name: string; value: number; percent: number }) => {
+          const isDeselecting = params.name === selectedCp;
+          onCpClick?.(isDeselecting ? null : params.name);
+          const info = isDeselecting ? null : { name: params.name, value: params.value, percent: params.percent };
+          selectedDonutRef.current = info;
+          setHoverDonut(info);
         },
+        mouseover: (p: { name: string; value: number; percent: number }) => {
+          if (p.name) setHoverDonut({ name: p.name, value: p.value, percent: p.percent });
+        },
+        mouseout: () => setHoverDonut(selectedDonutRef.current),
       }}
     />
   );
 }
 
 // ── 거래처별 당기/전기 증감 바 ────────────────────────────────
-function CounterpartyChangeBar({ data, isDark = false }: { data: Detail["counterparty"]; isDark?: boolean }) {
+function CounterpartyChangeBar({ data, isDark = false, selectedCp = null }: { data: Detail["counterparty"]; isDark?: boolean; selectedCp?: string | null }) {
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const maxVal    = Math.max(...data.flatMap(d => [Math.abs(d.cur), Math.abs(d.pri)]), 1);
   const trackBg   = isDark ? "#252830" : "#F0F0F0";
   const priBarBg  = isDark ? "rgba(100,110,130,0.55)" : "rgba(160,160,160,0.4)";
@@ -133,9 +160,11 @@ function CounterpartyChangeBar({ data, isDark = false }: { data: Detail["counter
       {data.map((d) => {
         const curPct = Math.abs(d.cur) / maxVal * 100;
         const priPct = Math.abs(d.pri) / maxVal * 100;
+        const isSelected = selectedCp === d.name;
+        const isDimmed   = selectedCp !== null && !isSelected;
         return (
-          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 140, fontSize: 11, color: labelClr, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
+          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, opacity: isDimmed ? 0.3 : 1, transition: "opacity .2s" }}>
+            <div style={{ width: 140, fontSize: 11, color: isSelected ? "#E87722" : labelClr, fontWeight: isSelected ? 700 : undefined, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
             <div style={{ flex: 1, position: "relative", height: 28 }}>
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 12, background: trackBg, borderRadius: 3 }}>
                 <div style={{ width: `${priPct}%`, height: "100%", background: priBarBg, border: `1px solid ${priBarBdr}`, borderRadius: 3, boxSizing: "border-box" }} />
@@ -145,8 +174,8 @@ function CounterpartyChangeBar({ data, isDark = false }: { data: Detail["counter
               </div>
             </div>
             <div style={{ width: 70, fontSize: 10, color: valClr, textAlign: "right", flexShrink: 0, lineHeight: 1.6 }}>
-              <div style={{ color: "#E87722", fontWeight: 700 }}>{fmtM(Math.abs(d.cur))}백만</div>
-              <div>{fmtM(Math.abs(d.pri))}백만</div>
+              <div style={{ color: "#E87722", fontWeight: 700 }}>{fmtAmt(Math.abs(d.cur))}{unitLabel}</div>
+              <div>{fmtAmt(Math.abs(d.pri))}{unitLabel}</div>
             </div>
           </div>
         );
@@ -158,6 +187,8 @@ function CounterpartyChangeBar({ data, isDark = false }: { data: Detail["counter
 export default function PLAccount() {
   const isDark  = useDarkMode();
   const filter  = useFilter();
+  const { amountUnit } = useFilter();
+  const fmt = (n: number) => fmtByUnit(n, amountUnit);
   const { triggerComment } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const [rows,       setRows]       = useState<AcctRow[] | null>(null);
@@ -254,7 +285,12 @@ export default function PLAccount() {
           <div className="tbl-wrap">
             <table>
               <thead>
-                <tr><th style={{ textAlign: "center" }}>계정</th><th style={{ textAlign: "center" }}>당기</th><th style={{ textAlign: "center" }}>전기</th><th style={{ textAlign: "center" }}>증감률</th></tr>
+                <tr>
+                  <th style={{ textAlign: "center" }}>계정</th>
+                  <th style={{ textAlign: "center" }}>당기<span style={{ fontSize: 9, fontWeight: 400, color: isDark ? "#5A6070" : "#bbb", marginLeft: 3 }}>({unitSuffix(amountUnit)})</span></th>
+                  <th style={{ textAlign: "center" }}>전기<span style={{ fontSize: 9, fontWeight: 400, color: isDark ? "#5A6070" : "#bbb", marginLeft: 3 }}>({unitSuffix(amountUnit)})</span></th>
+                  <th style={{ textAlign: "center" }}>증감률</th>
+                </tr>
               </thead>
               <tbody>
                 {orderedDisc.map(disc => {
@@ -292,7 +328,7 @@ export default function PLAccount() {
                           key={mgmtKey}
                           style={{
                             background: isActive ? rowMgmtActive : rowMgmtBg,
-                            borderLeft: isActive ? "3px solid #E87722" : "3px solid transparent",
+                            borderLeft: "3px solid transparent",
                           }}
                         >
                           <td className="td-s1" style={{ color: isActive ? "#E87722" : undefined, fontWeight: isActive ? 700 : undefined, cursor: "pointer" }}
@@ -306,15 +342,15 @@ export default function PLAccount() {
                             {mgmt}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 당기`)}
-                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 당기`, value: fmt(mgmtCur) }, { top: r.top, right: r.right }); }}>
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 당기`, value: fmt(mgmtCur) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             {fmt(mgmtCur)}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 전기`)}
-                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 전기`, value: fmt(mgmtPri) }, { top: r.top, right: r.right }); }}>
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 전기`, value: fmt(mgmtPri) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             {fmt(mgmtPri)}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 증감`)} className={mgmtChg >= 0 ? "up-t" : "dn-t"}
-                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toFixed(1)}%` }, { top: r.top, right: r.right }); }}>
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toFixed(1)}%` }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toFixed(1)}%
                           </td>
                         </tr>,
@@ -376,9 +412,9 @@ export default function PLAccount() {
                       const kChg = kCur - kPri;
                       const kChgPct = kPri !== 0 ? kChg / Math.abs(kPri) * 100 : 0;
                       return [
-                        { label: "당기금액", display: `${Math.abs(Math.round(kCur)).toLocaleString("ko-KR")}`, color: kpiValClr },
-                        { label: "전기금액", display: `${Math.abs(Math.round(kPri)).toLocaleString("ko-KR")}`, color: kpiValClr },
-                        { label: "증감액",   display: `${kChg < 0 ? "-" : ""}${Math.abs(Math.round(kChg)).toLocaleString("ko-KR")}`, color: kChg >= 0 ? "#EF4444" : "#2563EB" },
+                        { label: `당기금액(${unitSuffix(amountUnit)})`, display: fmtByUnit(Math.abs(kCur), amountUnit), color: kpiValClr },
+                        { label: `전기금액(${unitSuffix(amountUnit)})`, display: fmtByUnit(Math.abs(kPri), amountUnit), color: kpiValClr },
+                        { label: `증감액(${unitSuffix(amountUnit)})`,   display: (kChg < 0 ? "-" : "") + fmtByUnit(Math.abs(kChg), amountUnit), color: kChg >= 0 ? "#EF4444" : "#2563EB" },
                         { label: "증감률",   display: `${kChgPct >= 0 ? "▲" : "▼"}${Math.abs(kChgPct).toFixed(1)}%`, color: kChgPct >= 0 ? "#EF4444" : "#2563EB" },
                       ].map(({ label, display, color }) => (
                         <div key={label} style={{ background: kpiCardBg, borderRadius: 6, padding: "10px 14px", textAlign: "center" }}>
@@ -409,7 +445,7 @@ export default function PLAccount() {
                     <div className="card-title">거래처별 당기/전기</div>
                     {detail.counterparty.length === 0
                       ? <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 120, color: isDark ? "#9198A8" : "#bbb", fontSize: 13 }}>거래처 없음</div>
-                      : <CounterpartyChangeBar data={detail.counterparty} isDark={isDark} />}
+                      : <CounterpartyChangeBar data={detail.counterparty} isDark={isDark} selectedCp={selectedCp} />}
                   </div>
                 </div>
 
@@ -456,7 +492,8 @@ export default function PLAccount() {
                                             value: `일자: ${v.date} | 전표번호: ${v.voucher_no} | 거래처: ${v.counterparty ?? "-"} | 적요: ${v.description ?? "-"} | 금액: ${fmt(v.amount)}`,
                                             sub: detail.mgmt_acct,
                                           },
-                                          { top: r.top, right: r.right }
+                                          { top: r.top, right: r.right },
+                                          e.currentTarget
                                         );
                                       }}
                                     >

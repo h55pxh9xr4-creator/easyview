@@ -61,7 +61,7 @@ export default function ScenarioTable({ title, desc, rows, extraCols = [] }: Pro
                 {rows.map((r, i) => {
                   const label = `${r.voucher_no} (${r.date})`;
                   return (
-                  <tr key={i} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: title, label, value: `${fmt(r.amount)}원` }, { top: rect.top, right: rect.right }); }} style={{ cursor: "pointer" }}>
+                  <tr key={i} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page: title, label, value: `${fmt(r.amount)}원` }, { top: rect.top, right: rect.right }, e.currentTarget); }} style={{ cursor: "pointer" }}>
                     <td style={{ whiteSpace: "nowrap" }}>{r.date}</td>
                     <td>
                       {r.voucher_no}

@@ -6,6 +6,7 @@ import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { fetchBSAccount, fetchBSDisclosureDetail, BSDisclosureDetail } from "@/lib/api";
+import { useAmountFormat } from "@/lib/fmtAmount";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   LineController, LineElement, PointElement,
@@ -19,8 +20,6 @@ ChartJS.register(CategoryScale, LinearScale, LineController, LineElement, PointE
 const ORANGE = "#E87722";
 const BLUE   = "rgba(37,99,235,1)";
 const RED    = "rgba(220,38,38,1)";
-const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
-const fmtM   = (n: number) => Math.round(n / 10_000).toLocaleString("ko-KR");
 const fmtChg = (p: number) => `${p >= 0 ? "▲" : "▼"}${Math.abs(p * 100).toFixed(1)}%`;
 
 interface BSAcctRow {
@@ -34,6 +33,7 @@ const CAT_COLOR: Record<string, string> = { 자산: "#2563EB", 부채: "#EF4444"
 export default function BSAccount() {
   const isDark  = useDarkMode();
   const filter  = useFilter();
+  const { fmtAmt, unitLabel, unitSuffix } = useAmountFormat();
   const { triggerComment } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const [rows,     setRows]     = useState<BSAcctRow[] | null>(null);
@@ -170,8 +170,8 @@ export default function BSAccount() {
               <thead>
                 <tr>
                   <th style={{ textAlign: "center" }}>분류</th>
-                  <th style={{ textAlign: "center" }}>기말</th>
-                  <th style={{ textAlign: "center" }}>기초</th>
+                  <th style={{ textAlign: "center" }}>기말<span style={{ fontSize: 9, fontWeight: 400, color: isDark ? "#5A6070" : "#bbb", marginLeft: 3 }}>({unitSuffix})</span></th>
+                  <th style={{ textAlign: "center" }}>기초<span style={{ fontSize: 9, fontWeight: 400, color: isDark ? "#5A6070" : "#bbb", marginLeft: 3 }}>({unitSuffix})</span></th>
                   <th style={{ textAlign: "center" }}>증감</th>
                 </tr>
               </thead>
@@ -188,8 +188,8 @@ export default function BSAccount() {
                   return [
                     <tr key={catKey} className="tr-sum" style={{ cursor: "pointer" }} onClick={() => toggle(catKey)}>
                       <td style={{ color }}>{catOpen ? "▼" : "▶"} {cat}</td>
-                      <td>{fmtB(catEnd)}</td>
-                      <td>{fmtB(catOpn)}</td>
+                      <td>{fmtAmt(catEnd)}</td>
+                      <td>{fmtAmt(catOpn)}</td>
                       <td className={catChg >= 0 ? "up-t" : "dn-t"}>{fmtChg(catChg)}</td>
                     </tr>,
 
@@ -203,8 +203,8 @@ export default function BSAccount() {
                       return [
                         <tr key={sumKey} style={{ cursor: "pointer", background: sumRowBg }} onClick={() => toggle(sumKey)}>
                           <td className="td-s1" style={{ color: sumTxtClr }}>{sumOpen ? "▼" : "▶"} {sum}</td>
-                          <td>{fmtB(sumEnd)}</td>
-                          <td>{fmtB(sumOpn)}</td>
+                          <td>{fmtAmt(sumEnd)}</td>
+                          <td>{fmtAmt(sumOpn)}</td>
                           <td className={sumChg >= 0 ? "up-t" : "dn-t"}>{fmtChg(sumChg)}</td>
                         </tr>,
 
@@ -223,7 +223,7 @@ export default function BSAccount() {
                             <tr key={`${cat}-${sum}-${disc}`}
                               style={{
                                 background: isActive ? actRowBg : discRowBg,
-                                borderLeft: isActive ? `3px solid ${ORANGE}` : "3px solid transparent",
+                                borderLeft: "3px solid transparent",
                               }}
                             >
                               <td
@@ -233,15 +233,15 @@ export default function BSAccount() {
                                 {disc}
                               </td>
                               <td style={cmtStyle(`${disc} 기말`)}
-                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기말`, value: `${fmtB(discEnd)}백만` }, { top: r.top, right: r.right }); }}>
-                                {fmtB(discEnd)}
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기말`, value: `${fmtAmt(discEnd)}${unitLabel}` }, { top: r.top, right: r.right }, e.currentTarget); }}>
+                                {fmtAmt(discEnd)}
                               </td>
                               <td style={cmtStyle(`${disc} 기초`)}
-                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기초`, value: `${fmtB(discOpn)}백만` }, { top: r.top, right: r.right }); }}>
-                                {fmtB(discOpn)}
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 기초`, value: `${fmtAmt(discOpn)}${unitLabel}` }, { top: r.top, right: r.right }, e.currentTarget); }}>
+                                {fmtAmt(discOpn)}
                               </td>
                               <td style={{ ...cmtStyle(`${disc} 증감`) }} className={discChg >= 0 ? "up-t" : "dn-t"}
-                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 증감`, value: fmtChg(discChg) }, { top: r.top, right: r.right }); }}>
+                                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: `${disc} 증감`, value: fmtChg(discChg) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                                 {fmtChg(discChg)}
                               </td>
                             </tr>
@@ -300,9 +300,9 @@ export default function BSAccount() {
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
                     {[
-                      { label: "기말금액", display: <>{Math.round(dispEnd).toLocaleString("ko-KR")}</>, color: miniValClr },
-                      { label: "기초금액", display: <>{Math.round(dispOpn).toLocaleString("ko-KR")}</>, color: miniValClr },
-                      { label: "증감액",   display: <>{Math.round(dispChg).toLocaleString("ko-KR")}</>, color: dispChg >= 0 ? "#EF4444" : "#2563EB" },
+                      { label: `기말금액(${unitSuffix})`, display: <>{fmtAmt(dispEnd)}</>, color: miniValClr },
+                      { label: `기초금액(${unitSuffix})`, display: <>{fmtAmt(dispOpn)}</>, color: miniValClr },
+                      { label: `증감액(${unitSuffix})`,   display: <>{fmtAmt(dispChg)}</>, color: dispChg >= 0 ? "#EF4444" : "#2563EB" },
                       { label: "증감률",   display: <>{fmtChg(dispChgPct)}</>, color: dispChgPct >= 0 ? "#EF4444" : "#2563EB" },
                     ].map(({ label, display, color }) => (
                       <div key={label} style={{ background: miniCardBg, borderRadius: 8, padding: "10px 14px", textAlign: "center" }}>
@@ -334,8 +334,8 @@ export default function BSAccount() {
                             <tr key={i}>
                               <td style={{ textAlign: "left", color: subTxt, fontSize: 11 }}>{r.mgmt_acct}</td>
                               <td style={{ textAlign: "left" }}>{r.account_name}</td>
-                              <td style={{ textAlign: "right" }}>{fmtB(r.ending)}</td>
-                              <td style={{ textAlign: "right", color: subTxt }}>{fmtB(r.opening)}</td>
+                              <td style={{ textAlign: "right" }}>{fmtAmt(r.ending)}</td>
+                              <td style={{ textAlign: "right", color: subTxt }}>{fmtAmt(r.opening)}</td>
                               <td style={{ textAlign: "right" }} className={chg >= 0 ? "up-t" : "dn-t"}>{fmtChg(chg)}</td>
                             </tr>
                           );
@@ -357,7 +357,7 @@ export default function BSAccount() {
                         labels: trendLabels,
                         datasets: [{
                           label: selected,
-                          data: detail.monthly_trend.map(r => Math.round(r.ending / 1_000_000)),
+                          data: detail.monthly_trend.map(r => r.ending),
                           borderColor: ORANGE,
                           backgroundColor: "rgba(232,119,34,0.12)",
                           fill: true, tension: 0.3, borderWidth: 1.5,
@@ -381,13 +381,13 @@ export default function BSAccount() {
                             bodyColor: tipTxt,
                             callbacks: {
                               title: ctx => trendLabels[ctx[0].dataIndex] ?? "",
-                              label: ctx => ` ${fmtB((ctx.parsed.y as number) * 1_000_000)}백만`,
+                              label: ctx => ` ${fmtAmt(ctx.parsed.y as number)}${unitLabel}`,
                             },
                           },
                         },
                         scales: {
                           x: { ticks: { color: tickClr, font: { size: 9 } }, grid: { display: false } },
-                          y: { ticks: { color: tickClr, font: { size: 9 }, maxTicksLimit: 5, callback: v => `${Number(v).toLocaleString()}백만` }, grid: { color: gridClr } },
+                          y: { ticks: { color: tickClr, font: { size: 9 }, maxTicksLimit: 5, callback: (v: number | string) => `${fmtAmt(Number(v))}${unitLabel}` }, grid: { color: gridClr } },
                         },
                       }}
                     />
@@ -411,7 +411,7 @@ export default function BSAccount() {
                               <div style={{ width: `${pct}%`, height: "100%", background: isPos ? BLUE : RED, borderRadius: 3 }} />
                             </div>
                             <div style={{ width: 70, fontSize: 10, color: isPos ? BLUE : RED, textAlign: "right", flexShrink: 0, fontWeight: 700 }}>
-                              {fmtM(Math.abs(cp.net))}만
+                              {fmtAmt(Math.abs(cp.net))}{unitLabel}
                             </div>
                           </div>
                         );
@@ -438,17 +438,17 @@ export default function BSAccount() {
                       </thead>
                       <tbody>
                         {(activeDetail?.vouchers ?? []).map((v, i) => (
-                          <tr key={i} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: v.counterparty || v.account_name, value: `${fmtB(v.amount)}백만`, sub: selected ?? undefined }, { top: r.top, right: r.right }); }}>
+                          <tr key={i} style={{ cursor: "pointer" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "BS 계정분석", label: v.counterparty || v.account_name, value: `${fmtAmt(v.amount)}${unitLabel}`, sub: selected ?? undefined }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             <td style={{ whiteSpace: "nowrap", textAlign: "center" }}>{v.date}</td>
                             <td style={{ textAlign: "center", color: subTxt, fontSize: 11 }}>{v.voucher_no}</td>
                             <td style={{ textAlign: "left" }}>{v.account_name}</td>
                             <td style={{ textAlign: "left", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.counterparty}</td>
                             <td style={{ textAlign: "left", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: valTxt }}>{v.description}</td>
                             <td style={{ textAlign: "right", color: v.dr_cr === "차변" ? BLUE : zeroClr }}>
-                              {v.dr_cr === "차변" ? fmtB(v.amount) : "-"}
+                              {v.dr_cr === "차변" ? fmtAmt(v.amount) : "-"}
                             </td>
                             <td style={{ textAlign: "right", color: v.dr_cr === "대변" ? RED : zeroClr }}>
-                              {v.dr_cr === "대변" ? fmtB(v.amount) : "-"}
+                              {v.dr_cr === "대변" ? fmtAmt(v.amount) : "-"}
                             </td>
                           </tr>
                         ))}
@@ -457,10 +457,10 @@ export default function BSAccount() {
                         <tr style={{ fontWeight: 700, background: tfootBg }}>
                           <td colSpan={5}>합계</td>
                           <td style={{ textAlign: "right", color: BLUE }}>
-                            {fmtB((activeDetail?.vouchers ?? []).filter(v => v.dr_cr === "차변").reduce((s, v) => s + v.amount, 0))}
+                            {fmtAmt((activeDetail?.vouchers ?? []).filter(v => v.dr_cr === "차변").reduce((s, v) => s + v.amount, 0))}
                           </td>
                           <td style={{ textAlign: "right", color: RED }}>
-                            {fmtB((activeDetail?.vouchers ?? []).filter(v => v.dr_cr === "대변").reduce((s, v) => s + v.amount, 0))}
+                            {fmtAmt((activeDetail?.vouchers ?? []).filter(v => v.dr_cr === "대변").reduce((s, v) => s + v.amount, 0))}
                           </td>
                         </tr>
                       </tfoot>

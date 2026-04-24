@@ -41,6 +41,19 @@ export default function VCHSearch() {
   const [detail,       setDetail]       = useState<VCHCounterLineItem[] | null>(null);
   const detailRef = useRef<HTMLDivElement>(null);
 
+  const [w1, setW1] = useState<Record<string, number>>({ date: 90, vno: 130, acct: 220, cp: 80, dr: 150, cr: 150 });
+  const [w2, setW2] = useState<Record<string, number>>({ acct: 150, disc: 130, dr: 90, cr: 90 });
+  const [w3, setW3] = useState<Record<string, number>>({ acct: 150, cp: 100, dr: 90, cr: 90 });
+
+  const startResize = (setter: React.Dispatch<React.SetStateAction<Record<string, number>>>, col: string, curW: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    const x0 = e.clientX;
+    const onMove = (ev: MouseEvent) => setter(p => ({ ...p, [col]: Math.max(50, curW + ev.clientX - x0) }));
+    const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   useEffect(() => {
     fetchVCHSearchDiscAccts(dateFrom, dateTo).then(setDiscAcctList).catch(console.error);
   }, [dateFrom, dateTo]);
@@ -227,16 +240,22 @@ export default function VCHSearch() {
             ) : searchResult.items.length === 0 ? (
               <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: dimTxt, fontSize: 13 }}>검색 결과가 없습니다</div>
             ) : (
-              <table>
+              <table style={{ tableLayout: "fixed", width: "100%" }}>
                 <thead style={{ position: "sticky", top: 0, background: theadBg, zIndex: 1 }}>
                   <tr>
-                    <th style={{ textAlign: "left", whiteSpace: "nowrap" }}>일자</th>
-                    <th style={{ textAlign: "left", whiteSpace: "nowrap" }}>전표번호</th>
-                    <th style={{ textAlign: "left" }}>계정과목</th>
-                    <th style={{ textAlign: "left" }}>거래처</th>
-                    <th style={{ textAlign: "left" }}>적요</th>
-                    <th style={{ whiteSpace: "nowrap" }}>차변</th>
-                    <th style={{ whiteSpace: "nowrap" }}>대변</th>
+                    {([["date","일자"],["vno","전표번호"],["acct","계정과목"],["cp","거래처"]] as [string,string][]).map(([col, label]) => (
+                      <th key={col} style={{ textAlign: "center", whiteSpace: "nowrap", width: w1[col], position: "relative" }}>
+                        {label}
+                        <div onMouseDown={e => startResize(setW1, col, w1[col], e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                      </th>
+                    ))}
+                    <th style={{ textAlign: "center" }}>적요</th>
+                    {([["dr","차변"],["cr","대변"]] as [string,string][]).map(([col, label]) => (
+                      <th key={col} style={{ textAlign: "center", whiteSpace: "nowrap", width: w1[col], position: "relative" }}>
+                        {label}
+                        <div onMouseDown={e => startResize(setW1, col, w1[col], e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -247,18 +266,18 @@ export default function VCHSearch() {
                         onClick={(e) => {
                           if (isSelected) {
                             const rect = e.currentTarget.getBoundingClientRect();
-                            triggerComment({ page: PAGE, label: r.voucher_no, value: `${fmtN(r.amount)}원` }, { top: rect.top, right: rect.right });
+                            triggerComment({ page: PAGE, label: r.voucher_no, value: `${fmtN(r.amount)}원` }, { top: rect.top, right: rect.right }, e.currentTarget);
                           } else { handleRowClick(r.voucher_no); }
                         }}
-                        style={{ cursor: "pointer", background: isSelected ? selRowBg : undefined, borderLeft: isSelected ? `3px solid ${ORANGE}` : "3px solid transparent" }}>
-                        <td style={{ whiteSpace: "nowrap", color: subTxt, fontSize: 11 }}>{r.date}</td>
-                        <td style={{ color: isSelected ? ORANGE : subTxt, fontSize: 11, whiteSpace: "nowrap", fontWeight: isSelected ? 700 : undefined }}>
+                        style={{ cursor: "pointer", background: isSelected ? selRowBg : undefined, borderLeft: "3px solid transparent" }}>
+                        <td style={{ whiteSpace: "nowrap", color: subTxt, fontSize: 11, textAlign: "center" }}>{r.date}</td>
+                        <td style={{ color: isSelected ? ORANGE : subTxt, fontSize: 11, whiteSpace: "nowrap", fontWeight: isSelected ? 700 : undefined, textAlign: "center" }}>
                           {r.voucher_no}
                           {ck.has(commentKey(PAGE, r.voucher_no)) && <CommentDot inline inquiryId={ck.get(commentKey(PAGE, r.voucher_no))!} />}
                         </td>
-                        <td style={{ whiteSpace: "nowrap" }}>{r.account_name}</td>
-                        <td style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.counterparty}</td>
-                        <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: valTxt }}>{r.description}</td>
+                        <td style={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{r.account_name}</td>
+                        <td style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>{r.counterparty}</td>
+                        <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: valTxt, textAlign: "left" }}>{r.description}</td>
                         <td style={{ textAlign: "right", color: r.dr_cr === "차변" ? BLUE : zeroClr, whiteSpace: "nowrap" }}>
                           {r.dr_cr === "차변" ? fmtN(r.amount) : "-"}
                         </td>
@@ -312,20 +331,32 @@ export default function VCHSearch() {
               <div className="card">
                 <div className="card-title">계정별 요약 — {selectedVno}</div>
                 <div style={{ height: 260, overflowY: "auto" }}>
-                  <table>
+                  <table style={{ tableLayout: "fixed", width: "100%" }}>
                     <thead style={{ position: "sticky", top: 0, background: theadBg, zIndex: 1 }}>
                       <tr>
-                        <th style={{ textAlign: "left" }}>계정과목</th>
-                        <th style={{ textAlign: "left", color: subTxt, fontSize: 11, fontWeight: 500 }}>공시용계정</th>
-                        <th>차변</th>
-                        <th>대변</th>
+                        <th style={{ textAlign: "center", width: w2.acct, position: "relative" }}>
+                          계정과목
+                          <div onMouseDown={e => startResize(setW2, "acct", w2.acct, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
+                        <th style={{ textAlign: "center", width: w2.disc, color: subTxt, fontSize: 11, fontWeight: 500, position: "relative" }}>
+                          공시용계정
+                          <div onMouseDown={e => startResize(setW2, "disc", w2.disc, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
+                        <th style={{ textAlign: "center", width: w2.dr, position: "relative" }}>
+                          차변
+                          <div onMouseDown={e => startResize(setW2, "dr", w2.dr, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
+                        <th style={{ textAlign: "center", width: w2.cr, position: "relative" }}>
+                          대변
+                          <div onMouseDown={e => startResize(setW2, "cr", w2.cr, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {detailSummary.map((r, i) => (
                         <tr key={i}>
-                          <td style={{ fontWeight: 600 }}>{r.account_name}</td>
-                          <td style={{ color: subTxt, fontSize: 11 }}>{r.disclosure_acct}</td>
+                          <td style={{ fontWeight: 600, textAlign: "left" }}>{r.account_name}</td>
+                          <td style={{ color: subTxt, fontSize: 11, textAlign: "center" }}>{r.disclosure_acct}</td>
                           <td style={{ textAlign: "right", color: r.dr > 0 ? BLUE : zeroClr, whiteSpace: "nowrap" }}>
                             {r.dr > 0 ? fmtN(r.dr) : "-"}
                           </td>
@@ -354,22 +385,34 @@ export default function VCHSearch() {
               <div className="card">
                 <div className="card-title">전표 상세 내역</div>
                 <div style={{ height: 260, overflowY: "auto", overflowX: "auto" }}>
-                  <table>
+                  <table style={{ tableLayout: "fixed", width: "100%" }}>
                     <thead style={{ position: "sticky", top: 0, background: theadBg, zIndex: 1 }}>
                       <tr>
-                        <th style={{ textAlign: "left" }}>계정과목</th>
-                        <th style={{ textAlign: "left" }}>거래처</th>
-                        <th style={{ textAlign: "left" }}>적요</th>
-                        <th>차변</th>
-                        <th>대변</th>
+                        <th style={{ textAlign: "center", width: w3.acct, position: "relative" }}>
+                          계정과목
+                          <div onMouseDown={e => startResize(setW3, "acct", w3.acct, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
+                        <th style={{ textAlign: "center", width: w3.cp, position: "relative" }}>
+                          거래처
+                          <div onMouseDown={e => startResize(setW3, "cp", w3.cp, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
+                        <th style={{ textAlign: "center" }}>적요</th>
+                        <th style={{ textAlign: "center", width: w3.dr, position: "relative" }}>
+                          차변
+                          <div onMouseDown={e => startResize(setW3, "dr", w3.dr, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
+                        <th style={{ textAlign: "center", width: w3.cr, position: "relative" }}>
+                          대변
+                          <div onMouseDown={e => startResize(setW3, "cr", w3.cr, e)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize" }} />
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {detail.map((v, i) => (
                         <tr key={i}>
-                          <td style={{ whiteSpace: "nowrap" }}>{v.account_name}</td>
-                          <td style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.counterparty}</td>
-                          <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: valTxt }}>{v.description}</td>
+                          <td style={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{v.account_name}</td>
+                          <td style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>{v.counterparty}</td>
+                          <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: valTxt, textAlign: "left" }}>{v.description}</td>
                           <td style={{ textAlign: "right", color: v.dr_cr === "차변" ? BLUE : zeroClr, whiteSpace: "nowrap" }}>
                             {v.dr_cr === "차변" ? fmtN(v.amount) : "-"}
                           </td>

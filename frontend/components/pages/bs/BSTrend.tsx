@@ -9,6 +9,7 @@ import {
   fetchBSDailyBalance, fetchBSDailyDetail,
   DailyBalanceRow, DailyDetailData,
 } from "@/lib/api";
+import { useAmountFormat } from "@/lib/fmtAmount";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   LineController, LineElement, PointElement,
@@ -25,7 +26,6 @@ const ORANGE_FILL = "rgba(232,119,34,0.15)";
 const BLUE        = "rgba(37,99,235,1)";
 const RED         = "rgba(220,38,38,1)";
 
-const fmtAmt = (n: number) => Math.round(n / 10000).toLocaleString("ko-KR");
 
 const DONUT_COLORS_DR = ["#1d4ed8","#2563eb","#3b82f6","#60a5fa","#93c5fd","#bfdbfe","#dbeafe"];
 const DONUT_COLORS_CR = ["#b91c1c","#dc2626","#ef4444","#f87171","#fca5a5","#fecaca","#fee2e2"];
@@ -113,6 +113,7 @@ function CpPie({ items, colors, isDark }: {
   colors: string[];
   isDark: boolean;
 }) {
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const plugin = makePolylinePlugin(isDark);
   const emptyClr = isDark ? "#5A6070" : "#bbb";
   if (items.length === 0) return <div style={{ color: emptyClr, fontSize:12 }}>거래처 없음</div>;
@@ -150,7 +151,7 @@ function CpPie({ items, colors, isDark }: {
               callbacks: {
                 label: ctx => {
                   const v = ctx.parsed as number;
-                  return ` ${ctx.label}: ${fmtAmt(v)}만원 (${(v / total * 100).toFixed(1)}%)`;
+                  return ` ${ctx.label}: ${fmtAmt(v)}${unitLabel} (${(v / total * 100).toFixed(1)}%)`;
                 },
               },
             },
@@ -166,6 +167,7 @@ function CpPie({ items, colors, isDark }: {
 export default function BSTrend() {
   const isDark = useDarkMode();
   const filter = useFilter();
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const { triggerComment } = useComment();
 
   const [disclosures,    setDisclosures]    = useState<string[]>([]);
@@ -283,7 +285,7 @@ export default function BSTrend() {
     datasets: [
       {
         label: selAcctName || selDisclosure || "잔액",
-        data: balanceRows.map(r => Math.round(r.balance / 10000)),
+        data: balanceRows.map(r => r.balance),
         borderColor: ORANGE, backgroundColor: ORANGE_FILL,
         fill: true, tension: 0.2,
         pointRadius: pointRadii, pointHoverRadius: 6, borderWidth: 1.5,
@@ -296,7 +298,7 @@ export default function BSTrend() {
       },
       {
         label: "평균",
-        data: balanceRows.map(() => Math.round(avgBalance / 10000)),
+        data: balanceRows.map(() => avgBalance),
         borderColor: isDark ? "rgba(150,150,150,0.4)" : "rgba(150,150,150,0.5)",
         backgroundColor: "transparent",
         fill: false, borderDash: [4, 3], pointRadius: 0, borderWidth: 1, tension: 0,
@@ -335,14 +337,14 @@ export default function BSTrend() {
           title: ctx => balanceRows[ctx[0].dataIndex]?.date ?? "",
           label: ctx => {
             const v = ctx.parsed.y as number;
-            return ctx.datasetIndex === 1 ? ` 평균: ${v.toLocaleString("ko-KR")}만원` : ` 잔액: ${v.toLocaleString("ko-KR")}만원`;
+            return ctx.datasetIndex === 1 ? ` 평균: ${fmtAmt(v)}${unitLabel}` : ` 잔액: ${fmtAmt(v)}${unitLabel}`;
           },
         },
       },
     },
     scales: {
       x: { ticks:{ color: tickClr, font:{ size:9 }, maxRotation:0 }, grid:{ display:false } },
-      y: { ticks:{ color: tickClr, font:{ size:9 }, maxTicksLimit:6, callback: v => `${Number(v).toLocaleString()}만` }, grid:{ color: gridClr } },
+      y: { ticks:{ color: tickClr, font:{ size:9 }, maxTicksLimit:6, callback: (v: number | string) => `${fmtAmt(Number(v))}${unitLabel}` }, grid:{ color: gridClr } },
     },
     onClick: (_evt, elements) => handleChartClick(_evt, elements as { index: number }[]),
   };
@@ -404,7 +406,7 @@ export default function BSTrend() {
           </div>
           {avgBalance !== 0 && (
             <div style={{ fontSize:11, color: subTxt }}>
-              평균 <span style={{ color:ORANGE, fontWeight:700 }}>{fmtAmt(avgBalance)}만원</span>
+              평균 <span style={{ color:ORANGE, fontWeight:700 }}>{fmtAmt(avgBalance)}{unitLabel}</span>
             </div>
           )}
         </div>
@@ -480,7 +482,7 @@ export default function BSTrend() {
                         <tbody>
                           {detail.counter_accounts.map((r, i) => (
                             <tr key={i} style={{ cursor:"pointer" }}
-                              onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:r.account_name, value:r.dr ? `${fmtAmt(r.dr)}만원` : r.cr ? `${fmtAmt(r.cr)}만원` : "-", sub:selDisclosure }, { top:rect.top, right:rect.right }); }}>
+                              onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:r.account_name, value:r.dr ? `${fmtAmt(r.dr)}${unitLabel}` : r.cr ? `${fmtAmt(r.cr)}${unitLabel}` : "-", sub:selDisclosure }, { top:rect.top, right:rect.right }, e.currentTarget); }}>
                               <td>{r.account_name}</td>
                               <td style={{ color: subTxt }}>{r.disclosure_acct}</td>
                               <td style={{ textAlign:"right", color: r.dr ? BLUE : zeroClr }}>{r.dr ? fmtAmt(r.dr) : "-"}</td>
@@ -520,7 +522,7 @@ export default function BSTrend() {
                     <tbody>
                       {detail.vouchers.map((v, i) => (
                         <tr key={i} style={{ cursor:"pointer" }}
-                          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:v.counterparty || v.account_name, value:`${fmtAmt(v.amount)}만원`, bodyTemplate:`페이지: BS 추이분석\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtAmt(v.amount)}만원\n\n문의내용:\n` }, { top:r.top, right:r.right }); }}>
+                          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page:"BS 추이분석", label:v.counterparty || v.account_name, value:`${fmtAmt(v.amount)}${unitLabel}`, bodyTemplate:`페이지: BS 추이분석\n일자: ${v.date}\n전표번호: ${v.voucher_no}\n계정과목: ${v.account_name}\n거래처: ${v.counterparty}\n적요: ${v.description}\n금액: ${fmtAmt(v.amount)}${unitLabel}\n\n문의내용:\n` }, { top:r.top, right:r.right }, e.currentTarget); }}>
                           <td style={{ whiteSpace:"nowrap" }}>{v.date}</td>
                           <td style={{ color: subTxt, fontSize:11 }}>{v.voucher_no}</td>
                           <td>{v.account_name}</td>

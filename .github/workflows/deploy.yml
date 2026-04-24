@@ -27,13 +27,12 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.BACKEND_RENDER_URL }}
 
       - name: Prepare deploy directory
         run: |
-          mkdir -p deploy/easyview
-          cp -r frontend/out/* deploy/easyview/
-          cp frontend/out/index.html deploy/
+          mkdir -p deploy
+          cp -r frontend/out/. deploy/
           touch deploy/.nojekyll
 
       - name: Deploy to gh-pages

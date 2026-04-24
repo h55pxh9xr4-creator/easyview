@@ -430,12 +430,19 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface ChatAttachmentPayload {
+  label: string;
+  summary: string;
+  source?: string;
+}
+
 export interface ChatRequestBody {
   message: string;
   base_ym?: string;
   period_type?: string;
   page?: string;
   history?: ChatMessage[];
+  attachments?: ChatAttachmentPayload[];
 }
 
 export const sendChatMessage = (body: ChatRequestBody) =>
