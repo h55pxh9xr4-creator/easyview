@@ -348,7 +348,7 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
   const filtered = filter === "all" ? reports : reports.filter(r => r.status === filter);
 
   const changeStatus = async (reportId: number, status: string, label: string) => {
-    if (!confirm(`이 리포트를 "${label}" 상태로 변경하시겠습니까?`)) return;
+    void label;
     setActing(reportId);
     try {
       const res = await adminReportsApi.updateStatus(reportId, status);
