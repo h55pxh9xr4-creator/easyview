@@ -101,6 +101,57 @@ with engine.connect() as conn:
         conn.execute(text("ALTER TABLE inquiry ADD COLUMN corporation VARCHAR"))
         conn.commit()
 
+# ── je / tb_account → je_data / tb_data 마이그레이션 ─────────────────────────
+# 구 스키마(테이블) 제거 후 report_id 필터 뷰로 교체 (기존 쿼리 무수정 호환)
+with engine.connect() as conn:
+    _tables = {r[0] for r in conn.execute(text(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    )).fetchall()}
+    _views = {r[0] for r in conn.execute(text(
+        "SELECT name FROM sqlite_master WHERE type='view'"
+    )).fetchall()}
+
+    # 구 테이블 제거 (데이터는 리포트 재생성으로 복구 가능)
+    if "je" in _tables:
+        conn.execute(text("DROP TABLE je"))
+        conn.commit()
+    if "tb_account" in _tables:
+        conn.execute(text("DROP TABLE tb_account"))
+        conn.commit()
+
+    # 뷰 생성 — active 리포트 우선, 없으면 가장 최근 generated/reviewing 리포트
+    _views = {r[0] for r in conn.execute(text(
+        "SELECT name FROM sqlite_master WHERE type='view'"
+    )).fetchall()}
+
+    if "je" not in _views:
+        conn.execute(text("""
+            CREATE VIEW je AS
+            SELECT j.* FROM je_data j
+            WHERE j.report_id = COALESCE(
+                (SELECT id FROM reports WHERE is_active = 1 LIMIT 1),
+                (SELECT id FROM reports
+                 WHERE status IN ('active','reviewing','generated')
+                 ORDER BY id DESC LIMIT 1)
+            )
+        """))
+        conn.commit()
+        print("[MIGRATE] Created view: je")
+
+    if "tb_account" not in _views:
+        conn.execute(text("""
+            CREATE VIEW tb_account AS
+            SELECT t.* FROM tb_data t
+            WHERE t.report_id = COALESCE(
+                (SELECT id FROM reports WHERE is_active = 1 LIMIT 1),
+                (SELECT id FROM reports
+                 WHERE status IN ('active','reviewing','generated')
+                 ORDER BY id DESC LIMIT 1)
+            )
+        """))
+        conn.commit()
+        print("[MIGRATE] Created view: tb_account")
+
 app = FastAPI(title="EasyView API", version="1.0.0")
 
 app.add_middleware(

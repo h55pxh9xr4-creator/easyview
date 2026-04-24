@@ -172,10 +172,6 @@ export default function CompaniesPage() {
                     <input type="text" value={form.name} onChange={f("name")} className="input-field" placeholder="삼성전자" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-pwc-gray-700 mb-1">국가</label>
-                    <input type="text" value={form.country} onChange={f("country")} className="input-field" placeholder="Korea" />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-pwc-gray-700 mb-1">회사 유형</label>
                     <select value={form.company_type} onChange={f("company_type")} className="input-field">
                       <option value="">선택 안 함</option>
@@ -192,47 +188,57 @@ export default function CompaniesPage() {
               <div className="bg-white rounded-xl shadow-sm border border-pwc-gray-200 p-6">
                 <h3 className="text-sm font-semibold text-pwc-black mb-4">자회사 목록</h3>
 
-                {visibleSubs.length === 0 && (
-                  <p className="text-xs text-pwc-gray-400 mb-3">등록된 자회사가 없습니다.</p>
-                )}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* 왼쪽: 국가 */}
+                  <div>
+                    <label className="block text-sm font-medium text-pwc-gray-700 mb-1">국가</label>
+                    <input type="text" value={form.country} onChange={f("country")} className="input-field" placeholder="Korea" />
+                  </div>
 
-                <div className="space-y-2 mb-3">
-                  {subEntries.map((sub, idx) => sub._delete ? null : (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="flex-1 px-3 py-2 bg-pwc-gray-50 rounded border border-pwc-gray-200 text-sm text-pwc-black">
-                        {sub.name}
-                        {!sub.id && <span className="ml-2 text-xs text-pwc-orange font-medium">새로 추가</span>}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeSub(idx)}
-                        className="p-1.5 rounded hover:bg-red-50 text-pwc-gray-400 hover:text-red-500 cursor-pointer"
-                        title="삭제"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                  {/* 오른쪽: 자회사 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="text-sm font-medium text-pwc-gray-700">자회사</label>
+                      {visibleSubs.length === 0 && (
+                        <span className="text-xs text-pwc-gray-400">등록된 자회사가 없습니다.</span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 mb-2">
+                      {subEntries.map((sub, idx) => sub._delete ? null : (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="flex-1 px-3 py-2 bg-pwc-gray-50 rounded border border-pwc-gray-200 text-sm text-pwc-black">
+                            {sub.name}
+                            {!sub.id && <span className="ml-2 text-xs text-pwc-orange font-medium">새로 추가</span>}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeSub(idx)}
+                            className="p-1.5 rounded hover:bg-red-50 text-pwc-gray-400 hover:text-red-500 cursor-pointer"
+                            title="삭제"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={subInputVal}
+                        onChange={e => setSubInputVal(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
+                        placeholder="자회사명 입력 후 Enter"
+                        className="input-field flex-1 text-sm"
+                      />
+                      <button type="button" onClick={addSub} className="btn-primary px-4 py-2 text-sm">
+                        + 추가
                       </button>
                     </div>
-                  ))}
-                </div>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={subInputVal}
-                    onChange={e => setSubInputVal(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
-                    placeholder="자회사명 입력 후 + 버튼 또는 Enter"
-                    className="input-field flex-1 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={addSub}
-                    className="btn-primary px-4 py-2 text-sm"
-                  >
-                    + 추가
-                  </button>
+                  </div>
                 </div>
               </div>
 
@@ -341,7 +347,7 @@ export default function CompaniesPage() {
             <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
               <thead>
                 <tr className="border-b border-pwc-gray-200 bg-pwc-gray-50">
-                  {["회사명", "자회사", "국가", "유형", "계약기간", "기준 통화/분기", "관리"].map((h) => (
+                  {["회사명", "자회사 (국가)", "유형", "계약기간", "기준 통화/분기", "관리"].map((h) => (
                     <th key={h} className="text-left py-3 px-4 font-medium text-pwc-gray-500">{h}</th>
                   ))}
                 </tr>
@@ -352,18 +358,22 @@ export default function CompaniesPage() {
                     <td className="py-3 px-4 font-medium text-pwc-black">{c.name}</td>
                     <td className="py-3 px-4 text-pwc-gray-600">
                       {(c.subsidiaries ?? []).length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {(c.subsidiaries ?? []).map(s => (
-                            <span key={s.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-pwc-gray-100 text-pwc-gray-700">
-                              {s.name}
-                            </span>
-                          ))}
+                        <div className="flex flex-col gap-1">
+                          {c.country && (
+                            <span className="text-xs text-pwc-gray-400">{c.country}</span>
+                          )}
+                          <div className="flex flex-wrap gap-1">
+                            {(c.subsidiaries ?? []).map(s => (
+                              <span key={s.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-pwc-gray-100 text-pwc-gray-700">
+                                {s.name}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       ) : (
-                        <span className="text-pwc-gray-400">-</span>
+                        <span className="text-pwc-gray-400">{c.country || "-"}</span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-pwc-gray-600">{c.country || "-"}</td>
                     <td className="py-3 px-4">
                       {c.company_type
                         ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{c.company_type}</span>
@@ -390,7 +400,7 @@ export default function CompaniesPage() {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={7} className="py-12 text-center text-pwc-gray-400">검색 결과가 없습니다.</td></tr>
+                  <tr><td colSpan={6} className="py-12 text-center text-pwc-gray-400">검색 결과가 없습니다.</td></tr>
                 )}
               </tbody>
             </table>

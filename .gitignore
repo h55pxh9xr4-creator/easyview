@@ -1,6 +1,52 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# backend
 backend/venv/
 backend/__pycache__/
 backend/routers/__pycache__/
+*.pyc
+
+# frontend (easyview-web)
 frontend/node_modules/
 frontend/.next/
 frontend/.env.local
@@ -17,7 +63,6 @@ frontend/home/index.html
 frontend/home/index.txt
 frontend/index.txt
 frontend/.nojekyll
-*.pyc
 .env
 .env.local
 API_SPECIFICATION*.md
