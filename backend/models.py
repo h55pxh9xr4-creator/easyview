@@ -24,6 +24,14 @@ class TBData(Base):
 class JEData(Base):
     """JE(전표) 물리 테이블 — report_id 기준으로 리포트별 분리."""
     __tablename__ = "je_data"
+    __table_args__ = (
+        Index("idx_je_yearmonth", "year_month"),
+        Index("idx_je_section", "section"),
+        Index("idx_je_disclosure", "disclosure_acct"),
+        Index("idx_je_date", "date"),
+        Index("idx_je_voucher", "voucher_no"),
+        Index("idx_je_category", "category"),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     report_id = Column(Integer, index=True)
@@ -126,11 +134,3 @@ class RequestHistory(Base):
     detail     = Column(Text)
     created_at = Column(DateTime, default=datetime.now)
 
-
-# 인덱스 정의
-Index("idx_je_yearmonth", JEData.year_month)
-Index("idx_je_section", JEData.section)
-Index("idx_je_disclosure", JEData.disclosure_acct)
-Index("idx_je_date", JEData.date)
-Index("idx_je_voucher", JEData.voucher_no)
-Index("idx_je_category", JEData.category)
