@@ -470,6 +470,14 @@ export interface ChatAttachmentPayload {
   source?: string;
 }
 
+export interface ChatAction {
+  type: "navigate" | "execute" | "quick_reply";
+  label: string;
+  route?: string;
+  handler?: string;
+  payload?: Record<string, unknown>;
+}
+
 export interface ChatRequestBody {
   message: string;
   base_ym?: string;
@@ -477,7 +485,113 @@ export interface ChatRequestBody {
   page?: string;
   history?: ChatMessage[];
   attachments?: ChatAttachmentPayload[];
+  session_id?: number;
+  user_role?: string;
+}
+
+export interface ChatResponseBody {
+  reply: string;
+  actions?: ChatAction[];
+  suggestions?: string[];
+  matched_faq_id?: number;
+  session_id?: number;
 }
 
 export const sendChatMessage = (body: ChatRequestBody) =>
-  mut<{ reply: string }>(`${BASE}/api/chat/message`, "POST", body);
+  mut<ChatResponseBody>(`${BASE}/api/chat/message`, "POST", body);
+
+// 🆕 스트리밍 전송 (SSE)
+export interface ChatStreamHandlers {
+  onChunk?: (text: string) => void;
+  onDone?: (final: ChatResponseBody) => void;
+  onError?: (err: string) => void;
+}
+
+export const sendChatMessageStream = async (body: ChatRequestBody, handlers: ChatStreamHandlers) => {
+  const res = await fetch(`${BASE}/api/chat/message/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
+    body: JSON.stringify(body),
+  });
+  if (!res.body) { handlers.onError?.("스트림 연결 실패"); return; }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n\n");
+    buf = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const data = JSON.parse(line.slice(6));
+        if (data.type === "chunk") handlers.onChunk?.(data.text);
+        else if (data.type === "done") handlers.onDone?.(data);
+        else if (data.type === "error") handlers.onError?.(data.message);
+      } catch {/* ignore */}
+    }
+  }
+};
+
+// 🆕 세션 API
+export interface ChatSessionInfo {
+  id: number;
+  title: string;
+  page_context?: string;
+  message_count: number;
+  started_at?: string;
+  last_active_at?: string;
+}
+
+export const fetchChatSessions = (userName?: string) =>
+  get<{ sessions: ChatSessionInfo[] }>("/api/chat/sessions", { user_name: userName });
+
+export const fetchChatSession = (sessionId: number) =>
+  get<{ session: ChatSessionInfo; messages: Array<{ id: number; role: string; content: string; actions?: ChatAction[]; suggestions?: string[]; matched_faq_id?: number }> }>(`/api/chat/sessions/${sessionId}`);
+
+export const deleteChatSession = (sessionId: number) =>
+  mut<{ ok: boolean }>(`${BASE}/api/chat/sessions/${sessionId}`, "DELETE");
+
+// 🆕 FAQ API
+export interface FaqItem {
+  id: number;
+  category: string;
+  question: string;
+  answer: string;
+  keywords?: string;
+  action_route?: string;
+  action_handler?: string;
+  view_count: number;
+  helpful_count: number;
+  not_helpful_count: number;
+  priority: number;
+  is_published: boolean;
+  created_at?: string;
+}
+
+export interface FaqCategory {
+  name: string;
+  count: number;
+}
+
+export const fetchFaqs = (category?: string, search?: string) =>
+  get<{ faqs: FaqItem[]; categories: FaqCategory[] }>("/api/chat/faqs", { category, search });
+
+export const fetchFaq = (faqId: number) =>
+  get<FaqItem>(`/api/chat/faqs/${faqId}`);
+
+export const createFaq = (data: Partial<FaqItem>) =>
+  mut<{ id: number }>(`${BASE}/api/chat/faqs`, "POST", data);
+
+export const updateFaq = (faqId: number, data: Partial<FaqItem>) =>
+  mut<{ ok: boolean }>(`${BASE}/api/chat/faqs/${faqId}`, "PUT", data);
+
+export const deleteFaq = (faqId: number) =>
+  mut<{ ok: boolean }>(`${BASE}/api/chat/faqs/${faqId}`, "DELETE");
+
+export const submitFaqFeedback = (faqId: number, isHelpful: boolean, comment?: string) =>
+  mut<{ ok: boolean }>(`${BASE}/api/chat/faqs/${faqId}/feedback`, "POST", {
+    is_helpful: isHelpful, comment,
+  });

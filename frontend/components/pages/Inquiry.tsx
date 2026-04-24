@@ -8,6 +8,7 @@ import {
 import { useComment } from "@/hooks/useComment";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import FaqPanel from "./FaqPanel";
 
 type View = "list" | "detail" | "write" | "edit";
 
@@ -37,6 +38,7 @@ function parseCommentTarget(content: string) {
 
 export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string, keepComment?: boolean) => void }) {
   const isDark = useDarkMode();
+  const [activeTab, setActiveTab] = useState<"inquiry" | "faq">("inquiry");
 
   const [view,       setView]      = useState<View>("list");
   const [list,       setList]      = useState<InquiryItem[]>([]);
@@ -190,10 +192,51 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     </div>
   ) : null;
 
+  // ── 탭 UI ─────────────────────────────────────────────────
+  const TabBar = () => (
+    <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${bdr}`, marginBottom: 20 }}>
+      <button
+        onClick={() => setActiveTab("inquiry")}
+        style={{
+          padding: "10px 20px", background: "none", border: "none",
+          borderBottom: activeTab === "inquiry" ? "2px solid #E87722" : "2px solid transparent",
+          color: activeTab === "inquiry" ? "#E87722" : (isDark ? "#9198A8" : "#888"),
+          fontWeight: activeTab === "inquiry" ? 700 : 400,
+          fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+          marginBottom: -1, transition: "all .15s",
+        }}
+      >
+        💬 문의
+      </button>
+      <button
+        onClick={() => setActiveTab("faq")}
+        style={{
+          padding: "10px 20px", background: "none", border: "none",
+          borderBottom: activeTab === "faq" ? "2px solid #E87722" : "2px solid transparent",
+          color: activeTab === "faq" ? "#E87722" : (isDark ? "#9198A8" : "#888"),
+          fontWeight: activeTab === "faq" ? 700 : 400,
+          fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+          marginBottom: -1, transition: "all .15s",
+        }}
+      >
+        ❓ FAQ
+      </button>
+    </div>
+  );
+
+  // FAQ 탭이면 FaqPanel 렌더링
+  if (activeTab === "faq") return (
+    <div className="wrap">
+      <TabBar />
+      <FaqPanel />
+    </div>
+  );
+
   // ── 목록 ──────────────────────────────────────────────────
   if (view === "list") return (
     <div className="wrap">
       <Toast />
+      <TabBar />
 
       {/* 툴바 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
