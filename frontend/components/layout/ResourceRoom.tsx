@@ -5,7 +5,8 @@ import {
   fetchRequests, createRequests, updateRequest, deleteRequest,
   fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl, getDownloadUrl,
   fetchComments, createComment,
-  type DataRequest as ApiRequest, type ReqFile, type RequestComment,
+  fetchRequestHistory,
+  type DataRequest as ApiRequest, type ReqFile, type RequestComment, type ReqHistoryEntry,
 } from "@/lib/api";
 
 
@@ -385,6 +386,7 @@ export default function ResourceRoom() {
   } | null>(null);
   const [detailFiles, setDetailFiles]       = useState<ReqFile[]>([]);
   const [filesLoading, setFilesLoading]     = useState(false);
+  const [deletionHistory, setDeletionHistory] = useState<ReqHistoryEntry[]>([]);
   const [uploading, setUploading]           = useState(false);
   const fileInputRef                        = useRef<HTMLInputElement>(null);
   const [groupByEntity, setGroupByEntity]   = useState(false);
@@ -481,12 +483,15 @@ export default function ResourceRoom() {
 
   /* 상세 뷰 열릴 때 파일 목록 로드 + 논의 복원 */
   useEffect(() => {
-    if (!detailReq) { setDetailFiles([]); setDiscussionComments([]); setDiscussionDraft(""); return; }
+    if (!detailReq) { setDetailFiles([]); setDiscussionComments([]); setDiscussionDraft(""); setDeletionHistory([]); return; }
     setFilesLoading(true);
     fetchRequestFiles(detailReq.id)
       .then(f => setDetailFiles(f))
       .catch(() => setDetailFiles([]))
       .finally(() => setFilesLoading(false));
+    fetchRequestHistory(detailReq.id)
+      .then(h => setDeletionHistory(h))
+      .catch(() => setDeletionHistory([]));
     // DB에서 댓글 로드
     fetchComments(detailReq.id)
       .then((data: RequestComment[]) => {
@@ -553,8 +558,10 @@ export default function ResourceRoom() {
 
   const handleDeleteFile = async (fileId: number) => {
     if (!detailReq) return;
-    await deleteRequestFile(detailReq.id, fileId);
+    const actor = sessionStorage.getItem("ev_user") ?? "";
+    await deleteRequestFile(detailReq.id, fileId, actor);
     setDetailFiles(prev => prev.filter(f => f.id !== fileId));
+    fetchRequestHistory(detailReq.id).then(h => setDeletionHistory(h)).catch(() => {});
     showToast("파일이 삭제되었습니다.");
   };
 
@@ -1176,10 +1183,16 @@ export default function ResourceRoom() {
             type: "comment" as const,
             detail: `논의: "${c.text.slice(0, 50)}${c.text.length > 50 ? "…" : ""}"`,
           })),
+          ...deletionHistory.map(h => ({
+            ts: h.ts || "0000-00-00 00:00:00",
+            actor: h.actor,
+            type: "delete" as const,
+            detail: h.detail,
+          })),
         ].sort((a, b) => a.ts.localeCompare(b.ts));
 
-        const iconMap = { upload: "📤", download: "📥", comment: "💬", create: "📋", status: "🔄" } as const;
-        const colorMap = { upload: "#3B82F6", download: "#10B981", comment: "#F59E0B", create: C.primary, status: "#8B5CF6" } as const;
+        const iconMap = { upload: "📤", download: "📥", comment: "💬", create: "📋", status: "🔄", delete: "🗑️" } as const;
+        const colorMap = { upload: "#3B82F6", download: "#10B981", comment: "#F59E0B", create: C.primary, status: "#8B5CF6", delete: "#EF4444" } as const;
 
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>

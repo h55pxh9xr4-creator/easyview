@@ -435,8 +435,15 @@ export const uploadRequestFile = (reqId: number, file: File, uploader: string) =
     .then(mapFile) as Promise<ReqFile>;
 };
 
-export const deleteRequestFile = (reqId: number, fileId: number) =>
-  fetch(`${BASE}/api/requests/${reqId}/files/${fileId}`, { method: "DELETE" }).then(r => r.json());
+export const deleteRequestFile = (reqId: number, fileId: number, actor = "") =>
+  fetch(`${BASE}/api/requests/${reqId}/files/${fileId}?actor=${encodeURIComponent(actor)}`, { method: "DELETE" }).then(r => r.json());
+
+export interface ReqHistoryEntry {
+  id: number; requestId: number; actor: string;
+  eventType: string; detail: string; ts: string;
+}
+export const fetchRequestHistory = (reqId: number) =>
+  get<ReqHistoryEntry[]>(`/api/requests/${reqId}/history`);
 
 export const getFileUrl = (url: string) => `${BASE}${url}`;
 export const getDownloadUrl = (reqId: number, fileId: number) => `${BASE}/api/requests/${reqId}/files/${fileId}/download`;

@@ -100,6 +100,17 @@ class RequestComment(Base):
     created_at = Column(DateTime, default=datetime.now)
 
 
+class RequestHistory(Base):
+    __tablename__ = "request_history"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    request_id = Column(Integer, ForeignKey("data_request.id", ondelete="CASCADE"), nullable=False)
+    actor      = Column(String)
+    event_type = Column(String, nullable=False)  # delete_file
+    detail     = Column(Text)
+    created_at = Column(DateTime, default=datetime.now)
+
+
 # 인덱스 정의
 Index("idx_je_yearmonth", JE.year_month)
 Index("idx_je_section", JE.section)
