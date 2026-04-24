@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import SAMILKIM_IMG from "@/lib/samilkimImg";
-import { sendChatMessage, type ChatMessage } from "@/lib/api";
+import { sendChatMessageStream, fetchChatSessions, fetchChatSession, deleteChatSession, type ChatMessage, type ChatAction, type ChatSessionInfo } from "@/lib/api";
 import { useFilter } from "@/hooks/useFilter";
 import { useChatAttachment } from "@/hooks/useChatAttachment";
 
@@ -10,6 +10,34 @@ interface Message {
   id: number;
   role: "user" | "assistant";
   text: string;
+  actions?: ChatAction[];      // 🆕 Actions
+  suggestions?: string[];       // 🆕 Follow-up suggestions
+}
+
+// Action handler 실행기 — execute 타입 action의 handler 문자열을 실행
+function executeActionHandler(handler: string) {
+  try {
+    // applyTheme('dark'), applyTheme('light')
+    const themeMatch = handler.match(/applyTheme\(['"](dark|light)['"]\)/);
+    if (themeMatch) {
+      const theme = themeMatch[1];
+      localStorage.setItem("ev_theme", theme);
+      document.documentElement.setAttribute("data-theme", theme);
+      return;
+    }
+    // scrollToTop
+    if (handler === "scrollToTop()") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    // openCommentPanel
+    if (handler === "openCommentPanel()") {
+      // 현재 페이지에 이미 triggerComment 사용 중이면 외부에서 연결
+      return;
+    }
+  } catch (e) {
+    console.warn("Action handler 실행 실패:", handler, e);
+  }
 }
 
 interface ChatBotProps {
@@ -22,6 +50,10 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading]   = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [sessionId, setSessionId] = useState<number | null>(null);  // 🆕 현재 세션
+  const [showHistory, setShowHistory] = useState(false);  // 🆕 세션 히스토리 패널
+  const [sessions, setSessions] = useState<ChatSessionInfo[]>([]);
+  const [streamingText, setStreamingText] = useState("");  // 🆕 스트리밍 중인 텍스트
   const [pos, setPos]           = useState<{ x: number; y: number } | null>(null);
   const [grabbed, setGrabbed]       = useState(false);
   const [speechText, setSpeechText] = useState<string | null>(null);
@@ -127,43 +159,133 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
     setOpen(p => !p);
   };
 
-  const handleSend = async () => {
-    const text = input.trim();
-    if (!text || loading) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || loading) return;
 
     const userMsg: Message = { id: Date.now(), role: "user", text };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setLoading(true);
+    setStreamingText("");
 
-    // 대화 기록 구성 (최근 10개)
     const history: ChatMessage[] = messages.slice(-10).map(m => ({
       role: m.role,
       text: m.text,
     }));
 
+    let accumulated = "";
     try {
-      const res = await sendChatMessage({
+      await sendChatMessageStream({
         message: text,
         base_ym: filter.baseYm,
         period_type: filter.periodType,
         page: currentPage,
         history,
+        session_id: sessionId ?? undefined,
         attachments: attachments.map(a => ({ label: a.label, summary: a.summary, source: a.source })),
+      }, {
+        onChunk: (chunk) => {
+          accumulated += chunk;
+          setStreamingText(accumulated);
+        },
+        onDone: (final) => {
+          // 최종 파싱된 응답으로 대체 (JSON 코드블록 정리된 상태)
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            role: "assistant",
+            text: final.reply,
+            actions: final.actions,
+            suggestions: final.suggestions,
+          }]);
+          if (final.session_id) setSessionId(final.session_id);
+          clearAttachments();
+          setStreamingText("");
+        },
+        onError: (err) => {
+          setMessages(prev => [...prev, {
+            id: Date.now(), role: "assistant",
+            text: `죄송합니다. 오류가 발생했습니다: ${err}`,
+          }]);
+          setStreamingText("");
+        },
       });
-
-      setMessages(prev => [
-        ...prev,
-        { id: Date.now(), role: "assistant", text: res.reply },
-      ]);
-      clearAttachments();
     } catch {
-      setMessages(prev => [
-        ...prev,
-        { id: Date.now(), role: "assistant", text: "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요." },
-      ]);
+      setMessages(prev => [...prev, {
+        id: Date.now(), role: "assistant",
+        text: "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+      }]);
+      setStreamingText("");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSend = () => sendMessage(input);
+
+  // 새 대화 시작
+  const startNewSession = () => {
+    setMessages([]);
+    setSessionId(null);
+    setShowHistory(false);
+    setShowSuggestions(false);
+  };
+
+  // 세션 히스토리 토글 + 목록 로드
+  const toggleHistory = async () => {
+    if (!showHistory) {
+      try {
+        const userName = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? undefined) : undefined;
+        const res = await fetchChatSessions(userName);
+        setSessions(res.sessions);
+      } catch { setSessions([]); }
+    }
+    setShowHistory(p => !p);
+  };
+
+  // 세션 로드
+  const loadSession = async (sid: number) => {
+    try {
+      const res = await fetchChatSession(sid);
+      const msgs: Message[] = res.messages
+        .filter(m => m.role === "user" || m.role === "assistant")
+        .map(m => ({
+          id: m.id,
+          role: m.role as "user" | "assistant",
+          text: m.content,
+          actions: m.actions,
+          suggestions: m.suggestions,
+        }));
+      setMessages(msgs);
+      setSessionId(sid);
+      setShowHistory(false);
+    } catch { /* ignore */ }
+  };
+
+  const deleteSession = async (sid: number) => {
+    try {
+      await deleteChatSession(sid);
+      setSessions(prev => prev.filter(s => s.id !== sid));
+      if (sid === sessionId) startNewSession();
+    } catch { /* ignore */ }
+  };
+
+  // Action 클릭 핸들러
+  const handleActionClick = (action: ChatAction) => {
+    if (action.type === "navigate" && action.route) {
+      // /easyview/?page=... 형태 → hash 방식으로 변환
+      const url = action.route;
+      if (url.includes("?")) {
+        const qs = url.split("?")[1];
+        window.location.hash = qs;
+      } else {
+        window.location.href = url;
+      }
+    } else if (action.type === "execute" && action.handler) {
+      executeActionHandler(action.handler);
+    } else if (action.type === "quick_reply") {
+      // 바로 메시지로 전송
+      setInput(action.label);
+      setTimeout(() => handleSend(), 50);
     }
   };
 
@@ -197,23 +319,7 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
 
   const handleSuggestionClick = (question: string) => {
     setShowSuggestions(false);
-    setInput("");
-    const userMsg: Message = { id: Date.now(), role: "user", text: question };
-    setMessages(prev => [...prev, userMsg]);
-    setLoading(true);
-    sendChatMessage({
-      message: question,
-      base_ym: filter.baseYm,
-      period_type: filter.periodType,
-      page: currentPage,
-      history: messages.slice(-10).map(m => ({ role: m.role, text: m.text })),
-      attachments: attachments.map(a => ({ label: a.label, summary: a.summary, source: a.source })),
-    }).then(res => {
-      setMessages(prev => [...prev, { id: Date.now(), role: "assistant", text: res.reply }]);
-      clearAttachments();
-    }).catch(() => {
-      setMessages(prev => [...prev, { id: Date.now(), role: "assistant", text: "죄송합니다. 일시적인 오류가 발생했습니다." }]);
-    }).finally(() => setLoading(false));
+    sendMessage(question);
   };
 
   const fabStyle: React.CSSProperties = pos
@@ -235,10 +341,15 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
               <span style={{ fontWeight: 700, fontSize: 14, color: "#2C2C2C" }}>김삼일 매니저</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <button className="chatbot-header-btn" onClick={toggleHistory} title="대화 내역">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </button>
               {messages.length > 0 && (
-                <button className="chatbot-header-btn" onClick={() => { setMessages([]); setShowSuggestions(false); }} title="새 대화">
+                <button className="chatbot-header-btn" onClick={startNewSession} title="새 대화 시작">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/>
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                   </svg>
                 </button>
               )}
@@ -250,6 +361,40 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
             </div>
           </div>
 
+          {showHistory && (
+            <div className="chatbot-history">
+              <div className="chatbot-history-header">
+                <span>최근 대화</span>
+                <button className="chatbot-header-btn" onClick={() => setShowHistory(false)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+              {sessions.length === 0 ? (
+                <div className="chatbot-history-empty">저장된 대화가 없어요.</div>
+              ) : (
+                <div className="chatbot-history-list">
+                  {sessions.map(s => (
+                    <div key={s.id} className={`chatbot-history-item ${s.id === sessionId ? "active" : ""}`}>
+                      <button className="chatbot-history-item-main" onClick={() => loadSession(s.id)}>
+                        <div className="chatbot-history-title">{s.title || "(제목 없음)"}</div>
+                        <div className="chatbot-history-meta">
+                          💬 {s.message_count} · {s.last_active_at?.slice(5, 16).replace("T", " ")}
+                        </div>
+                      </button>
+                      <button className="chatbot-history-delete" onClick={() => deleteSession(s.id)} title="삭제">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="chatbot-messages">
             {messages.length === 0 && (
               <div className="chatbot-empty">
@@ -258,19 +403,65 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
               </div>
             )}
             {messages.map(m => (
-              <div key={m.id} className={`chatbot-msg chatbot-msg-${m.role}`}>
-
-                <div className="chatbot-msg-bubble" style={{ whiteSpace: "pre-wrap" }}>{m.text}</div>
+              <div key={m.id}>
+                <div className={`chatbot-msg chatbot-msg-${m.role}`}>
+                  <div className="chatbot-msg-bubble" style={{ whiteSpace: "pre-wrap" }}>{m.text}</div>
+                </div>
+                {m.role === "assistant" && m.actions && m.actions.length > 0 && (
+                  <div className="chatbot-actions">
+                    {m.actions.map((a, i) => (
+                      <button
+                        key={i}
+                        className={`chatbot-action-btn chatbot-action-${a.type}`}
+                        onClick={() => handleActionClick(a)}
+                      >
+                        {a.type === "navigate" && (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                          </svg>
+                        )}
+                        {a.type === "execute" && (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                          </svg>
+                        )}
+                        <span>{a.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {m.role === "assistant" && m.suggestions && m.suggestions.length > 0 && (
+                  <div className="chatbot-followup">
+                    <div className="chatbot-followup-label">이어서 물어보기</div>
+                    <div className="chatbot-followup-list">
+                      {m.suggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          className="chatbot-followup-btn"
+                          onClick={() => handleSuggestionClick(s)}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
-            {loading && (
+            {loading && streamingText ? (
               <div className="chatbot-msg chatbot-msg-assistant">
-
+                <div className="chatbot-msg-bubble" style={{ whiteSpace: "pre-wrap" }}>
+                  {streamingText}
+                  <span className="chatbot-stream-cursor" />
+                </div>
+              </div>
+            ) : loading ? (
+              <div className="chatbot-msg chatbot-msg-assistant">
                 <div className="chatbot-msg-bubble chatbot-typing">
                   <span className="chatbot-dot" /><span className="chatbot-dot" /><span className="chatbot-dot" />
                 </div>
               </div>
-            )}
+            ) : null}
             <div ref={bottomRef} />
           </div>
 
