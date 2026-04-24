@@ -36,9 +36,9 @@ function parseCommentTarget(content: string) {
   return { page: get("페이지"), label: get("항목"), value: get("값"), sub: get("선택 월") };
 }
 
-export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string, keepComment?: boolean) => void }) {
+export default function Inquiry({ onNavigate, activeSub }: { onNavigate?: (tab: string, sub: string, label: string, keepComment?: boolean) => void; activeSub?: "inquiry" | "faq" }) {
   const isDark = useDarkMode();
-  const [activeTab, setActiveTab] = useState<"inquiry" | "faq">("inquiry");
+  const activeTab = activeSub ?? "inquiry";
 
   const [view,       setView]      = useState<View>("list");
   const [list,       setList]      = useState<InquiryItem[]>([]);
@@ -128,11 +128,23 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     if (!detail || !replyText.trim()) return;
     setSubmitting(true);
     try {
-      await replyInquiry(detail.id, replyText);
+      await replyInquiry(detail.id, replyText, currentUser || "관리자");
+      setReplyText("");
       openDetail(detail.id);
       showToast("답변이 등록되었습니다.");
     } catch { showToast("답변 등록 중 오류가 발생했습니다.", "err"); }
     finally { setSubmitting(false); }
+  };
+
+  const handleDeleteReply = async (replyId: number) => {
+    if (!detail) return;
+    if (!confirm("이 댓글을 삭제할까요?")) return;
+    try {
+      const mod = await import("@/lib/api");
+      await mod.deleteInquiryReply(detail.id, replyId);
+      openDetail(detail.id);
+      showToast("댓글이 삭제되었습니다.");
+    } catch { showToast("삭제 중 오류가 발생했습니다.", "err"); }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -192,42 +204,9 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
     </div>
   ) : null;
 
-  // ── 탭 UI ─────────────────────────────────────────────────
-  const TabBar = () => (
-    <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${bdr}`, marginBottom: 20 }}>
-      <button
-        onClick={() => setActiveTab("inquiry")}
-        style={{
-          padding: "10px 20px", background: "none", border: "none",
-          borderBottom: activeTab === "inquiry" ? "2px solid #E87722" : "2px solid transparent",
-          color: activeTab === "inquiry" ? "#E87722" : (isDark ? "#9198A8" : "#888"),
-          fontWeight: activeTab === "inquiry" ? 700 : 400,
-          fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-          marginBottom: -1, transition: "all .15s",
-        }}
-      >
-        💬 문의
-      </button>
-      <button
-        onClick={() => setActiveTab("faq")}
-        style={{
-          padding: "10px 20px", background: "none", border: "none",
-          borderBottom: activeTab === "faq" ? "2px solid #E87722" : "2px solid transparent",
-          color: activeTab === "faq" ? "#E87722" : (isDark ? "#9198A8" : "#888"),
-          fontWeight: activeTab === "faq" ? 700 : 400,
-          fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-          marginBottom: -1, transition: "all .15s",
-        }}
-      >
-        ❓ FAQ
-      </button>
-    </div>
-  );
-
-  // FAQ 탭이면 FaqPanel 렌더링
+  // FAQ 탭이면 FaqPanel 렌더링 (사이드바에서 제어)
   if (activeTab === "faq") return (
     <div className="wrap">
-      <TabBar />
       <FaqPanel />
     </div>
   );
@@ -236,7 +215,6 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
   if (view === "list") return (
     <div className="wrap">
       <Toast />
-      <TabBar />
 
       {/* 툴바 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
@@ -478,19 +456,58 @@ export default function Inquiry({ onNavigate }: { onNavigate?: (tab: string, sub
         </div>
         {canView && (
           <div style={{ ...cardS, marginTop: 12 }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#E87722", marginBottom: 14 }}>관리자 답변</p>
-            {detail.reply
-              ? <>
-                  <p style={{ fontSize: 13, color: isDark ? "#C4C9D4" : "#333", lineHeight: 1.9, whiteSpace: "pre-wrap" }}>{detail.reply}</p>
-                  <p style={{ fontSize: 11, color: txtD, marginTop: 10, textAlign: "right" }}>답변일: {detail.reply_at}</p>
-                </>
-              : <p style={{ fontSize: 12, color: emptyClr }}>아직 답변이 등록되지 않았습니다.</p>
-            }
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#E87722", marginBottom: 14 }}>
+              댓글 {detail.replies && detail.replies.length > 0 ? `(${detail.replies.length})` : ""}
+            </p>
+            {detail.replies && detail.replies.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {detail.replies.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{
+                      padding: "12px 14px",
+                      background: bg3,
+                      borderRadius: 8,
+                      border: `1px solid ${bdr2}`,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: txtP }}>{r.author}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: txtD }}>{r.created_at}</span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteReply(r.id)}
+                            title="삭제"
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: txtDim,
+                              fontSize: 11,
+                              cursor: "pointer",
+                              padding: "2px 4px",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 13, color: isDark ? "#C4C9D4" : "#333", lineHeight: 1.75, whiteSpace: "pre-wrap", margin: 0 }}>
+                      {r.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: 12, color: emptyClr }}>아직 댓글이 없습니다.</p>
+            )}
             {isAdmin && (
               <div style={{ marginTop: 16, borderTop: `1px solid ${bdr2}`, paddingTop: 16 }}>
-                <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="답변 내용을 입력하세요" rows={4} style={{ ...inp, resize: "vertical", marginBottom: 10 }} />
+                <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="댓글을 입력하세요" rows={4} style={{ ...inp, resize: "vertical", marginBottom: 10 }} />
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={handleReply} disabled={submitting} style={{ ...submitBtn, opacity: submitting ? 0.7 : 1 }}>{submitting ? "등록 중..." : "답변 등록"}</button>
+                  <button onClick={handleReply} disabled={submitting} style={{ ...submitBtn, opacity: submitting ? 0.7 : 1 }}>{submitting ? "등록 중..." : "댓글 등록"}</button>
                 </div>
               </div>
             )}

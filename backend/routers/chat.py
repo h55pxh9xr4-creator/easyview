@@ -97,9 +97,18 @@ EasyView 재무분석 플랫폼의 AI 어시스턴트입니다.
 }
 
 ## 주의
-- JSON 외의 텍스트를 출력하지 마세요
+- JSON 외의 텍스트를 출력하지 마세요 (자연어 preamble, 설명, 인사말 금지)
+- **응답 전체가 JSON 오브젝트여야 합니다.** `{` 로 시작해서 `}` 로 끝나야 합니다.
+- JSON 앞뒤로 "```json" 코드펜스도 붙이지 마세요.
 - actions/suggestions는 필요 없으면 빈 배열, 최대 3~4개까지만
 - Function Calling이 필요하면 먼저 tool을 호출한 후, 그 결과로 최종 JSON 응답하세요
+
+## EasyView 상단 필터바 (모든 사용자가 즉시 변경 가능)
+리포트 페이지 상단에는 다음 드롭다운이 있어 클릭만으로 즉시 변경됩니다:
+기간(월별/누적) · 기준연월 · 분석대상 · 비교대상 · **통화**(KRW/USD/EUR/GBP/JPY 등) · **단위**(원/천원/백만원)
+
+이 필터 변경은 권한 불문·설정 페이지 이동 불필요입니다.
+단위/통화 변경을 요청받으면 "화면 우측 상단 [단위]/[통화] 드롭다운에서 바로 선택하시면 돼요" 형태로 안내하고, 현재 값이 page context에 주어진 경우 그 값을 그대로 전달하세요 (추측 금지).
 
 ## ⚠️ 절대 금지 (중요!)
 - **execute 타입 action은 사용자가 버튼을 클릭해야 실행됩니다.**
@@ -588,6 +597,8 @@ class ChatRequest(BaseModel):
     session_id: Optional[int] = None  # 🆕 대화 세션 ID
     user_role: Optional[str] = "viewer"  # 🆕 사용자 역할 (admin/manager/viewer)
     user_name: Optional[str] = None  # 🆕 로그인 사용자명 (세션 저장용)
+    amount_unit: Optional[str] = None  # 🆕 현재 단위 (원/천/백만/억)
+    currency: Optional[str] = None  # 🆕 현재 통화 (KRW/USD/EUR...)
 
 
 class ChatAction(BaseModel):
@@ -722,7 +733,7 @@ async def chat_message(req: ChatRequest, db: Session = Depends(get_db)):
                 )
 
         # 페이지 컨텍스트 메시지 구성 — 페이지별 맞춤 가이드
-        page_context = _build_page_context(req.page, req.base_ym, req.period_type, req.user_role)
+        page_context = _build_page_context(req.page, req.base_ym, req.period_type, req.user_role, req.amount_unit, req.currency)
 
         # 첨부 데이터 (사용자가 'Add to Chat'으로 보낸 리포트 데이터)
         attachment_context = ""
@@ -818,29 +829,68 @@ async def chat_message(req: ChatRequest, db: Session = Depends(get_db)):
 
 
 def _parse_ai_response(raw: str) -> dict:
-    """AI 응답에서 JSON 추출. 실패 시 전체를 reply로 간주."""
+    """AI 응답에서 JSON 추출. 자연어 preamble이 섞여 있어도 JSON 오브젝트만 추출.
+    실패 시 코드펜스/JSON 블록을 제거한 자연어만 reply로 사용."""
     if not raw:
         return {"reply": "죄송합니다, 응답을 생성하지 못했습니다.", "actions": [], "suggestions": []}
 
-    # 코드블록 제거 (```json ... ```)
+    # 1차 시도: 전체 텍스트에서 코드펜스 제거 후 통째 파싱
     txt = raw.strip()
-    if txt.startswith("```"):
-        lines = txt.split("\n")
-        txt = "\n".join(lines[1:-1]) if len(lines) > 2 else txt.strip("`")
+    fenced = re.search(r"```(?:json)?\s*(.*?)```", txt, re.DOTALL)
+    candidates = []
+    if fenced:
+        candidates.append(fenced.group(1).strip())
+    # 2차 시도: 가장 바깥 중괄호 블록 (중첩 균형 매칭)
+    candidates.append(_extract_outermost_json(txt))
+    candidates.append(txt)
 
-    try:
-        data = json.loads(txt)
-        if isinstance(data, dict) and "reply" in data:
-            return {
-                "reply": str(data.get("reply", "")),
-                "actions": data.get("actions") if isinstance(data.get("actions"), list) else [],
-                "suggestions": data.get("suggestions") if isinstance(data.get("suggestions"), list) else [],
-            }
-    except (json.JSONDecodeError, ValueError):
-        pass
+    for cand in candidates:
+        if not cand:
+            continue
+        try:
+            data = json.loads(cand)
+            if isinstance(data, dict) and "reply" in data:
+                return {
+                    "reply": str(data.get("reply", "")),
+                    "actions": data.get("actions") if isinstance(data.get("actions"), list) else [],
+                    "suggestions": data.get("suggestions") if isinstance(data.get("suggestions"), list) else [],
+                }
+        except (json.JSONDecodeError, ValueError):
+            continue
 
-    # 파싱 실패 → 원문을 reply로
-    return {"reply": raw, "actions": [], "suggestions": []}
+    # 파싱 완전 실패 → 원문에서 JSON/코드펜스 블록을 제거한 자연어만 reply로
+    cleaned = re.sub(r"```(?:json)?\s*.*?```", "", raw, flags=re.DOTALL)
+    cleaned = re.sub(r"\{[\s\S]*?\"reply\"[\s\S]*?\}\s*$", "", cleaned).strip()
+    return {"reply": cleaned or raw, "actions": [], "suggestions": []}
+
+
+def _extract_outermost_json(txt: str) -> str:
+    """문자열에서 가장 바깥쪽 { ... } 블록을 찾아 반환. 문자열 내부 중괄호는 스킵."""
+    start = txt.find("{")
+    if start < 0:
+        return ""
+    depth = 0
+    in_str = False
+    esc = False
+    for i in range(start, len(txt)):
+        ch = txt[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return txt[start:i+1]
+    return ""
 
 
 # ── 페이지별 시스템 프롬프트 확장 ───────────────────────────────
@@ -948,13 +998,31 @@ PAGE_GUIDES = {
 }
 
 
-def _build_page_context(page: Optional[str], base_ym: Optional[str], period_type: Optional[str], user_role: Optional[str]) -> str:
+def _build_page_context(page: Optional[str], base_ym: Optional[str], period_type: Optional[str], user_role: Optional[str], amount_unit: Optional[str] = None, currency: Optional[str] = None) -> str:
     """페이지별 맞춤 프롬프트 추가 — AI가 컨텍스트를 더 잘 이해하도록."""
+    # 현재 단위/통화는 페이지 여부와 무관하게 항상 포함
+    unit_line = ""
+    if amount_unit or currency:
+        bits = []
+        if amount_unit:
+            bits.append(f"단위={amount_unit}")
+        if currency:
+            bits.append(f"통화={currency}")
+        unit_line = (
+            f"\n💱 현재 표시 설정: {', '.join(bits)}"
+            f"\n\n[필수 응답 규칙 — 반드시 따르세요]"
+            f"\n- 사용자가 단위/통화 변경을 요청하면, 답변은 오직 아래 템플릿만 사용:"
+            f"\n  reply=\"화면 우측 상단 [단위] 또는 [통화] 드롭다운에서 바로 바꾸실 수 있어요 👆\""
+            f"\n  actions=[]"
+            f"\n- '설정 변경', '관리자', '자료실', '문의게시판', '설정 페이지' 이런 단어 절대 쓰지 마세요."
+            f"\n- 현재 단위/통화를 묻는 질문에는 위 값({', '.join(bits)})을 그대로 알려주세요. 추측 금지."
+        )
+
     if not page:
-        return ""
+        return unit_line
     guide = PAGE_GUIDES.get(page)
     if not guide:
-        return f"\n\n[현재 페이지: {page}][기준: {base_ym}, 기간: {period_type}]"
+        return f"\n\n[현재 페이지: {page}][기준: {base_ym}, 기간: {period_type}]{unit_line}"
 
     parts = [
         f"\n\n━━━ 현재 페이지 컨텍스트 ━━━",
@@ -964,11 +1032,13 @@ def _build_page_context(page: Optional[str], base_ym: Optional[str], period_type
     if guide.get("suggested_tools"):
         parts.append(f"🔧 추천 tool: {guide['suggested_tools']}")
     parts.append(f"📅 기준 연월: {base_ym} / 기간: {period_type}")
+    if unit_line:
+        parts.append(unit_line.lstrip("\n"))
     if user_role:
         role_hint = {
             "admin": "관리자 권한 — 전체 관리 기능 안내 가능",
             "manager": "매니저 권한 — 데이터 분석/리포트 생성 가능",
-            "viewer": "조회 전용 — 수정 관련 답변은 권한 안내 필요",
+            "viewer": "조회 권한 (단, 필터/단위/통화 등 화면 설정은 누구나 변경 가능)",
             "uploader": "자료 업로드 권한 — 자료실 위주 답변",
         }.get(user_role, user_role)
         parts.append(f"👤 사용자 역할: {role_hint}")
@@ -1218,7 +1288,7 @@ async def chat_message_stream(req: ChatRequest, db: Session = Depends(get_db)):
                     return
 
             # 페이지별 시스템 프롬프트 (chat_message와 동일)
-            page_context = _build_page_context(req.page, req.base_ym, req.period_type, req.user_role)
+            page_context = _build_page_context(req.page, req.base_ym, req.period_type, req.user_role, req.amount_unit, req.currency)
 
             attachment_context = ""
             if req.attachments:

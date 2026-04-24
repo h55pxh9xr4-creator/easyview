@@ -221,6 +221,8 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
         history,
         session_id: sessionId ?? undefined,
         user_name: typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? undefined) : undefined,
+        amount_unit: filter.amountUnit,
+        currency: filter.currency,
         attachments: attachments.map(a => ({ label: a.label, summary: a.summary, source: a.source })),
       }, {
         onChunk: (chunk) => {
