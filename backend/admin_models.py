@@ -113,3 +113,36 @@ class UserAddRequest(Base):
     status = Column(String, default="pending")
     reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+
+
+class Report(Base):
+    __tablename__ = "reports"
+    id = Column(Integer, primary_key=True, index=True)
+    data_request_id = Column(Integer, ForeignKey("data_request.id"), nullable=True)
+    company = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    period = Column(String, nullable=True)          # YYYY-QN or YYYY-MM
+    # upload | pending_generation | generated | reviewing | active | archived
+    status = Column(String, default="upload")
+    version = Column(Integer, default=1)
+    is_active = Column(Boolean, default=False)
+    parent_report_id = Column(Integer, ForeignKey("reports.id"), nullable=True)
+    generated_by = Column(String, nullable=True)
+    generated_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(String, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    activated_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ReportFile(Base):
+    __tablename__ = "report_files"
+    id = Column(Integer, primary_key=True, index=True)
+    report_id = Column(Integer, ForeignKey("reports.id"), nullable=False)
+    file_type = Column(String, nullable=False)      # JE | TB
+    filename = Column(String, nullable=False)       # 저장 파일명 (uuid)
+    original_name = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    size = Column(Integer, nullable=True)
+    uploaded_by = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, server_default=func.now())

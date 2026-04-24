@@ -134,3 +134,32 @@ export const adminCompaniesApi = {
   createSubsidiary: (data: Record<string, unknown>) => api.post('/api/admin/companies/subsidiaries', data),
   names: () => api.get('/api/admin/companies/names'),
 };
+
+async function uploadFile(path: string, formData: FormData) {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: formData });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: '업로드에 실패했습니다.' }));
+    throw new Error(err.detail || '업로드에 실패했습니다.');
+  }
+  return res.json();
+}
+
+export const adminReportsApi = {
+  acceptedRequests: () => api.get('/api/admin/reports/accepted-requests'),
+  list: () => api.get('/api/admin/reports'),
+  create: (data: { data_request_id: number; period?: string }) =>
+    api.post('/api/admin/reports', data),
+  uploadFile: (reportId: number, fileType: 'JE' | 'TB', file: File) => {
+    const fd = new FormData();
+    fd.append('file_type', fileType);
+    fd.append('file', file);
+    return uploadFile(`/api/admin/reports/${reportId}/upload-file`, fd);
+  },
+  generate: (reportId: number) =>
+    api.post(`/api/admin/reports/${reportId}/generate`),
+  updateStatus: (reportId: number, status: string) =>
+    api.put(`/api/admin/reports/${reportId}/status`, { status }),
+};

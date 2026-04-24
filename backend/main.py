@@ -7,7 +7,7 @@ from database import engine, Base
 from dotenv import load_dotenv
 load_dotenv()
 from routers import filters, summary, pl, bs, vch, scenario, inquiry, requests as req_router, chat
-from routers import admin_auth, admin_users, admin_audit, admin_groups, admin_permissions, admin_roles, admin_companies, admin_requests
+from routers import admin_auth, admin_users, admin_audit, admin_groups, admin_permissions, admin_roles, admin_companies, admin_requests, admin_reports
 from admin_seed import seed_admin_data
 import admin_models  # noqa: F401 — registers tables with Base
 
@@ -47,6 +47,7 @@ app.include_router(admin_permissions.router)
 app.include_router(admin_roles.router)
 app.include_router(admin_companies.router)
 app.include_router(admin_requests.router)
+app.include_router(admin_reports.router)
 app.include_router(chat.router,          prefix="/api/chat",      tags=["chat"])
 
 # media 폴더를 /media 경로로 정적 서빙

@@ -21,6 +21,7 @@ import { adminAuthApi } from "@/lib/admin-api";
 
 const AdminAccounts  = dynamic(() => import("@/app/admin/accounts/page"),  { ssr: false });
 const AdminCompanies = dynamic(() => import("@/app/admin/companies/page"), { ssr: false });
+const AdminReports   = dynamic(() => import("@/app/admin/reports/page"),   { ssr: false });
 
 const Summary      = dynamic(() => import("@/components/pages/Summary"),         { ssr: false });
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
@@ -216,7 +217,7 @@ function PageInner() {
               <Suspense fallback={<div style={{ color: "#9ca3af" }}>로딩 중...</div>}>
                 {adminSubPage === "accounts"  && <AdminAccounts />}
                 {adminSubPage === "companies" && <AdminCompanies />}
-                {adminSubPage === "reports"   && <div style={{ color: "#9ca3af", padding: 40, textAlign: "center" }}>준비 중입니다.</div>}
+                {adminSubPage === "reports"   && <AdminReports />}
               </Suspense>
             </div>
           </div>
