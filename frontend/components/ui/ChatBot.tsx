@@ -182,6 +182,7 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
         page: currentPage,
         history,
         session_id: sessionId ?? undefined,
+        user_name: typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? undefined) : undefined,
         attachments: attachments.map(a => ({ label: a.label, summary: a.summary, source: a.source })),
       }, {
         onChunk: (chunk) => {
