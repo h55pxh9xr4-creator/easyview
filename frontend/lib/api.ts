@@ -544,6 +544,9 @@ export const fetchBillingStats = () =>
 export const reimportBilling = () =>
   mut<{ ok: boolean; entry_inserted: number; entry_updated: number }>(`${BASE}/api/billing/import`, "POST");
 
+export const syncBillingFromReports = () =>
+  mut<{ ok: boolean; created: number; skipped_no_master: number; skipped_duplicate: number; skipped_no_period: number }>(`${BASE}/api/billing/sync-from-reports`, "POST");
+
 // ── Report visibility ────────────────────────────────────────
 export interface ActiveReportInfo {
   active: boolean;

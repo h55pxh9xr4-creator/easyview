@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   fetchBillingEntries, fetchBillingStats, fetchBillingMaster, fetchBillingExceptions,
   completeBillingEntry, markBillingDeposit, reimportBilling, updateBillingEntry,
+  syncBillingFromReports,
   type BillingEntry, type BillingMaster, type BillingException, type BillingStats,
 } from "@/lib/api";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -102,6 +103,17 @@ export default function Billing() {
     } catch { showToast("엑셀 파일을 찾지 못했거나 import 실패"); }
   };
 
+  const handleSyncFromReports = async () => {
+    if (!confirm("리포트 관리의 reviewing/active 상태 리포트를 스캔해서 청구 건을 자동 생성할까요?")) return;
+    try {
+      const r = await syncBillingFromReports();
+      const skipMsg = r.skipped_no_master > 0 ? ` (매칭 실패 ${r.skipped_no_master})` : "";
+      showToast(`동기화 완료: 신규 ${r.created}건${skipMsg}`);
+      loadStats();
+      if (tab === "pending") loadEntries("pending");
+    } catch { showToast("동기화 실패"); }
+  };
+
   const handleMemoSave = async (id: number, memo: string) => {
     try {
       await updateBillingEntry(id, { memo });
@@ -139,14 +151,25 @@ export default function Billing() {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: txtP, margin: 0, marginBottom: 4 }}>청구 관리</h1>
           <p style={{ fontSize: 12, color: txtS, margin: 0 }}>Easy View 빌링현황 — 대기중 / 완료 / 계약 마스터 / 특이사항</p>
         </div>
-        <button
-          onClick={handleReimport}
-          style={{
-            padding: "8px 16px", fontSize: 12, fontWeight: 600,
-            background: "#E87722", color: "#fff", border: "none",
-            borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >엑셀 재import</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={handleSyncFromReports}
+            title="리포트 관리의 reviewing/active 상태 리포트 → 청구 건 자동 생성"
+            style={{
+              padding: "8px 16px", fontSize: 12, fontWeight: 600,
+              background: "#fff", color: "#E87722", border: "1px solid #E87722",
+              borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
+            }}
+          >리포트 → 청구 동기화</button>
+          <button
+            onClick={handleReimport}
+            style={{
+              padding: "8px 16px", fontSize: 12, fontWeight: 600,
+              background: "#E87722", color: "#fff", border: "none",
+              borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
+            }}
+          >엑셀 재import</button>
+        </div>
       </div>
 
       {/* ── KPI ── */}

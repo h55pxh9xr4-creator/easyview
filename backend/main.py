@@ -75,6 +75,15 @@ try:
 except Exception as _e:
     print(f"[BILLING] import skipped: {_e}")
 
+# 빌링 데이터가 전혀 없으면 (예: 배포 환경) demo seed 투입
+try:
+    from billing_seed import seed_billing_demo
+    _seed_r = seed_billing_demo(force=False)
+    if _seed_r and not _seed_r.get("skipped"):
+        print(f"[BILLING] demo seed — {_seed_r}")
+except Exception as _e:
+    print(f"[BILLING] demo seed skipped: {_e}")
+
 # 기존 inquiry.reply 단일 컬럼 → inquiry_reply 테이블 이관 (idempotent)
 try:
     from models import Inquiry, InquiryReply

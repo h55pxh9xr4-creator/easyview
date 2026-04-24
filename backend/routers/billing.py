@@ -23,6 +23,119 @@ from billing_models import BillingEntry, BillingMaster, BillingException
 router = APIRouter()
 
 
+# ═══════════════════════════════════════════════════════════════
+# 공유 함수 — 리포트 발행 상태에서 billing_entry 자동 생성
+#  - B 옵션 (수동): POST /api/billing/sync-from-reports 에서 호출
+#  - A 옵션 (자동, 추후): admin_reports.py에서 status 전환 훅에 1줄 추가
+#    → sync_billing_from_reports(db, report_ids=[report.id])
+# ═══════════════════════════════════════════════════════════════
+
+def _period_to_ym(period: Optional[str]) -> Optional[str]:
+    """reports.period ('YYYY-MM' 또는 'YYYY-QN') → '2026년 3월' 형식.
+       분기는 말월 기준 (Q1→3월, Q2→6월, Q3→9월, Q4→12월)."""
+    if not period:
+        return None
+    p = period.strip()
+    # YYYY-QN (분기)
+    if len(p) == 7 and p[4] == "-" and p[5].upper() == "Q":
+        try:
+            y = int(p[:4])
+            q = int(p[6])
+            m = q * 3
+            return f"{y}년 {m}월"
+        except (ValueError, IndexError):
+            return None
+    # YYYY-MM
+    if len(p) == 7 and p[4] == "-":
+        try:
+            y, m = int(p[:4]), int(p[5:7])
+            return f"{y}년 {m}월"
+        except ValueError:
+            return None
+    return p  # 그대로 사용
+
+
+def sync_billing_from_reports(
+    db: Session,
+    report_ids: Optional[List[int]] = None,
+    trigger_statuses: tuple = ("reviewing", "active"),
+) -> dict:
+    """Reports 테이블 → billing_entry 자동 생성.
+
+    Args:
+        db: SQLAlchemy Session
+        report_ids: 특정 report id만 처리. None이면 trigger_statuses에 해당하는 전체.
+        trigger_statuses: 어느 상태의 리포트를 동기화할지 (기본: reviewing + active)
+
+    Returns:
+        {created, skipped_no_master, skipped_duplicate, skipped_no_period}
+    """
+    # lazy import to avoid circular
+    from admin_models import Report
+
+    q = db.query(Report).filter(Report.status.in_(trigger_statuses))
+    if report_ids:
+        q = q.filter(Report.id.in_(report_ids))
+    reports = q.all()
+
+    created = 0
+    skipped_no_master = 0
+    skipped_duplicate = 0
+    skipped_no_period = 0
+    details: list[dict] = []
+
+    for r in reports:
+        report_ym = _period_to_ym(r.period)
+        if not report_ym:
+            skipped_no_period += 1
+            details.append({"report_id": r.id, "company": r.company, "reason": "no_period"})
+            continue
+
+        # 마스터 매칭: parent 또는 company 필드 모두 확인
+        master = (
+            db.query(BillingMaster)
+            .filter((BillingMaster.parent == r.company) | (BillingMaster.company == r.company))
+            .first()
+        )
+        if not master:
+            skipped_no_master += 1
+            details.append({"report_id": r.id, "company": r.company, "reason": "no_master"})
+            continue
+
+        # 중복 체크: 같은 관리번호 + 같은 기준월
+        existing = db.query(BillingEntry).filter(
+            BillingEntry.mgmt_no == master.mgmt_no,
+            BillingEntry.report_ym == report_ym,
+        ).first()
+        if existing:
+            skipped_duplicate += 1
+            continue
+
+        db.add(BillingEntry(
+            parent=master.parent,
+            subsidiary=master.company,
+            mgmt_no=master.mgmt_no,
+            report_ym=report_ym,
+            status="빌링대기중",
+            amount=master.amount,
+            invoice_request_day=master.invoice_request_day,
+            invoice_manager=master.invoice_manager,
+            manager_email=master.manager_email,
+            manager_phone=master.manager_phone,
+            is_completed=False,
+        ))
+        created += 1
+
+    db.commit()
+    return {
+        "created": created,
+        "skipped_no_master": skipped_no_master,
+        "skipped_duplicate": skipped_duplicate,
+        "skipped_no_period": skipped_no_period,
+        "details": details[:20],  # 최대 20건만 반환
+    }
+
+
 class EntryPatch(BaseModel):
     status: Optional[str] = None
     billing_date: Optional[date] = None
@@ -206,6 +319,16 @@ def stats(db: Session = Depends(get_db)):
         "pending_amount": pending_amount,
         "unpaid": unpaid,
     }
+
+
+@router.post("/sync-from-reports")
+def sync_from_reports(db: Session = Depends(get_db)):
+    """[B 옵션 — 수동 동기화]
+    리포트 관리의 reviewing/active 상태 리포트를 스캔해서 billing_entry 자동 생성.
+    A 옵션(자동 트리거)이 반영되면 이 엔드포인트는 '보정용'으로 남음.
+    """
+    result = sync_billing_from_reports(db)
+    return {"ok": True, **result}
 
 
 @router.post("/import")
