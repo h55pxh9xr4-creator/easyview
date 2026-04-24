@@ -14,6 +14,44 @@ interface Message {
   suggestions?: string[];       // 🆕 Follow-up suggestions
 }
 
+// 부분 JSON 스트림에서 "reply" 필드의 값만 추출 (스트리밍 중 진행형 표시용)
+function extractReplyFromPartialJson(raw: string): string {
+  // 코드펜스 제거 (```json ... ``` 형태 대응)
+  let text = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  const keyMatch = text.match(/"reply"\s*:\s*"/);
+  if (!keyMatch) {
+    // 아직 "reply" 키가 안 나옴 — 빈 문자열로 대기
+    // 단, 모델이 JSON이 아닌 평문으로 응답하는 예외 상황은 그대로 노출
+    return text.trim().startsWith("{") || text.trim().startsWith("```") ? "" : text;
+  }
+  const start = keyMatch.index! + keyMatch[0].length;
+  let result = "";
+  let i = start;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === "\\") {
+      const next = text[i + 1];
+      if (next === undefined) break; // 불완전 이스케이프 — 다음 청크 대기
+      if (next === "n") { result += "\n"; i += 2; continue; }
+      if (next === "t") { result += "\t"; i += 2; continue; }
+      if (next === "r") { result += "\r"; i += 2; continue; }
+      if (next === '"') { result += '"'; i += 2; continue; }
+      if (next === "\\") { result += "\\"; i += 2; continue; }
+      if (next === "/") { result += "/"; i += 2; continue; }
+      if (next === "u") {
+        if (i + 6 > text.length) break;
+        const code = parseInt(text.slice(i + 2, i + 6), 16);
+        if (!Number.isNaN(code)) { result += String.fromCharCode(code); i += 6; continue; }
+      }
+      result += next; i += 2; continue;
+    }
+    if (ch === '"') break; // reply 값 종료
+    result += ch;
+    i++;
+  }
+  return result;
+}
+
 // Action handler 실행기 — execute 타입 action의 handler 문자열을 실행
 function executeActionHandler(handler: string) {
   try {
@@ -187,7 +225,7 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
       }, {
         onChunk: (chunk) => {
           accumulated += chunk;
-          setStreamingText(accumulated);
+          setStreamingText(extractReplyFromPartialJson(accumulated));
         },
         onDone: (final) => {
           // 최종 파싱된 응답으로 대체 (JSON 코드블록 정리된 상태)
