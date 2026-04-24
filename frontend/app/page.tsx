@@ -63,6 +63,7 @@ function PageInner() {
   const [authed, setAuthed]             = useState<boolean | null>(null);
   const [topTab, setTopTab]             = useState<TopTab>("서비스 소개");
   const [adminSubPage, setAdminSubPage] = useState("accounts");
+  const [inquirySubPage, setInquirySubPage] = useState<"inquiry" | "faq">("inquiry");
   const [activeTab, setActiveTab] = useState("summary");
   const [activeSub, setActiveSub] = useState("summary");
   const [pageLabel, setPageLabel] = useState("Summary");
@@ -218,12 +219,38 @@ function PageInner() {
         <ServiceIntro onNavigateToReport={() => handleNavigate("summary", "summary", "Summary")} />
       )}
 
-      {topTab === "문의게시판" && (
-        <div className="app-body">
-          <div className="main-content"><Inquiry onNavigate={handleNavigate} /></div>
-          <ChatBot activePage="inquiry" />
-        </div>
-      )}
+      {topTab === "문의게시판" && (() => {
+        const BASE_ICON = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+        const INQUIRY_NAV: { key: "inquiry" | "faq"; label: string; icon: string }[] = [
+          { key: "inquiry", label: "문의", icon: `${BASE_ICON}/icons/icon-email.svg` },
+          { key: "faq",     label: "FAQ",  icon: `${BASE_ICON}/icons/icon-trust.svg` },
+        ];
+        return (
+          <div className="app-body">
+            <aside className="sidebar" style={{ position: "sticky", top: 52, height: "calc(100vh - 52px)", alignSelf: "flex-start" }}>
+              <div className="sb-list">
+                {INQUIRY_NAV.map(item => (
+                  <button
+                    key={item.key}
+                    onClick={() => setInquirySubPage(item.key)}
+                    className={`sb-item${inquirySubPage === item.key ? " active" : ""}`}
+                  >
+                    <span className="sb-icon">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.icon} alt="" width={22} height={22} style={{ display: "block" }} />
+                    </span>
+                    <span className="sb-label">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </aside>
+            <div className="main-content">
+              <Inquiry onNavigate={handleNavigate} activeSub={inquirySubPage} />
+            </div>
+            <ChatBot activePage="inquiry" />
+          </div>
+        );
+      })()}
 
       {topTab === "관리자" && (() => {
         const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";

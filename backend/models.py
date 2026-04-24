@@ -55,8 +55,19 @@ class Inquiry(Base):
     corporation = Column(String,  nullable=True)     # 법인명
     is_secret   = Column(Boolean, default=False)     # 비밀글 여부
     status      = Column(String,  default="답변대기") # 답변대기 | 답변완료
-    reply       = Column(Text,    nullable=True)     # 관리자 답변
-    reply_at    = Column(DateTime, nullable=True)    # 답변 일시
+    reply       = Column(Text,    nullable=True)     # (레거시) 최신 답변 캐시 — 실제 리스트는 InquiryReply
+    reply_at    = Column(DateTime, nullable=True)    # (레거시) 최신 답변 일시 캐시
+    created_at  = Column(DateTime, default=datetime.now)
+
+
+class InquiryReply(Base):
+    """문의게시판 답변/댓글 — 하나의 문의에 여러 건 누적."""
+    __tablename__ = "inquiry_reply"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    inquiry_id  = Column(Integer, nullable=False, index=True)
+    author      = Column(String,  nullable=False)
+    content     = Column(Text,    nullable=False)
     created_at  = Column(DateTime, default=datetime.now)
 
 

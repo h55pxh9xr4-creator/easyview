@@ -318,15 +318,26 @@ export interface InquiryItem {
   id: number; category: string; title: string; author: string;
   is_secret: boolean; status: string; created_at: string;
 }
+export interface InquiryReplyItem {
+  id: number;
+  author: string;
+  content: string;
+  created_at: string;
+}
 export interface InquiryDetail extends InquiryItem {
-  content: string; reply: string | null; reply_at: string | null;
+  content: string;
+  reply: string | null;
+  reply_at: string | null;
+  replies?: InquiryReplyItem[];
 }
 export const fetchInquiries = () => get<InquiryItem[]>("/api/inquiry");
 export const fetchInquiry   = (id: number) => get<InquiryDetail>(`/api/inquiry/${id}`);
 export const createInquiry  = (body: { category: string; title: string; content: string; author: string; is_secret: boolean }) =>
   fetch(`${BASE}/api/inquiry`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
-export const replyInquiry   = (id: number, reply: string) =>
-  fetch(`${BASE}/api/inquiry/${id}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply }) }).then(r => r.json());
+export const replyInquiry   = (id: number, reply: string, author?: string) =>
+  fetch(`${BASE}/api/inquiry/${id}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply, author }) }).then(r => r.json());
+export const deleteInquiryReply = (inquiryId: number, replyId: number) =>
+  fetch(`${BASE}/api/inquiry/${inquiryId}/reply/${replyId}`, { method: "DELETE" }).then(r => r.json());
 export const updateInquiry  = (id: number, body: { category?: string; title?: string; content?: string; is_secret?: boolean }) =>
   fetch(`${BASE}/api/inquiry/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json());
 export const deleteInquiry  = (id: number) =>
@@ -488,6 +499,8 @@ export interface ChatRequestBody {
   session_id?: number;
   user_role?: string;
   user_name?: string;
+  amount_unit?: string;
+  currency?: string;
 }
 
 export interface ChatResponseBody {

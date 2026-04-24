@@ -93,8 +93,13 @@ export default function FaqPanel() {
     <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
       {/* 헤더 */}
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: txt, margin: 0, marginBottom: 6 }}>
-          ❓ 자주 묻는 질문
+        <h2 style={{ fontSize: 22, fontWeight: 700, color: txt, margin: 0, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E87722" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          자주 묻는 질문
         </h2>
         <p style={{ fontSize: 13, color: txtSec, margin: 0 }}>
           궁금한 점을 카테고리별로 빠르게 찾아보세요. 없는 내용은 김삼일 매니저에게 물어봐도 좋아요!
@@ -152,7 +157,7 @@ export default function FaqPanel() {
         <div style={{ textAlign: "center", padding: 40, color: txtDim, fontSize: 13 }}>로딩 중...</div>
       ) : faqs.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40, color: txtDim, fontSize: 13 }}>
-          조건에 맞는 FAQ가 없어요. 김삼일 매니저에게 직접 물어보세요! 💬
+          조건에 맞는 FAQ가 없어요. 김삼일 매니저에게 직접 물어보세요.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -226,14 +231,24 @@ export default function FaqPanel() {
                       fontSize: 11, color: txtDim,
                     }}>
                       {gaveFeedback ? (
-                        <span style={{ color: "#22C55E" }}>✓ 피드백 감사합니다!</span>
+                        <span style={{ color: "#22C55E" }}>피드백 감사합니다.</span>
                       ) : (
                         <>
                           <span>이 답변이 도움 됐나요?</span>
-                          <button onClick={() => handleFeedback(f.id, true)}
-                            style={feedbackBtn(isDark, true)}>👍 예 ({f.helpful_count})</button>
-                          <button onClick={() => handleFeedback(f.id, false)}
-                            style={feedbackBtn(isDark, false)}>👎 아니오 ({f.not_helpful_count})</button>
+                          <button onClick={() => handleFeedback(f.id, true)} style={feedbackBtn(isDark, true)}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "-2px" }}>
+                              <path d="M7 10v12"/>
+                              <path d="M15 5.88L14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l5-8h1a2 2 0 0 1 2 2v1.88z"/>
+                            </svg>
+                            예 ({f.helpful_count})
+                          </button>
+                          <button onClick={() => handleFeedback(f.id, false)} style={feedbackBtn(isDark, false)}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "-2px" }}>
+                              <path d="M17 14V2"/>
+                              <path d="M9 18.12L10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-5 8h-1a2 2 0 0 1-2-2v-1.88z"/>
+                            </svg>
+                            아니오 ({f.not_helpful_count})
+                          </button>
                         </>
                       )}
                       <span style={{ marginLeft: "auto", fontSize: 10 }}>조회 {f.view_count}</span>
