@@ -27,6 +27,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   reviewing:          { label: "검토 중",    cls: "bg-purple-100 text-purple-700" },
   active:             { label: "활성",       cls: "bg-green-100 text-green-700" },
   archived:           { label: "보관",       cls: "bg-gray-100 text-gray-500" },
+  error:              { label: "확인필요",   cls: "bg-red-100 text-red-700" },
 };
 function StatusBadge({ status }: { status: string }) {
   const m = STATUS_META[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
@@ -337,6 +338,7 @@ const STATUS_GROUPS = [
   { key: "reviewing",  label: "검토 중" },
   { key: "active",     label: "활성" },
   { key: "archived",   label: "보관" },
+  { key: "error",      label: "확인필요" },
 ];
 
 function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () => void }) {
@@ -443,6 +445,24 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
                           className="text-xs px-2.5 py-1 rounded border border-pwc-gray-300 text-pwc-gray-500 hover:bg-pwc-gray-50 cursor-pointer disabled:opacity-50"
                         >
                           보관 처리
+                        </button>
+                      )}
+                      {r.status === "archived" && (
+                        <button
+                          onClick={() => changeStatus(r.id, "active", "활성")}
+                          disabled={acting === r.id}
+                          className="text-xs px-2.5 py-1 rounded border border-green-400 text-green-700 hover:bg-green-50 cursor-pointer disabled:opacity-50"
+                        >
+                          재활성
+                        </button>
+                      )}
+                      {r.status === "error" && (
+                        <button
+                          onClick={() => changeStatus(r.id, "upload", "파일 대기")}
+                          disabled={acting === r.id}
+                          className="text-xs px-2.5 py-1 rounded border border-red-300 text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50"
+                        >
+                          재시도
                         </button>
                       )}
                     </div>
