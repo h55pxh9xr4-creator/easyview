@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { adminReportsApi } from "@/lib/admin-api";
+import { adminReportsApi, adminCompaniesApi } from "@/lib/admin-api";
 import { showToast } from "../_components/Toast";
 
-// ── 타입 ──────────────────────────────────────────────────────
+// ── 타입 ─────────────────────────────────────────────────────
 interface ReportFile {
   id: number; reportId: number; fileType: string;
   originalName: string; size: number; uploadedBy: string; uploadedAt: string;
@@ -16,223 +16,276 @@ interface Report {
   reviewedBy: string; reviewedAt: string; activatedAt: string; createdAt: string;
   files?: Record<string, ReportFile>;
 }
-interface AcceptedRequest {
-  id: number; reqCode: string; title: string; entity: string;
-  requester: string; createdAt: string;
-  report: Report | null;
-  files: Record<string, ReportFile>;
-}
+interface Company { id: number; name: string; subsidiary_name?: string; }
 
-// ── 상태 배지 ─────────────────────────────────────────────────
+// ── 상태 배지 ────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  upload:             { label: "파일 대기",   cls: "bg-gray-100 text-gray-600" },
-  pending_generation: { label: "생성 대기",   cls: "bg-yellow-100 text-yellow-700" },
-  generated:          { label: "생성 완료",   cls: "bg-blue-100 text-blue-700" },
-  reviewing:          { label: "검토 중",     cls: "bg-purple-100 text-purple-700" },
-  active:             { label: "활성",        cls: "bg-green-100 text-green-700" },
-  archived:           { label: "보관",        cls: "bg-gray-100 text-gray-500" },
+  upload:             { label: "파일 대기",  cls: "bg-gray-100 text-gray-600" },
+  pending_generation: { label: "생성 대기",  cls: "bg-yellow-100 text-yellow-700" },
+  generated:          { label: "생성 완료",  cls: "bg-blue-100 text-blue-700" },
+  reviewing:          { label: "검토 중",    cls: "bg-purple-100 text-purple-700" },
+  active:             { label: "활성",       cls: "bg-green-100 text-green-700" },
+  archived:           { label: "보관",       cls: "bg-gray-100 text-gray-500" },
 };
 function StatusBadge({ status }: { status: string }) {
   const m = STATUS_META[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${m.cls}`}>{m.label}</span>;
 }
 
-function fmt(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+function fmtSize(b: number) {
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1024 / 1024).toFixed(1)} MB`;
 }
 
-// ── 파일 업로드 셀 ───────────────────────────────────────────
-function FileCell({
-  label, fileInfo, reportId, fileType, onUploaded, disabled,
+// ── 드래그앤드롭 업로드 카드 ──────────────────────────────────
+function UploadZone({
+  label, description, accept, required, file, onFile, disabled,
 }: {
-  label: string; fileInfo?: ReportFile; reportId: number;
-  fileType: "JE" | "TB"; onUploaded: () => void; disabled?: boolean;
+  label: string; description: string; accept: string;
+  required: boolean; file: File | null;
+  onFile: (f: File) => void; disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      await adminReportsApi.uploadFile(reportId, fileType, file);
-      showToast(`${label} 업로드 완료`, "success");
-      onUploaded();
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : "업로드 실패", "error");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragging(false);
+    if (disabled) return;
+    const f = e.dataTransfer.files[0];
+    if (f) onFile(f);
   };
 
   return (
-    <div className="flex items-center gap-2 min-w-0">
-      {fileInfo ? (
-        <span className="flex items-center gap-1 text-xs text-green-700 font-medium truncate max-w-[140px]" title={fileInfo.originalName}>
-          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          <span className="truncate">{fileInfo.originalName}</span>
-          <span className="text-gray-400 flex-shrink-0">({fmt(fileInfo.size)})</span>
-        </span>
-      ) : (
-        <span className="text-xs text-gray-400">{label} 미업로드</span>
-      )}
-      {!disabled && (
-        <>
-          <button
-            onClick={() => inputRef.current?.click()}
-            disabled={uploading}
-            className="flex-shrink-0 text-xs px-2 py-1 rounded border border-pwc-gray-300 text-pwc-gray-600 hover:bg-pwc-gray-50 cursor-pointer disabled:opacity-50"
-          >
-            {uploading ? "업로드 중…" : fileInfo ? "재업로드" : "업로드"}
-          </button>
-          <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
-        </>
-      )}
+    <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-sm font-semibold text-pwc-black">{label}</span>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+          required ? "bg-pwc-orange text-white" : "bg-pwc-gray-100 text-pwc-gray-600"
+        }`}>{required ? "필수" : "선택"}</span>
+      </div>
+      <p className="text-xs text-pwc-gray-400 mb-3">{description}</p>
+
+      <div
+        onClick={() => !disabled && inputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); if (!disabled) setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        className={`rounded-lg border-2 border-dashed transition-colors flex flex-col items-center justify-center gap-2 py-8 px-4 ${
+          disabled
+            ? "border-pwc-gray-200 bg-pwc-gray-50 cursor-default"
+            : file
+            ? "border-green-400 bg-green-50 cursor-pointer"
+            : dragging
+            ? "border-pwc-orange bg-orange-50 cursor-pointer"
+            : required
+            ? "border-pwc-orange bg-orange-50/40 cursor-pointer hover:bg-orange-50"
+            : "border-pwc-gray-300 bg-pwc-gray-50 cursor-pointer hover:bg-pwc-gray-100"
+        }`}
+      >
+        {file ? (
+          <>
+            <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium text-green-700 text-center max-w-xs truncate">{file.name}</p>
+            <p className="text-xs text-green-500">{fmtSize(file.size)} · 클릭하여 재선택</p>
+          </>
+        ) : (
+          <>
+            <svg className={`w-7 h-7 ${required ? "text-pwc-orange" : "text-pwc-gray-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <p className="text-sm text-pwc-gray-500">클릭하여 파일을 선택하세요</p>
+            <p className="text-xs text-pwc-gray-400">{accept.replaceAll(",", ", ")}</p>
+          </>
+        )}
+      </div>
+      <input ref={inputRef} type="file" accept={accept} className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
     </div>
   );
 }
 
 // ── 업로드 탭 ────────────────────────────────────────────────
 function UploadTab({ onRefresh }: { onRefresh: () => void }) {
-  const [rows, setRows] = useState<AcceptedRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [periodMap, setPeriodMap] = useState<Record<number, string>>({});
-  const [starting, setStarting] = useState<number | null>(null);
-  const [generating, setGenerating] = useState<number | null>(null);
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(currentYear);
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [jeFile, setJeFile] = useState<File | null>(null);
+  const [tbFile, setTbFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await adminReportsApi.acceptedRequests();
-      setRows(data.requests ?? []);
-    } catch { /* */ } finally { setLoading(false); }
+  useEffect(() => {
+    adminCompaniesApi.list()
+      .then((d: { companies: Company[] }) => setCompanies(d.companies ?? []))
+      .catch(() => {});
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const period = `${year}-${String(month).padStart(2, "0")}`;
+  const canGenerate = !!selectedCompany && !!jeFile && !!tbFile;
 
-  const startReport = async (reqId: number) => {
-    setStarting(reqId);
+  const handleGenerate = async () => {
+    if (!canGenerate) return;
+    setSubmitting(true);
     try {
-      await adminReportsApi.create({ data_request_id: reqId, period: periodMap[reqId] ?? "" });
-      showToast("리포트 업로드를 시작합니다.", "success");
-      await load(); onRefresh();
+      // 1. 리포트 레코드 생성
+      const rep: Report = await adminReportsApi.create({
+        company: selectedCompany!.name,
+        period,
+        title: `${selectedCompany!.name} ${year}년 ${month}월 리포트`,
+      });
+
+      // 2. JE 업로드
+      await adminReportsApi.uploadFile(rep.id, "JE", jeFile!);
+      // 3. TB 업로드
+      await adminReportsApi.uploadFile(rep.id, "TB", tbFile!);
+
+      // 4. 리포트 생성 트리거
+      const res = await adminReportsApi.generate(rep.id);
+      showToast(res.message ?? "리포트 생성을 시작했습니다.", "success");
+
+      // 초기화
+      setJeFile(null); setTbFile(null);
+      onRefresh();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "오류 발생", "error");
-    } finally { setStarting(null); }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const generate = async (reportId: number) => {
-    setGenerating(reportId);
-    try {
-      const res = await adminReportsApi.generate(reportId);
-      showToast(res.message ?? "생성 시작", "success");
-      setTimeout(() => { load(); onRefresh(); }, 1500);
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : "생성 실패", "error");
-    } finally { setGenerating(null); }
-  };
-
-  if (loading) return <div className="py-12 text-center text-pwc-gray-400">불러오는 중...</div>;
-  if (rows.length === 0) return (
-    <div className="py-16 text-center text-pwc-gray-400">
-      <p className="text-sm">Accept된 자료 요청이 없습니다.</p>
-      <p className="text-xs mt-1">자료실에서 요청을 Accept하면 여기에 표시됩니다.</p>
-    </div>
-  );
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
-        <thead>
-          <tr className="border-b border-pwc-gray-200 bg-pwc-gray-50">
-            {["요청 코드", "제목", "법인", "요청자", "Accept일", "기간", "JE 파일", "TB 파일", ""].map(h => (
-              <th key={h} className="text-left py-3 px-4 font-medium text-pwc-gray-500 whitespace-nowrap">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(row => {
-            const rep = row.report;
-            const hasJE = !!(rep ? row.files["JE"] : false);
-            const hasTB = !!(rep ? row.files["TB"] : false);
-            const canGenerate = rep && hasJE && hasTB && ["upload", "pending_generation"].includes(rep.status);
-            const isDone = rep && !["upload", "pending_generation"].includes(rep.status);
+    <div className="flex gap-6 items-start">
+      {/* ── 왼쪽 패널 ── */}
+      <div className="w-56 flex-shrink-0 space-y-4 sticky top-0">
+        {/* 결산 기간 */}
+        <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-pwc-black mb-4">결산 기간</h3>
 
-            return (
-              <tr key={row.id} className="border-b border-pwc-gray-100 hover:bg-pwc-gray-50">
-                <td className="py-3 px-4 font-mono text-xs text-pwc-gray-500">{row.reqCode}</td>
-                <td className="py-3 px-4 font-medium text-pwc-black max-w-[180px] truncate" title={row.title}>{row.title}</td>
-                <td className="py-3 px-4 text-pwc-gray-700">{row.entity}</td>
-                <td className="py-3 px-4 text-pwc-gray-600 text-xs">{row.requester}</td>
-                <td className="py-3 px-4 text-pwc-gray-500 text-xs whitespace-nowrap">{row.createdAt}</td>
-                <td className="py-3 px-4">
-                  {rep ? (
-                    <span className="text-xs text-pwc-gray-600">{rep.period || "—"}</span>
-                  ) : (
-                    <input
-                      type="text"
-                      placeholder="예) 2025-Q4"
-                      value={periodMap[row.id] ?? ""}
-                      onChange={e => setPeriodMap(p => ({ ...p, [row.id]: e.target.value }))}
-                      className="input-field text-xs py-1 w-24"
-                    />
+          <div className="mb-3">
+            <label className="block text-xs text-pwc-gray-500 mb-1">연도</label>
+            <select
+              value={year}
+              onChange={e => setYear(Number(e.target.value))}
+              className="input-field text-sm"
+            >
+              {years.map(y => <option key={y} value={y}>{y}년</option>)}
+            </select>
+          </div>
+
+          <div className="mb-3">
+            <label className="block text-xs text-pwc-gray-500 mb-2">월</label>
+            <div className="grid grid-cols-4 gap-1">
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <button
+                  key={m}
+                  onClick={() => setMonth(m)}
+                  className={`py-1.5 rounded text-xs font-medium transition-colors cursor-pointer ${
+                    month === m
+                      ? "bg-pwc-orange text-white"
+                      : "bg-pwc-gray-100 text-pwc-gray-600 hover:bg-pwc-gray-200"
+                  }`}
+                >
+                  {m}월
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 py-2 px-3 bg-pwc-gray-50 rounded-lg text-center">
+            <span className="text-sm font-semibold text-pwc-black">{year}년 {month}월</span>
+          </div>
+        </div>
+
+        {/* 대상 회사 */}
+        <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-pwc-black mb-3">대상 회사</h3>
+          {companies.length === 0 ? (
+            <p className="text-xs text-pwc-gray-400 text-center py-4">회사 없음</p>
+          ) : (
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {companies.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCompany(c)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
+                    selectedCompany?.id === c.id
+                      ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange"
+                      : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50"
+                  }`}
+                >
+                  <p className="text-sm font-medium text-pwc-black leading-tight">{c.name}</p>
+                  {c.subsidiary_name && (
+                    <p className="text-xs text-pwc-gray-400 mt-0.5">{c.subsidiary_name}</p>
                   )}
-                </td>
-                <td className="py-3 px-4">
-                  {rep ? (
-                    <FileCell
-                      label="JE" fileInfo={row.files["JE"]} reportId={rep.id}
-                      fileType="JE" onUploaded={load} disabled={isDone ?? false}
-                    />
-                  ) : <span className="text-xs text-pwc-gray-300">—</span>}
-                </td>
-                <td className="py-3 px-4">
-                  {rep ? (
-                    <FileCell
-                      label="TB" fileInfo={row.files["TB"]} reportId={rep.id}
-                      fileType="TB" onUploaded={load} disabled={isDone ?? false}
-                    />
-                  ) : <span className="text-xs text-pwc-gray-300">—</span>}
-                </td>
-                <td className="py-3 px-4 whitespace-nowrap">
-                  {!rep ? (
-                    <button
-                      onClick={() => startReport(row.id)}
-                      disabled={starting === row.id}
-                      className="btn-primary text-xs py-1.5 px-3"
-                    >
-                      {starting === row.id ? "시작 중…" : "업로드 시작"}
-                    </button>
-                  ) : isDone ? (
-                    <StatusBadge status={rep.status} />
-                  ) : (
-                    <button
-                      onClick={() => generate(rep.id)}
-                      disabled={!canGenerate || generating === rep.id}
-                      className="btn-primary text-xs py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {generating === rep.id ? "생성 중…" : "리포트 생성"}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 오른쪽 패널 ── */}
+      <div className="flex-1 space-y-4">
+        {!selectedCompany && (
+          <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700">
+            왼쪽에서 대상 회사를 선택하세요.
+          </div>
+        )}
+
+        <UploadZone
+          label="분개장 (JE) / 계정원장 (GL)"
+          description="Journal Entry 또는 General Ledger 파일을 업로드합니다. (CSV, Excel, TXT)"
+          accept=".csv,.xlsx,.xls,.txt"
+          required
+          file={jeFile}
+          onFile={setJeFile}
+          disabled={!selectedCompany}
+        />
+
+        <UploadZone
+          label="시산표 (TB)"
+          description="Trial Balance 파일을 업로드합니다. (CSV, Excel, TXT)"
+          accept=".csv,.xlsx,.xls,.txt"
+          required
+          file={tbFile}
+          onFile={setTbFile}
+          disabled={!selectedCompany}
+        />
+
+        {/* 생성 버튼 */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-xs text-pwc-gray-400">
+            {!selectedCompany && "회사 선택 필요"}
+            {selectedCompany && !jeFile && "JE 파일 업로드 필요"}
+            {selectedCompany && jeFile && !tbFile && "TB 파일 업로드 필요"}
+            {canGenerate && (
+              <span className="text-green-600 font-medium">
+                {selectedCompany.name} · {year}년 {month}월 · JE + TB 준비 완료
+              </span>
+            )}
+          </div>
+          <button
+            onClick={handleGenerate}
+            disabled={!canGenerate || submitting}
+            className="btn-primary px-6 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {submitting ? "생성 중…" : "리포트 생성"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ── 현황 탭 ──────────────────────────────────────────────────
 const STATUS_GROUPS = [
-  { key: "all",      label: "전체" },
+  { key: "all",       label: "전체" },
   { key: "generated", label: "생성 완료" },
   { key: "reviewing", label: "검토 중" },
   { key: "active",    label: "활성" },
@@ -259,7 +312,7 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
 
   return (
     <div>
-      <div className="flex gap-1 mb-4">
+      <div className="flex gap-1 mb-4 flex-wrap">
         {STATUS_GROUPS.map(g => (
           <button
             key={g.key}
@@ -351,7 +404,7 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
   );
 }
 
-// ── 메인 페이지 ───────────────────────────────────────────────
+// ── 메인 페이지 ──────────────────────────────────────────────
 export default function ReportsPage() {
   const [tab, setTab] = useState<"upload" | "status">("upload");
   const [reports, setReports] = useState<Report[]>([]);
@@ -369,7 +422,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-pwc-black">리포트 관리</h1>
-        <p className="text-sm text-pwc-gray-500 mt-1">자료실 Accept 데이터로 리포트를 생성하고 배포를 관리합니다.</p>
+        <p className="text-sm text-pwc-gray-500 mt-1">결산 기간과 대상 회사를 선택하고 JE / TB 파일을 업로드하여 리포트를 생성합니다.</p>
       </div>
 
       {/* 탭 */}
@@ -393,18 +446,19 @@ export default function ReportsPage() {
       </div>
 
       {/* 탭 내용 */}
-      <div className="bg-white rounded-xl shadow-sm border border-pwc-gray-200 overflow-hidden" style={{ padding: 0 }}>
-        <div className="px-6 py-3 border-b border-pwc-gray-200 bg-pwc-gray-50 text-sm text-pwc-gray-600">
-          {tab === "upload" ? (
-            <span>Accept된 자료 요청에 JE / TB 파일을 업로드하고 리포트를 생성합니다.</span>
-          ) : (
-            <span>생성된 리포트의 검토 및 반영 상태를 관리합니다.</span>
-          )}
-        </div>
-        <div className="p-6">
-          {tab === "upload" && <UploadTab onRefresh={loadReports} />}
-          {tab === "status" && <StatusTab reports={reports} onRefresh={loadReports} />}
-        </div>
+      <div className={tab === "upload" ? "" : "bg-white rounded-xl shadow-sm border border-pwc-gray-200 overflow-hidden"}>
+        {tab === "upload" ? (
+          <UploadTab onRefresh={loadReports} />
+        ) : (
+          <>
+            <div className="px-6 py-3 border-b border-pwc-gray-200 bg-pwc-gray-50 text-sm text-pwc-gray-600">
+              생성된 리포트의 검토 및 반영 상태를 관리합니다.
+            </div>
+            <div className="p-6">
+              <StatusTab reports={reports} onRefresh={loadReports} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
