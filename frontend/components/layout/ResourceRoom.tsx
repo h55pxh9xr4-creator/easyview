@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   fetchRequests, createRequests, updateRequest, deleteRequest,
-  fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
+  fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl, getDownloadUrl,
   fetchComments, createComment,
   type DataRequest as ApiRequest, type ReqFile, type RequestComment,
 } from "@/lib/api";
@@ -504,12 +504,12 @@ export default function ResourceRoom() {
     setDiscussionDraft("");
   }, [detailReq?.id]);
 
-  /* 파일 업로드 핸들러 */
-  const handleFileUpload = async (files: FileList | null) => {
-    if (!files || !detailReq) return;
+  /* 파일 업로드 핸들러 (확인 후 호출) */
+  const handleFileUpload = async (files: File[]) => {
+    if (!files.length || !detailReq) return;
     setUploading(true);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         const rf = await uploadRequestFile(detailReq.id, file, sessionStorage.getItem("ev_user") ?? "");
         setDetailFiles(prev => [rf, ...prev]);
       }
@@ -675,6 +675,7 @@ export default function ResourceRoom() {
     ? ENTITIES
     : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
   const filteredReqs = requests.filter(r => {
+    if (!isAdmin && r.status === "Draft") return false;
     if (myOnly && currentUser) {
       const mine = isAdmin ? r.requester === currentUser : r.assignee === currentUser;
       if (!mine) return false;
@@ -971,15 +972,24 @@ export default function ResourceRoom() {
       /* ── 업로드 탭 ── */
       const UploadTab = () => {
         const [isDragOver, setIsDragOver] = useState(false);
-        const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
+        const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+        const stageFiles = (files: FileList | File[] | null) => {
+          if (!files) return;
+          setPendingFiles(prev => [...prev, ...Array.from(files)]);
+        };
+        const onDragOver  = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
         const onDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); };
-        const onDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); handleFileUpload(e.dataTransfer.files); };
+        const onDrop      = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); stageFiles(e.dataTransfer.files); };
+
+        const confirmUpload = async () => {
+          await handleFileUpload(pendingFiles);
+          setPendingFiles([]);
+        };
+
         return (
-          <div
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-          >
+          <div onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+            {/* 헤더 */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: "uppercase", letterSpacing: "0.3px" }}>첨부파일</span>
               {!filesLoading && (
@@ -987,18 +997,50 @@ export default function ResourceRoom() {
                   {detailFiles.length}
                 </span>
               )}
-              <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 12, fontWeight: 600 }}>
-                <input ref={fileInputRef} type="file" multiple hidden disabled={uploading} onChange={e => handleFileUpload(e.target.files)} />
-                {uploading ? "업로드 중..." : "+ 파일 첨부"}
+              <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 14px", borderRadius: 6, cursor: "pointer", background: C.primary, color: "#fff", fontSize: 12, fontWeight: 600 }}>
+                <input ref={fileInputRef} type="file" multiple hidden onChange={e => { stageFiles(e.target.files); e.target.value = ""; }} />
+                + 파일 선택
               </label>
             </div>
+
+            {/* 대기 중 파일 (선택됐지만 아직 업로드 전) */}
+            {pendingFiles.length > 0 && (
+              <div style={{ marginBottom: 12, border: `1.5px dashed ${C.primary}`, borderRadius: 8, padding: "12px 14px", background: C.primaryBg }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: C.primary, marginBottom: 8 }}>선택된 파일 {pendingFiles.length}개 — 확인 버튼을 눌러 업로드하세요</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                  {pendingFiles.map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 6, background: "var(--rr-surface)", border: `1px solid ${C.border}` }}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{fileIcon(f.name)}</span>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                      <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{fmtSize(f.size)}</span>
+                      <button onClick={() => setPendingFiles(p => p.filter((_, j) => j !== i))}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, padding: 2, display: "flex", alignItems: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={confirmUpload} disabled={uploading}
+                    style={{ flex: 1, padding: "7px 0", borderRadius: 6, border: "none", cursor: uploading ? "not-allowed" : "pointer", background: uploading ? "#eee" : C.primary, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+                    {uploading ? "업로드 중..." : `확인 (${pendingFiles.length}개 업로드)`}
+                  </button>
+                  <button onClick={() => setPendingFiles([])} disabled={uploading}
+                    style={{ padding: "7px 14px", borderRadius: 6, border: `1px solid ${C.border}`, cursor: "pointer", background: "var(--rr-surface)", color: C.muted, fontSize: 13, fontFamily: "inherit" }}>
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 업로드된 파일 목록 */}
             {filesLoading ? (
               <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>불러오는 중...</p>
-            ) : detailFiles.length === 0 ? (
+            ) : detailFiles.length === 0 && pendingFiles.length === 0 ? (
               <div style={{ border: `2px dashed ${isDragOver ? C.primary : C.border}`, borderRadius: 8, padding: "36px 0", textAlign: "center", background: "transparent", transition: "all 0.15s" }}>
                 <div style={{ fontSize: 28, marginBottom: 6 }}>📎</div>
                 <p style={{ fontSize: 12, color: C.muted }}>첨부된 파일이 없습니다.</p>
-                <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 첨부하거나 파일을 드래그 앤 드롭하여 첨부해주세요.</p>
+                <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>위 버튼을 눌러 파일을 선택하거나 드래그 앤 드롭하세요.</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1006,11 +1048,11 @@ export default function ResourceRoom() {
                   <div key={f.id ?? f.filename ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "var(--rr-surface)" }}>
                     <span style={{ fontSize: 20, flexShrink: 0 }}>{fileIcon(f.originalName)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <a href={getFileUrl(f.url)} target="_blank" rel="noreferrer"
+                      <a href={getDownloadUrl(f.requestId, f.id)} download={f.originalName}
                         style={{ fontSize: 13, fontWeight: 600, color: C.primary, textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                         onMouseEnter={e => ((e.target as HTMLElement).style.textDecoration = "underline")}
                         onMouseLeave={e => ((e.target as HTMLElement).style.textDecoration = "none")}
-                      >{f.originalName ?? f.filename ?? "파일"}</a>
+                      >{f.originalName || f.filename || "파일"}</a>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fmtSize(f.size)} · {f.uploader} · {f.uploadedAt}</div>
                     </div>
                     <button onClick={() => handleDeleteFile(f.id)} title="삭제"
@@ -1039,7 +1081,7 @@ export default function ResourceRoom() {
         const draft    = discussionDraft;
         const addComment = () => {
           if (!draft.trim() || !detailReq) return;
-          const optimistic: DiscussionMsg = { id: Date.now(), author: me, role: myRole, text: draft.trim(), ts: new Date().toLocaleString("sv").slice(0, 16) };
+          const optimistic: DiscussionMsg = { id: Date.now(), author: me, role: myRole, text: draft.trim(), ts: new Date().toLocaleString("sv").slice(0, 19) };
           setDiscussionComments(p => {
             const next = [...p, optimistic];
             discussionStore.current.set(detailReq.id, next);
@@ -1121,20 +1163,20 @@ export default function ResourceRoom() {
       /* ── 히스토리 탭 ── */
       const HistoryTab = () => {
         const logs = [
-          { ts: (detailReq!.createdDate || "0000-00-00") + " 00:00", actor: detailReq!.requester || "—", type: "create" as const, detail: `요청 생성 (${detailReq!.reqCode})` },
+          { ts: (detailReq!.createdDate || "0000-00-00") + " 00:00:00", actor: detailReq!.requester || "—", type: "create" as const, detail: `요청 생성 (${detailReq!.reqCode})` },
           ...detailFiles.map(f => ({
-            ts: f.uploadedAt || "0000-00-00 00:00",
+            ts: f.uploadedAt || "0000-00-00 00:00:00",
             actor: f.uploader || "—",
             type: "upload" as const,
             detail: `파일 업로드: ${f.originalName}`,
           })),
           ...discussionComments.map(c => ({
-            ts: c.ts || "0000-00-00 00:00",
+            ts: c.ts || "0000-00-00 00:00:00",
             actor: c.author,
             type: "comment" as const,
             detail: `논의: "${c.text.slice(0, 50)}${c.text.length > 50 ? "…" : ""}"`,
           })),
-        ].sort((a, b) => b.ts.localeCompare(a.ts));
+        ].sort((a, b) => a.ts.localeCompare(b.ts));
 
         const iconMap = { upload: "📤", download: "📥", comment: "💬", create: "📋", status: "🔄" } as const;
         const colorMap = { upload: "#3B82F6", download: "#10B981", comment: "#F59E0B", create: C.primary, status: "#8B5CF6" } as const;
@@ -1368,7 +1410,7 @@ export default function ResourceRoom() {
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           {/* Status filter tabs */}
           <div style={{ display: "flex", gap: 4 }}>
-            {(["전체", "Draft", "Requested", "Submitted", "Recall", "Accepted"] as (ReqStatus | "전체")[]).map(s => {
+            {((isAdmin ? ["전체", "Draft", "Requested", "Submitted", "Recall", "Accepted"] : ["전체", "Requested", "Submitted", "Recall", "Accepted"]) as (ReqStatus | "전체")[]).map(s => {
               const cfg = s === "전체" ? null : STATUS_CFG[s];
               const isActive = reqFilter === s;
               return (

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
@@ -69,7 +70,7 @@ def _fmt_comment(c: RequestComment):
         "role":      c.role or "viewer",
         "text":      c.text,
         "fileRef":   c.file_ref,
-        "ts":        c.created_at.strftime("%Y-%m-%d %H:%M") if c.created_at else "",
+        "ts":        c.created_at.strftime("%Y-%m-%d %H:%M:%S") if c.created_at else "",
     }
 
 def _fmt_file(rf: RequestFile):
@@ -80,7 +81,7 @@ def _fmt_file(rf: RequestFile):
         "originalName": rf.original_name,
         "uploader":     rf.uploader or "",
         "size":         rf.size or 0,
-        "uploadedAt":   rf.uploaded_at.strftime("%Y-%m-%d %H:%M") if rf.uploaded_at else "",
+        "uploadedAt":   rf.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if rf.uploaded_at else "",
         "url":          f"/media/requests/{rf.request_id}/{rf.filename}",
     }
 
@@ -188,10 +189,6 @@ async def upload_file(
     file:     UploadFile = File(...),
     db:       Session    = Depends(get_db),
 ):
-    row = db.query(DataRequest).filter(DataRequest.id == req_id).first()
-    if not row:
-        raise HTTPException(404, "Not found")
-
     suffix  = Path(file.filename).suffix
     stored  = f"{uuid.uuid4().hex}{suffix}"
     dest_dir = MEDIA_DIR / str(req_id)
@@ -212,6 +209,21 @@ async def upload_file(
     db.commit()
     db.refresh(rf)
     return _fmt_file(rf)
+
+
+@router.get("/{req_id}/files/{file_id}/download")
+def download_file(req_id: int, file_id: int, db: Session = Depends(get_db)):
+    rf = (
+        db.query(RequestFile)
+        .filter(RequestFile.id == file_id, RequestFile.request_id == req_id)
+        .first()
+    )
+    if not rf:
+        raise HTTPException(404, "Not found")
+    path = MEDIA_DIR / str(req_id) / rf.filename
+    if not path.exists():
+        raise HTTPException(404, "File not found on disk")
+    return FileResponse(path=str(path), filename=rf.original_name, media_type="application/octet-stream")
 
 
 @router.delete("/{req_id}/files/{file_id}")

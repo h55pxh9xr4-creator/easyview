@@ -431,7 +431,7 @@ export const uploadRequestFile = (reqId: number, file: File, uploader: string) =
   fd.append("file", file);
   fd.append("uploader", uploader);
   return fetch(`${BASE}/api/requests/${reqId}/files`, { method: "POST", body: fd })
-    .then(r => r.json())
+    .then(r => { if (!r.ok) throw new Error(`Upload failed: ${r.status}`); return r.json(); })
     .then(mapFile) as Promise<ReqFile>;
 };
 
@@ -439,6 +439,7 @@ export const deleteRequestFile = (reqId: number, fileId: number) =>
   fetch(`${BASE}/api/requests/${reqId}/files/${fileId}`, { method: "DELETE" }).then(r => r.json());
 
 export const getFileUrl = (url: string) => `${BASE}${url}`;
+export const getDownloadUrl = (reqId: number, fileId: number) => `${BASE}/api/requests/${reqId}/files/${fileId}/download`;
 
 // ── Chat (김삼일 AI) ─────────────────────────────────────────
 export interface ChatMessage {
