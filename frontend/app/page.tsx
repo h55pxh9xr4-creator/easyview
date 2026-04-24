@@ -261,8 +261,9 @@ function PageInner() {
       <div className="app-body" style={{ display: topTab !== "리포트" && topTab !== "자료실" ? "none" : undefined }}>
         {topTab === "리포트" && (() => {
           const isAdmin = role === "admin";
-          // undefined=로딩중이면 접근허용, null=활성리포트없음이면 전체접근, string이면 회사 일치 여부 확인
-          const hasAccess = isAdmin || activeReportCompany === undefined || activeReportCompany === null || activeReportCompany === userCompany;
+          if (!isAdmin && activeReportCompany === undefined) return null;
+          // null = 활성 리포트 없음 → admin 외 차단
+          const hasAccess = isAdmin || activeReportCompany === userCompany;
           if (!hasAccess) {
             return (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, color: "#6b7280", padding: 40 }}>
