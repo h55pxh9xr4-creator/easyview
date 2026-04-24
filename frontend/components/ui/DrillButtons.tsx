@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
 interface Props {
   onExpandAll: () => void;
   onCollapseAll: () => void;
@@ -11,6 +13,7 @@ interface Props {
  * 카드 헤더 우측에 배치해서 사용.
  */
 export default function DrillButtons({ onExpandAll, onCollapseAll, isDark = false }: Props) {
+  const { t } = useTranslation();
   const bg = isDark ? "#252830" : "#fff";
   const bdr = isDark ? "#2E3039" : "#E0E0E0";
   const txt = isDark ? "#C4C9D4" : "#555";
@@ -36,7 +39,7 @@ export default function DrillButtons({ onExpandAll, onCollapseAll, isDark = fals
     <div style={{ display: "inline-flex", gap: 4 }}>
       <button
         onClick={onExpandAll}
-        title="모든 항목 펼치기"
+        title={t("drill.expandAll", "전체 펼침")}
         style={btnStyle}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#2E3039" : "#F5F5F5"; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
@@ -45,11 +48,11 @@ export default function DrillButtons({ onExpandAll, onCollapseAll, isDark = fals
           <polyline points="7 13 12 18 17 13" />
           <polyline points="7 6 12 11 17 6" />
         </svg>
-        전체 펼침
+        {t("drill.expandAll", "전체 펼침")}
       </button>
       <button
         onClick={onCollapseAll}
-        title="모든 항목 접기"
+        title={t("drill.collapseAll", "전체 접힘")}
         style={btnStyle}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#2E3039" : "#F5F5F5"; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
@@ -58,7 +61,7 @@ export default function DrillButtons({ onExpandAll, onCollapseAll, isDark = fals
           <polyline points="17 11 12 6 7 11" />
           <polyline points="17 18 12 13 7 18" />
         </svg>
-        전체 접힘
+        {t("drill.collapseAll", "전체 접힘")}
       </button>
     </div>
   );

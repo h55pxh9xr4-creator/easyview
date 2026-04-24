@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import CursorTrail from "@/components/layout/CursorTrail";
+import I18nProvider from "@/components/providers/I18nProvider";
 
 export const metadata: Metadata = {
   title: "Easy View | PwC",
@@ -22,7 +23,9 @@ export default function RootLayout({
       </head>
       <body>
         <CursorTrail />
-        {children}
+        <I18nProvider>
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );

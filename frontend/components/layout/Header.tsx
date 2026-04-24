@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 
 export type TopTab = "서비스 소개" | "리포트" | "자료실" | "문의게시판" | "관리자";
 const TOP_TABS: TopTab[] = ["서비스 소개", "리포트", "자료실", "문의게시판", "관리자"];
+
+// TopTab (내부 라우팅 키) → i18n 키 매핑
+const TAB_I18N_KEY: Record<TopTab, string> = {
+  "서비스 소개": "header.serviceIntro",
+  "리포트": "header.report",
+  "자료실": "header.resource",
+  "문의게시판": "header.inquiry",
+  "관리자": "header.admin",
+};
 
 export const ROLE_TABS: Record<string, TopTab[]> = {
   admin:           ["서비스 소개", "리포트", "자료실", "문의게시판", "관리자"],
@@ -22,6 +33,7 @@ interface Props {
 }
 
 export default function Header({ user, activeTopTab = "리포트", onTopTabChange, onLogout, onSettings, allowedTabs }: Props) {
+  const { t } = useTranslation();
   const [displayName, setDisplayName] = useState(user ?? "");
   const [avatar, setAvatar]           = useState<string | null>(null);
   const [dropOpen, setDropOpen]       = useState(false);
@@ -61,23 +73,24 @@ export default function Header({ user, activeTopTab = "리포트", onTopTabChang
 
       {/* 상단 탭 */}
       <nav className="hdr-tabs">
-        {(allowedTabs ?? TOP_TABS).map(t => (
+        {(allowedTabs ?? TOP_TABS).map(tab => (
           <span
-            key={t}
-            className={`hdr-tab${activeTopTab === t ? " active" : ""}`}
-            onClick={() => onTopTabChange?.(t)}
+            key={tab}
+            className={`hdr-tab${activeTopTab === tab ? " active" : ""}`}
+            onClick={() => onTopTabChange?.(tab)}
             style={{ cursor: "pointer" }}
           >
-            {t}
+            {t(TAB_I18N_KEY[tab], tab)}
           </span>
         ))}
       </nav>
 
       {/* 유저 영역 */}
       <div className="hdr-right">
+        <LanguageSwitcher />
         {user && (
           <span className="hdr-username">
-            <b>{displayName}</b>님, 환영합니다.
+            {t("header.greeting", { name: displayName })}
           </span>
         )}
 
@@ -115,7 +128,7 @@ export default function Header({ user, activeTopTab = "리포트", onTopTabChang
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                로그아웃
+                {t("header.logout", "로그아웃")}
               </button>
             </div>
           )}

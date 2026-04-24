@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useFilter } from "@/hooks/useFilter";
 import { fetchMonths } from "@/lib/api";
 import { fetchExchangeRates } from "@/lib/exchangeRate";
 
 export default function FilterBar({ activeSub, inline }: { activeSub: string; inline?: boolean }) {
+  const { t, i18n } = useTranslation();
   const { baseYm, periodType, compareTarget, bsBase, amountUnit, currency, exchangeRates,
           setBaseYm, setPeriodType, setCompareTarget, setBsBase, setAmountUnit,
           setCurrency, setExchangeRates } = useFilter();
@@ -37,6 +39,11 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
 
   const fmtYm = (ym: string) => {
     const [y, m] = ym.split("-");
+    const lang = (i18n.language ?? "ko").split("-")[0];
+    if (lang === "en") {
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${monthNames[parseInt(m, 10) - 1]} ${y}`;
+    }
     return `${y}년 ${m}월`;
   };
 
@@ -51,23 +58,23 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
       {/* 월별/누적 토글 */}
       {showPeriod && (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="flabel">기간</span>
+          <span className="flabel">{t("filter.period")}</span>
           <div className="ftoggle">
             <button
               className={`ftbtn${periodType === "monthly" ? " on" : ""}`}
               onClick={() => setPeriodType("monthly")}
-            >월별</button>
+            >{t("filter.monthly")}</button>
             <button
               className={`ftbtn${periodType === "cumulative" ? " on" : ""}`}
               onClick={() => setPeriodType("cumulative")}
-            >누적</button>
+            >{t("filter.cumulative")}</button>
           </div>
         </div>
       )}
 
       {/* 기준연월 */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span className="flabel">기준연월</span>
+        <span className="flabel">{t("filter.baseYm")}</span>
         <select className="fsel" value={baseYm} onChange={(e) => setBaseYm(e.target.value)}>
           {months.map((m) => (
             <option key={m} value={m}>{fmtYm(m)}</option>
@@ -78,7 +85,7 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
       {/* 분석대상 */}
       {showCompare && (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="flabel">분석대상</span>
+          <span className="flabel">{t("filter.compareTarget")}</span>
           <select
             className="fsel"
             value={compareTarget}
@@ -86,13 +93,13 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
           >
             {periodType === "monthly" ? (
               <>
-                <option value="prev_year_month">전년동월</option>
-                <option value="prev_month">전월</option>
+                <option value="prev_year_month">{t("filter.prevYearMonth")}</option>
+                <option value="prev_month">{t("filter.prevMonth")}</option>
               </>
             ) : (
               <>
-                <option value="prev_year_cum">전년누적</option>
-                <option value="prev_month_cum">전월누적</option>
+                <option value="prev_year_cum">{t("filter.prevYearCum")}</option>
+                <option value="prev_month_cum">{t("filter.prevMonthCum")}</option>
               </>
             )}
           </select>
@@ -102,10 +109,10 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
       {/* 비교대상(재무) */}
       {showBsBase && (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="flabel">비교대상(재무)</span>
+          <span className="flabel">{t("filter.bsBase")}</span>
           <select className="fsel" value={bsBase} onChange={(e) => setBsBase(e.target.value as never)}>
-            <option value="year_start">연초</option>
-            <option value="month_start">월초</option>
+            <option value="year_start">{t("filter.yearStart")}</option>
+            <option value="month_start">{t("filter.monthStart")}</option>
           </select>
         </div>
       )}
@@ -113,7 +120,7 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
       {/* 통화 + 단위 — 항상 맨 오른쪽 고정 */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="flabel">통화</span>
+          <span className="flabel">{t("filter.currency")}</span>
           <select
             className="fsel"
             value={currency}
@@ -126,12 +133,12 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
           </select>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="flabel">단위</span>
+          <span className="flabel">{t("filter.unit")}</span>
           <select className="fsel" value={amountUnit} onChange={(e) => setAmountUnit(e.target.value as never)}>
-            <option value="원">원</option>
-            <option value="천">천</option>
-            <option value="백만">백만</option>
-            <option value="억">억</option>
+            <option value="원">{t("filter.unitWon")}</option>
+            <option value="천">{t("filter.unitThousand")}</option>
+            <option value="백만">{t("filter.unitMillion")}</option>
+            <option value="억">{t("filter.unitBillion")}</option>
           </select>
         </div>
       </div>

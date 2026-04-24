@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const NavIcon = ({ src }: { src: string }) => (
   <img src={src} alt="" width={22} height={22} style={{ display: "block", opacity: 1 }} />
@@ -19,55 +20,56 @@ const ChevronUp = () => (
 
 interface NavGroup {
   tab: string;
-  label: string;
+  /** i18n key */
+  labelKey: string;
   icon?: string;
   directSub?: string;
-  sub?: { id: string; label: string }[];
+  sub?: { id: string; labelKey: string }[];
   dividerAfter?: boolean;
 }
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const NAV: NavGroup[] = [
-  { tab: "summary", label: "Summary", directSub: "summary", icon: `${BASE}/icons/icon-dashboard.svg` },
+  { tab: "summary", labelKey: "sidebar.summary", directSub: "summary", icon: `${BASE}/icons/icon-dashboard.svg` },
   {
-    tab: "pl", label: "손익분석", icon: `${BASE}/icons/icon-pl.svg`,
+    tab: "pl", labelKey: "sidebar.pl", icon: `${BASE}/icons/icon-pl.svg`,
     sub: [
-      { id: "pl-sum",   label: "PL 요약" },
-      { id: "pl-trend", label: "PL 추이분석" },
-      { id: "pl-acct",  label: "PL 계정분석" },
-      { id: "pl-sale",  label: "매출분석" },
-      { id: "pl-item",  label: "손익항목" },
+      { id: "pl-sum",   labelKey: "sidebar.plSum" },
+      { id: "pl-trend", labelKey: "sidebar.plTrend" },
+      { id: "pl-acct",  labelKey: "sidebar.plAcct" },
+      { id: "pl-sale",  labelKey: "sidebar.plSale" },
+      { id: "pl-item",  labelKey: "sidebar.plItem" },
     ],
   },
   {
-    tab: "bs", label: "재무상태분석", icon: `${BASE}/icons/icon-balance.svg`,
+    tab: "bs", labelKey: "sidebar.bs", icon: `${BASE}/icons/icon-balance.svg`,
     sub: [
-      { id: "bs-sum",   label: "BS 요약" },
-      { id: "bs-trend", label: "BS 추이분석" },
-      { id: "bs-acct",  label: "BS 계정분석" },
+      { id: "bs-sum",   labelKey: "sidebar.bsSum" },
+      { id: "bs-trend", labelKey: "sidebar.bsTrend" },
+      { id: "bs-acct",  labelKey: "sidebar.bsAcct" },
     ],
   },
   {
-    tab: "vch", label: "전표분석", icon: `${BASE}/icons/icon-journal.svg`,
+    tab: "vch", labelKey: "sidebar.vch", icon: `${BASE}/icons/icon-journal.svg`,
     sub: [
-      { id: "vch-analysis", label: "전표분석내역" },
-      { id: "vch-search",   label: "전표검색" },
+      { id: "vch-analysis", labelKey: "sidebar.vchAnalysis" },
+      { id: "vch-search",   labelKey: "sidebar.vchSearch" },
     ],
   },
   {
-    tab: "sc", label: "시나리오분석", icon: `${BASE}/icons/icon-scenario.svg`,
+    tab: "sc", labelKey: "sidebar.sc", icon: `${BASE}/icons/icon-scenario.svg`,
     dividerAfter: true,
     sub: [
-      { id: "sc-dup",  label: "동일금액 중복 전표" },
-      { id: "sc-cash", label: "현금지급 後 부채인식" },
-      { id: "sc-wknd", label: "주말 현금지급" },
-      { id: "sc-big",  label: "고액 현금지급" },
-      { id: "sc-sc5",  label: "비용인식 동시 현금지급" },
-      { id: "sc-sc6",  label: "Seldom Used Customer" },
+      { id: "sc-dup",  labelKey: "sidebar.scDup" },
+      { id: "sc-cash", labelKey: "sidebar.scCash" },
+      { id: "sc-wknd", labelKey: "sidebar.scWknd" },
+      { id: "sc-big",  labelKey: "sidebar.scBig" },
+      { id: "sc-sc5",  labelKey: "sidebar.scSc5" },
+      { id: "sc-sc6",  labelKey: "sidebar.scSc6" },
     ],
   },
-  { tab: "inquiry", label: "문의게시판", directSub: "inquiry", icon: `${BASE}/icons/icon-email.svg` },
+  { tab: "inquiry", labelKey: "sidebar.inquiry", directSub: "inquiry", icon: `${BASE}/icons/icon-email.svg` },
 ];
 
 interface Props {
@@ -79,6 +81,7 @@ interface Props {
 }
 
 export default function Sidebar({ activeTab, activeSub, onNavigate, collapsed, onToggleCollapse }: Props) {
+  const { t } = useTranslation();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set([activeTab]));
 
   useEffect(() => {
@@ -100,27 +103,29 @@ export default function Sidebar({ activeTab, activeSub, onNavigate, collapsed, o
         {NAV.map(item => {
           const isActive = activeTab === item.tab;
           const isOpen = !collapsed && openGroups.has(item.tab);
+          const itemLabel = t(item.labelKey);
 
           return (
             <div key={item.tab}>
               {/* 그룹 헤더 버튼 */}
               <button
                 className={`sb-item${isActive ? " active" : ""}`}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? itemLabel : undefined}
                 onClick={() => {
                   if (item.directSub) {
-                    onNavigate(item.tab, item.directSub, item.label);
+                    onNavigate(item.tab, item.directSub, itemLabel);
                   } else if (collapsed) {
                     onToggleCollapse();
                     setOpenGroups(new Set([item.tab]));
-                    onNavigate(item.tab, item.sub![0].id, item.sub![0].label);
+                    const firstSub = item.sub![0];
+                    onNavigate(item.tab, firstSub.id, t(firstSub.labelKey));
                   } else {
                     toggle(item.tab);
                   }
                 }}
               >
                 <span className="sb-icon">{item.icon ? <NavIcon src={item.icon} /> : null}</span>
-                {!collapsed && <span className="sb-label">{item.label}</span>}
+                {!collapsed && <span className="sb-label">{itemLabel}</span>}
                 {!collapsed && item.sub && (
                   <span className="sb-arrow">
                     {isOpen ? <ChevronUp /> : <ChevronDown />}
@@ -135,9 +140,9 @@ export default function Sidebar({ activeTab, activeSub, onNavigate, collapsed, o
                     <button
                       key={s.id}
                       className={`sb-sub-item${activeSub === s.id ? " active" : ""}`}
-                      onClick={() => onNavigate(item.tab, s.id, s.label)}
+                      onClick={() => onNavigate(item.tab, s.id, t(s.labelKey))}
                     >
-                      {s.label}
+                      {t(s.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -161,7 +166,7 @@ export default function Sidebar({ activeTab, activeSub, onNavigate, collapsed, o
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
-            <span style={{ fontSize: 11, marginLeft: 4, color: "#aaa" }}>접기</span>
+            <span style={{ fontSize: 11, marginLeft: 4, color: "#aaa" }}>{t("sidebar.collapse", "접기")}</span>
           </>
         )}
       </button>

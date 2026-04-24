@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   exportCurrentPageToPdf,
   exportMultiplePagesToPdf,
@@ -27,6 +28,7 @@ export default function DownloadMenu({
   setActiveTab,
   setPageLabel,
 }: DownloadMenuProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("closed");
   const [selected, setSelected] = useState<Set<string>>(new Set(REPORT_SUBS.map(s => s.id)));
   const [progress, setProgress] = useState<{ done: number; total: number; label: string }>({ done: 0, total: 0, label: "" });
@@ -140,7 +142,7 @@ export default function DownloadMenu({
         ref={btnRef}
         data-no-export="true"
         onClick={() => setMode(mode === "closed" ? "menu" : "closed")}
-        title="다운로드"
+        title={t("download.menu", "다운로드")}
         style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "6px 12px", height: 30,
@@ -156,7 +158,7 @@ export default function DownloadMenu({
           <polyline points="7 10 12 15 17 10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
-        다운로드
+        {t("download.menu", "다운로드")}
       </button>
 
       {mode === "menu" && (
@@ -172,12 +174,12 @@ export default function DownloadMenu({
           }}
         >
           <div style={{ fontSize: 10, color: "#999", padding: "4px 10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>PDF</div>
-          <MenuItem onClick={handleCurrentPdf}>현재 페이지 PDF</MenuItem>
-          <MenuItem onClick={() => runMultiPdf(allIds)}>전체 페이지 PDF ({allIds.length})</MenuItem>
-          <MenuItem onClick={() => setMode("selectPages")}>페이지 선택 PDF…</MenuItem>
+          <MenuItem onClick={handleCurrentPdf}>{t("download.currentPdf", "현재 페이지 PDF")}</MenuItem>
+          <MenuItem onClick={() => runMultiPdf(allIds)}>{t("download.allPdf", { count: allIds.length })}</MenuItem>
+          <MenuItem onClick={() => setMode("selectPages")}>{t("download.selectPdf", "페이지 선택 PDF…")}</MenuItem>
           <div style={{ height: 1, background: "var(--border, #E0E0E0)", margin: "6px 0" }} />
           <div style={{ fontSize: 10, color: "#999", padding: "4px 10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>Excel</div>
-          <MenuItem onClick={handleCurrentXlsx}>현재 페이지 테이블 Excel</MenuItem>
+          <MenuItem onClick={handleCurrentXlsx}>{t("download.currentExcel", "현재 페이지 테이블 Excel")}</MenuItem>
         </div>
       )}
 
