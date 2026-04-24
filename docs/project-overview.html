@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>EasyView 프로젝트 구조 개요</title>
+<style>
+:root {
+  --primary: #E87722;
+  --primary-dark: #C35F1B;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --text: #2C2C2C;
+  --text-sub: #666;
+  --text-dim: #999;
+  --border: #E0E0E0;
+  --border-soft: #F0F0F0;
+  --blue: #2563EB;
+  --green: #16A34A;
+  --red: #EF4444;
+  --purple: #7C3AED;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 0;
+  font-family: "Noto Sans KR", -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg); color: var(--text);
+  font-size: 13px; line-height: 1.6;
+}
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, #F5A623 100%);
+  color: white; padding: 36px 48px;
+}
+.hero h1 { margin: 0 0 6px; font-size: 26px; font-weight: 700; }
+.hero p  { margin: 0; opacity: 0.92; font-size: 14px; }
+.hero .meta { margin-top: 10px; font-size: 11.5px; opacity: 0.85; letter-spacing: 0.3px; }
+
+.container { max-width: 1400px; margin: 0 auto; padding: 24px 32px 60px; }
+
+nav.tabs {
+  display: flex; gap: 4px; margin: -20px 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card); padding: 0 24px;
+  position: sticky; top: 0; z-index: 10;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+nav.tabs button {
+  padding: 14px 18px; border: none; background: none;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text-sub); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+nav.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+nav.tabs button:hover { color: var(--primary-dark); }
+
+.panel { display: none; animation: fadeIn 0.2s; }
+.panel.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.card {
+  background: var(--card); border-radius: 10px; padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  margin-bottom: 16px;
+}
+.card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 700; color: var(--text); }
+.card h3 { margin: 18px 0 8px; font-size: 13.5px; font-weight: 700; color: var(--primary); }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.stack {
+  display: inline-block; padding: 4px 10px; border-radius: 4px;
+  background: rgba(232,119,34,0.08); color: var(--primary);
+  font-size: 11px; font-weight: 600; margin: 2px;
+}
+.stack.blue { background: rgba(37,99,235,0.08); color: var(--blue); }
+.stack.green { background: rgba(22,163,74,0.08); color: var(--green); }
+.stack.red { background: rgba(239,68,68,0.08); color: var(--red); }
+.stack.purple { background: rgba(124,58,237,0.08); color: var(--purple); }
+
+table.data {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+}
+table.data th {
+  text-align: left; padding: 9px 12px; font-weight: 600;
+  color: var(--text-sub); background: #FAFAFA;
+  border-bottom: 2px solid var(--primary); white-space: nowrap;
+}
+table.data td {
+  padding: 9px 12px; border-bottom: 1px solid var(--border-soft);
+  color: var(--text);
+}
+table.data tr:hover td { background: #FFF8F3; }
+
+.tree {
+  font-family: "Consolas", "Menlo", monospace; font-size: 11.5px;
+  line-height: 1.7; color: var(--text);
+  white-space: pre-wrap;
+}
+.tree .dir { color: var(--primary); font-weight: 700; }
+.tree .file { color: var(--text); }
+.tree .new { background: rgba(22,163,74,0.12); padding: 0 4px; border-radius: 3px; }
+.tree .mod { background: rgba(37,99,235,0.10); padding: 0 4px; border-radius: 3px; }
+
+.timeline {
+  position: relative; padding-left: 24px;
+  border-left: 2px solid var(--border);
+}
+.timeline .event {
+  position: relative; margin-bottom: 18px; padding-left: 10px;
+}
+.timeline .event::before {
+  content: ""; position: absolute; left: -29px; top: 6px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--primary); border: 2px solid white;
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.timeline .event.fix::before { background: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+.timeline .event.feat::before { background: var(--green); box-shadow: 0 0 0 1px var(--green); }
+.timeline .event .time { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; }
+.timeline .event .msg { font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.timeline .event .hash { font-family: monospace; font-size: 10px; color: var(--purple); padding: 1px 5px; background: rgba(124,58,237,0.08); border-radius: 3px; }
+
+.route-map { display: flex; flex-direction: column; gap: 8px; }
+.route {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; background: #FAFAFA;
+  border-radius: 6px;
+}
+.route .method {
+  font-family: monospace; font-size: 10.5px; font-weight: 700;
+  padding: 2px 6px; border-radius: 3px; min-width: 50px; text-align: center;
+}
+.method.get    { background: rgba(37,99,235,0.12); color: var(--blue); }
+.method.post   { background: rgba(22,163,74,0.12); color: var(--green); }
+.method.patch  { background: rgba(232,119,34,0.12); color: var(--primary); }
+.method.delete { background: rgba(239,68,68,0.12); color: var(--red); }
+.route .path { font-family: monospace; font-size: 11.5px; color: var(--text); flex: 1; }
+.route .desc { font-size: 11px; color: var(--text-sub); }
+
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+.kpi {
+  background: var(--card); border-radius: 8px; padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.kpi .label { font-size: 11px; color: var(--text-sub); margin-bottom: 4px; }
+.kpi .value { font-size: 22px; font-weight: 700; color: var(--text); }
+
+.arch-diagram {
+  padding: 20px; background: #FAFAFA; border-radius: 8px;
+  font-family: "Consolas", monospace; font-size: 11.5px;
+  line-height: 1.9; white-space: pre;
+  overflow-x: auto;
+}
+
+.legend {
+  display: flex; gap: 16px; margin-bottom: 12px; font-size: 11px; color: var(--text-sub);
+}
+.legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>EasyView 프로젝트 구조 개요</h1>
+  <p>PwC 삼일회계법인 — 구독형 재무분석 웹 포털 · FastAPI + Next.js</p>
+  <div class="meta">작성 시점: 2026-04-25 · 배포: https://h55pxh9xr4-creator.github.io/easyview/ · API: https://easyview-api.onrender.com</div>
+</div>
+
+<nav class="tabs">
+  <button data-tab="overview" class="active">개요</button>
+  <button data-tab="frontend">프론트엔드</button>
+  <button data-tab="backend">백엔드</button>
+  <button data-tab="database">데이터베이스</button>
+  <button data-tab="features">주요 기능</button>
+  <button data-tab="today">오늘 변경사항</button>
+  <button data-tab="deploy">배포·환경</button>
+</nav>
+
+<div class="container">
+
+<!-- ===== 개요 ===== -->
+<div class="panel active" id="overview">
+  <div class="kpi-row">
+    <div class="kpi"><div class="label">프론트엔드 페이지</div><div class="value">18+</div></div>
+    <div class="kpi"><div class="label">백엔드 API 라우터</div><div class="value">16</div></div>
+    <div class="kpi"><div class="label">DB 테이블</div><div class="value">25+</div></div>
+    <div class="kpi"><div class="label">지원 언어</div><div class="value">2</div></div>
+  </div>
+
+  <div class="card">
+    <h2>기술 스택</h2>
+    <h3>프론트엔드</h3>
+    <div>
+      <span class="stack">Next.js 16 (Turbopack)</span>
+      <span class="stack">React 19</span>
+      <span class="stack">TypeScript</span>
+      <span class="stack blue">Zustand</span>
+      <span class="stack blue">ECharts</span>
+      <span class="stack blue">Chart.js</span>
+      <span class="stack green">react-i18next</span>
+      <span class="stack green">jsPDF + html2canvas-pro</span>
+      <span class="stack green">xlsx (SheetJS)</span>
+    </div>
+    <h3>백엔드</h3>
+    <div>
+      <span class="stack">FastAPI</span>
+      <span class="stack">SQLAlchemy</span>
+      <span class="stack">SQLite</span>
+      <span class="stack blue">Pydantic</span>
+      <span class="stack blue">pandas</span>
+      <span class="stack blue">openpyxl</span>
+      <span class="stack green">OpenAI SDK (PwC GenAI)</span>
+    </div>
+    <h3>인프라 · 배포</h3>
+    <div>
+      <span class="stack">GitHub Pages (프론트)</span>
+      <span class="stack">Render (백엔드)</span>
+      <span class="stack blue">GitHub Actions</span>
+      <span class="stack purple">Power Automate (메일 Webhook)</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>아키텍처 다이어그램</h2>
+    <div class="arch-diagram">┌─────────────────────────────────────────────────────────────────┐
+│  사용자 (admin / manager / viewer / uploader)                    │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ HTTPS
+         ┌─────────────┴──────────────┐
+         ▼                            ▼
+┌──────────────────┐         ┌─────────────────┐
+│ GitHub Pages     │         │ Render          │
+│ (Frontend)       │─────────│ (Backend API)   │
+│                  │  JSON   │                 │
+│ Next.js 16 SPA   │◄───────►│ FastAPI         │
+└──────────────────┘         │ uvicorn :8000   │
+                             └─────────┬───────┘
+                                       │
+                       ┌───────────────┼──────────────────┐
+                       ▼               ▼                  ▼
+                 ┌──────────┐   ┌──────────┐    ┌────────────────┐
+                 │ SQLite   │   │ OpenAI   │    │ Power Automate │
+                 │ (files)  │   │ PwC GenAI│    │ Webhook        │
+                 │          │   │ gpt-4o   │    │ (Outlook mail) │
+                 └──────────┘   └──────────┘    └────────────────┘</div>
+  </div>
+
+  <div class="card">
+    <h2>역할 기반 접근</h2>
+    <table class="data">
+      <thead><tr><th>역할</th><th>접근 가능 탭</th><th>핵심 권한</th></tr></thead>
+      <tbody>
+        <tr><td>admin</td><td>서비스소개·리포트·자료실·문의게시판·관리자</td><td>전체 관리 · 리포트 발행 · 사용자·회사 관리 · 청구 관리</td></tr>
+        <tr><td>manager</td><td>서비스소개·리포트·자료실·문의게시판</td><td>데이터 분석·리포트 생성</td></tr>
+        <tr><td>viewer</td><td>서비스소개·리포트·문의게시판</td><td>리포트 조회 (발행된 것만)</td></tr>
+        <tr><td>uploader</td><td>서비스소개·자료실·문의게시판</td><td>자료 업로드</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== 프론트엔드 ===== -->
+<div class="panel" id="frontend">
+  <div class="card">
+    <h2>디렉터리 구조</h2>
+    <div class="tree"><span class="dir">frontend/</span>
+├── <span class="dir">app/</span>
+│   ├── <span class="file">layout.tsx</span>          <em>// I18nProvider 래핑</em>
+│   ├── <span class="file">page.tsx</span>            <em>// 라우팅 허브 (top tab + sidebar + ActivePage)</em>
+│   ├── <span class="file">globals.css</span>
+│   └── <span class="dir">admin/</span>               <em>// 관리자 페이지 (accounts/companies/reports)</em>
+├── <span class="dir">components/</span>
+│   ├── <span class="dir">layout/</span>              <em>// Header, Sidebar, FilterBar, ResourceRoom, LoginPage</em>
+│   ├── <span class="dir">providers/</span>           <span class="new">I18nProvider.tsx (신규)</span>
+│   ├── <span class="dir">ui/</span>                  <em>// ChatBot, DownloadMenu, DrillButtons, LanguageSwitcher, …</em>
+│   └── <span class="dir">pages/</span>
+│       ├── <span class="file">Summary.tsx</span>
+│       ├── <span class="new">Billing.tsx</span>         <em>// 청구 관리 (신규)</em>
+│       ├── <span class="file">Inquiry.tsx</span>      <em>// 댓글 리스트화 + 사이드바</em>
+│       ├── <span class="file">FaqPanel.tsx</span>
+│       ├── <span class="dir">pl/</span>               <em>// PLSummary, PLTrend, PLAccount, PLSales, PLItems</em>
+│       ├── <span class="dir">bs/</span>               <em>// BSSummary, BSTrend, BSAccount</em>
+│       ├── <span class="dir">vch/</span>              <em>// VCHAnalysis, VCHSearch</em>
+│       └── <span class="dir">sc/</span>               <em>// SC1..SC6 (6가지 이상전표 시나리오)</em>
+├── <span class="dir">lib/</span>
+│   ├── <span class="file">api.ts</span>              <em>// 모든 백엔드 API 호출 집중</em>
+│   ├── <span class="new">exports.ts</span>            <em>// PDF/Excel 유틸 (신규)</em>
+│   ├── <span class="file">fmtAmount.ts</span>        <em>// 금액/퍼센트/건수 포맷 (천단위 쉼표)</em>
+│   ├── <span class="file">exchangeRate.ts</span>
+│   └── <span class="new">i18n/</span>                 <em>// config.ts + locales/ko.json, en.json</em>
+└── <span class="dir">hooks/</span>                <em>// useFilter, useComment, useChatAttachment, useDarkMode, …</em></div>
+  </div>
+
+  <div class="card">
+    <h2>페이지 맵</h2>
+    <table class="data">
+      <thead><tr><th>Top Tab</th><th>Sub / Path</th><th>컴포넌트</th><th>주요 기능</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="18">리포트</td><td>summary</td><td>Summary</td><td>KPI 4종 + Top3 증감 + 지표 + PL/BS 표 + 시나리오 카운트</td></tr>
+        <tr><td>pl-sum</td><td>PLSummary</td><td>손익 요약 (매출/매출원가/판관비/영업이익/당기순이익)</td></tr>
+        <tr><td>pl-trend</td><td>PLTrend</td><td>월별 손익 Trend</td></tr>
+        <tr><td>pl-acct</td><td>PLAccount</td><td>공시→관리→계정 2단계 드릴다운 (전체 펼침/접힘)</td></tr>
+        <tr><td>pl-sale</td><td>PLSales</td><td>거래처 매출 Top + 도넛 + Bar-race</td></tr>
+        <tr><td>pl-item</td><td>PLItems</td><td>월/분기/연간 손익항목 테이블</td></tr>
+        <tr><td>bs-sum</td><td>BSSummary</td><td>재무 KPI + 구조 + 비율/활동성 지표</td></tr>
+        <tr><td>bs-trend</td><td>BSTrend</td><td>자산·부채·자본 추이 + 구성 변동</td></tr>
+        <tr><td>bs-acct</td><td>BSAccount</td><td>카테고리→합계계정→공시 3단계 드릴다운</td></tr>
+        <tr><td>vch-analysis</td><td>VCHAnalysis</td><td>일자별 전표 + Treemap + 상위 거래처</td></tr>
+        <tr><td>vch-search</td><td>VCHSearch</td><td>전표 고급 검색</td></tr>
+        <tr><td>sc-dup</td><td>SC1</td><td>동일금액 중복 전표</td></tr>
+        <tr><td>sc-cash</td><td>SC2</td><td>현금지급 後 부채인식</td></tr>
+        <tr><td>sc-wknd</td><td>SC3</td><td>주말 현금지급</td></tr>
+        <tr><td>sc-big</td><td>SC4</td><td>고액 현금지급</td></tr>
+        <tr><td>sc-sc5</td><td>SC5</td><td>비용인식 동시 현금지급</td></tr>
+        <tr><td>sc-sc6</td><td>SC6</td><td>Seldom Used Customer</td></tr>
+        <tr><td>settings</td><td>Settings</td><td>다크모드 등</td></tr>
+        <tr><td>자료실</td><td>-</td><td>ResourceRoom</td><td>월별 자료 업로드/다운로드</td></tr>
+        <tr><td rowspan="2">문의게시판</td><td>inquiry</td><td>Inquiry</td><td>문의 작성/조회, 댓글 리스트 누적, Power Automate 메일 알림</td></tr>
+        <tr><td>faq</td><td>FaqPanel</td><td>고객사 FAQ 31건 · 👍👎 피드백</td></tr>
+        <tr><td rowspan="4">관리자</td><td>accounts</td><td>AdminAccounts</td><td>사용자 관리</td></tr>
+        <tr><td>companies</td><td>AdminCompanies</td><td>회사/자회사 관리</td></tr>
+        <tr><td>reports</td><td>AdminReports</td><td>리포트 업로드/생성/발행</td></tr>
+        <tr><td>billing</td><td>Billing</td><td>청구 관리 (대기/완료/마스터/특이사항)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>상태 관리 (Zustand)</h2>
+    <table class="data">
+      <thead><tr><th>Store</th><th>상태</th><th>범위</th></tr></thead>
+      <tbody>
+        <tr><td>useFilter</td><td>baseYm, periodType, compareTarget, bsBase, amountUnit, currency, exchangeRates</td><td>글로벌 (페이지 이동 시 유지)</td></tr>
+        <tr><td>useComment</td><td>commentTarget, rect, panelOpen</td><td>코멘트 트리거/패널</td></tr>
+        <tr><td>useChatAttachment</td><td>attachments, open</td><td>김삼일 AI 첨부 큐</td></tr>
+        <tr><td>useCommentedItems</td><td>ck (Set), load()</td><td>댓글 달린 셀 하이라이트</td></tr>
+        <tr><td>useDarkMode</td><td>isDark (data-theme 관찰)</td><td>다크모드 감지</td></tr>
+        <tr><td>usePendingInquiry</td><td>pendingId</td><td>댓글 작성 후 자동 이동</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== 백엔드 ===== -->
+<div class="panel" id="backend">
+  <div class="card">
+    <h2>디렉터리 구조</h2>
+    <div class="tree"><span class="dir">backend/</span>
+├── <span class="file">main.py</span>              <em>// FastAPI 앱, 라우터 등록, startup seed/migrate</em>
+├── <span class="file">database.py</span>          <em>// SQLAlchemy engine + SessionLocal</em>
+├── <span class="file">models.py</span>            <em>// JEData, TBData, Inquiry, InquiryReply, DataRequest, …</em>
+├── <span class="file">admin_models.py</span>     <em>// User, Company, Report, Permission, …</em>
+├── <span class="file">chat_models.py</span>      <em>// ChatSession, ChatMessage, Faq, FaqFeedback</em>
+├── <span class="new">billing_models.py</span>     <em>// BillingEntry, BillingMaster, BillingException</em>
+├── <span class="dir">routers/</span>
+│   ├── <span class="file">summary.py</span>       <em>// Summary 대시보드 API</em>
+│   ├── <span class="file">pl.py</span>            <em>// 손익분석</em>
+│   ├── <span class="file">bs.py</span>            <em>// 재무상태분석</em>
+│   ├── <span class="file">vch.py</span>           <em>// 전표분석</em>
+│   ├── <span class="file">scenario.py</span>      <em>// SC1..SC6</em>
+│   ├── <span class="file">inquiry.py</span>       <em>// 문의게시판 + 댓글 + 메일 webhook</em>
+│   ├── <span class="file">chat.py</span>          <em>// 김삼일 AI (FAQ + 세션 + 스트리밍)</em>
+│   ├── <span class="new">billing.py</span>        <em>// 청구 관리 (리포트→청구 동기화 포함)</em>
+│   ├── <span class="file">requests.py</span>      <em>// 자료 요청</em>
+│   ├── <span class="file">filters.py</span>
+│   └── <span class="file">admin_*.py</span>       <em>// auth, users, audit, groups, permissions, roles, companies, requests, reports</em>
+├── <span class="file">admin_seed.py</span>       <em>// 초기 사용자·회사 시드</em>
+├── <span class="new">billing_seed.py</span>      <em>// 청구 샘플 시드 (8법인)</em>
+├── <span class="new">import_billing.py</span>    <em>// xlsm → DB 파싱 (수동/startup)</em>
+├── <span class="new">import_customer_faqs.py</span> <em>// FAQ JSON → DB upsert</em>
+├── <span class="new">customer_faqs.json</span>   <em>// 고객사 FAQ 24건 번들</em>
+└── <span class="file">migrate_inquiry_reply.py</span> <em>// 레거시 컬럼 → inquiry_reply 이관</em></div>
+  </div>
+
+  <div class="card">
+    <h2>주요 API 라우트</h2>
+    <h3>재무 리포트</h3>
+    <div class="route-map">
+      <div class="route"><span class="method get">GET</span><span class="path">/api/summary/kpi · /top3 · /indicators · /pl_table · /bs_table · /scenario_count</span><span class="desc">Summary</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/pl/summary · /trend · /account · /sales · /items · /account_detail</span><span class="desc">손익분석</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/bs/summary · /trend · /account · /disclosure_detail · /daily_balance</span><span class="desc">재무상태</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/vch/analysis · /search · /daily · /kpi · /top_counterparty</span><span class="desc">전표분석</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/scenario/{1..6}/exceptions · /extract · /lines</span><span class="desc">이상 전표 시나리오</span></div>
+    </div>
+    <h3>김삼일 AI</h3>
+    <div class="route-map">
+      <div class="route"><span class="method post">POST</span><span class="path">/api/chat/message · /message/stream</span><span class="desc">대화 (스트리밍)</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/chat/sessions · /sessions/{id}</span><span class="desc">세션 조회</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/chat/faqs · /faqs/{id}</span><span class="desc">FAQ</span></div>
+      <div class="route"><span class="method post">POST</span><span class="path">/api/chat/faqs/{id}/feedback</span><span class="desc">👍👎</span></div>
+    </div>
+    <h3>청구 관리 (신규)</h3>
+    <div class="route-map">
+      <div class="route"><span class="method get">GET</span><span class="path">/api/billing/entries?status=&parent=&q=&year=&page=</span><span class="desc">빌링 목록 (페이지네이션)</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/billing/entries/{id}</span><span class="desc">상세 (특이사항 포함)</span></div>
+      <div class="route"><span class="method patch">PATCH</span><span class="path">/api/billing/entries/{id}</span><span class="desc">상태/일자/메모 수정</span></div>
+      <div class="route"><span class="method post">POST</span><span class="path">/api/billing/entries/{id}/complete · /deposit</span><span class="desc">완료 처리 / 입금 기록</span></div>
+      <div class="route"><span class="method get">GET</span><span class="path">/api/billing/master · /exceptions · /stats</span><span class="desc">마스터·특이사항·KPI</span></div>
+      <div class="route"><span class="method post">POST</span><span class="path">/api/billing/sync-from-reports</span><span class="desc">B옵션: 리포트→청구 수동 동기화</span></div>
+      <div class="route"><span class="method post">POST</span><span class="path">/api/billing/import · /dedupe</span><span class="desc">엑셀 재import · 중복 정리</span></div>
+    </div>
+    <h3>문의 & 요청</h3>
+    <div class="route-map">
+      <div class="route"><span class="method get">GET</span><span class="path">/api/inquiry · /{id}</span><span class="desc">문의 조회 (댓글 리스트 포함)</span></div>
+      <div class="route"><span class="method post">POST</span><span class="path">/api/inquiry · /{id}/reply</span><span class="desc">작성 · 댓글 누적 + 메일 webhook 트리거</span></div>
+      <div class="route"><span class="method delete">DELETE</span><span class="path">/api/inquiry/{id}/reply/{reply_id}</span><span class="desc">댓글 삭제</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DB ===== -->
+<div class="panel" id="database">
+  <div class="card">
+    <h2>데이터베이스 구조 (SQLite)</h2>
+    <div class="grid-2">
+      <div>
+        <h3>회계 데이터 (리포트 기반)</h3>
+        <ul>
+          <li><b>reports</b> — 리포트 메타 (company, period, status, is_active, version)</li>
+          <li><b>report_files</b> — JE/TB 원본 파일</li>
+          <li><b>je_data</b> — 전표 원장 (report_id 파티션)</li>
+          <li><b>tb_data</b> — 시산표 (report_id 파티션)</li>
+          <li><b>je</b>, <b>tb_account</b> — active 리포트 view (레거시 쿼리 호환)</li>
+        </ul>
+        <h3>사용자 & 권한</h3>
+        <ul>
+          <li><b>users</b>, <b>companies</b>, <b>company_subsidiaries</b></li>
+          <li><b>groups</b>, <b>group_members</b></li>
+          <li><b>roles</b>, <b>report_permissions</b>, <b>user_permissions</b></li>
+          <li><b>audit_log</b></li>
+        </ul>
+      </div>
+      <div>
+        <h3>문의 / FAQ / 챗봇</h3>
+        <ul>
+          <li><b>inquiry</b> + <b>inquiry_reply</b> (1:N 댓글)</li>
+          <li><b>faqs</b>, <b>faq_feedbacks</b></li>
+          <li><b>chat_sessions</b>, <b>chat_messages</b></li>
+        </ul>
+        <h3>자료 요청</h3>
+        <ul>
+          <li><b>data_request</b>, <b>request_file</b></li>
+          <li><b>request_comment</b>, <b>request_history</b></li>
+        </ul>
+        <h3>청구 관리 (신규)</h3>
+        <ul>
+          <li><b>billing_entry</b> — (mgmt_no, report_ym, transfer_at) 복합 유니크</li>
+          <li><b>billing_master</b> — 계약 마스터</li>
+          <li><b>billing_exception</b> — 법인별 특이사항</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Startup 자동 마이그레이션</h2>
+    <ol style="margin:0;padding-left:20px;">
+      <li><code>Base.metadata.create_all()</code> — 신규 테이블 생성</li>
+      <li>FAQ 초기 7건 seed (count == 0 일 때만)</li>
+      <li>고객사 FAQ 24건 JSON upsert (idempotent)</li>
+      <li>빌링 xlsm 있으면 import (Asset/ 폴더)</li>
+      <li>빌링 master 비어있으면 샘플 시드 (8법인)</li>
+      <li>inquiry.reply → inquiry_reply 테이블 이관 (idempotent)</li>
+      <li>corporation 컬럼 없으면 ALTER TABLE</li>
+      <li>je_data · tb_data → je · tb_account view 교체</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ===== 주요 기능 ===== -->
+<div class="panel" id="features">
+  <div class="card">
+    <h2>김삼일 AI 챗봇</h2>
+    <ul>
+      <li><b>모델</b>: PwC GenAI Shared Service <code>openai.gpt-4o</code></li>
+      <li><b>Function Calling</b> 10개 도구: get_kpi, get_pl_summary, get_pl_sales_top, get_bs_summary, get_bs_ratios, get_scenario_count, get_scenario_detail, get_indicators, get_pl_items, get_top3_changes</li>
+      <li><b>SSE 스트리밍</b>: `POST /api/chat/message/stream` (reply 필드만 점진 렌더)</li>
+      <li><b>세션 저장</b>: DB에 대화 기록 + 🕒 버튼으로 이전 세션 복원</li>
+      <li><b>FAQ 매칭</b>: 키워드 히트 시 LLM 우회</li>
+      <li><b>Page context 주입</b>: activeSub/baseYm/periodType/amount_unit/currency 자동 전달</li>
+      <li><b>Actions</b>: navigate (hashchange), execute (applyTheme 등)</li>
+      <li><b>Add to Chat</b>: 리포트 카드를 첨부로 전달</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>PDF · Excel 다운로드</h2>
+    <ul>
+      <li><b>PDF</b> — 현재 페이지 / 전체 17개 페이지 / 선택 페이지</li>
+      <li>카드 경계 기반 슬라이싱 → 페이지 중간에서 잘림 방지</li>
+      <li>한글 헤더는 canvas에 fillText → 이미지로 삽입 (jsPDF 한글 폰트 제한 회피)</li>
+      <li>우측 빈 여백 자동 트리밍 (다중 bg 샘플링)</li>
+      <li>native &lt;select&gt; → &lt;span&gt; 치환 (한글 글리프 깨짐 회피)</li>
+      <li>32,767px 캔버스 한계 대응 (예산 기반 선택적 확장 + scale 자동 하향)</li>
+      <li>진행률 모달 + X 취소 버튼</li>
+      <li><b>Excel</b> — 현재 페이지 전체 테이블 → 시트별 분리 (카드 제목 기반 시트명) / 우클릭 단일 표</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>다국어 (i18n Stage 1)</h2>
+    <ul>
+      <li>브라우저 언어 자동 감지 (localStorage.ev_lang 우선)</li>
+      <li>수동 전환: 우측 상단 언어 스위처</li>
+      <li>번역 범위: Header 탭, Sidebar 전체, FilterBar, Download/Drill 버튼</li>
+      <li>번역 원칙: 손익분석 → P&L Analysis, 재무상태분석 → Balance Sheet, 전표분석 → Journal Entries</li>
+      <li>Stage 2 예정: Summary/PL/BS/VCH 페이지 내부 라벨</li>
+      <li>Stage 3 예정: 청구/문의/관리자 + 김삼일 AI 다국어 응답</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>청구 관리</h2>
+    <ul>
+      <li>4개 탭: 대기중 · 완료 · 계약 마스터 · 특이사항</li>
+      <li>5개 KPI: 대기 건수 / 이번달 세금계산서 예정 / 대기 계약 총액 / 미입금 / 완료</li>
+      <li>페이지네이션 + 연도 필터 + 검색 (모회사/자회사/관리번호/담당자/기준월)</li>
+      <li>Excel 재import (Asset/ 폴더) + 리포트→청구 수동 동기화 (B 옵션)</li>
+      <li>완료 처리 / 입금 기록 / 비고 편집 / 특이사항 자동 표시</li>
+      <li>A 옵션 준비 완료: <code>sync_billing_from_reports(db, [report.id])</code> 1줄로 자동화 전환</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== 오늘 변경사항 ===== -->
+<div class="panel" id="today">
+  <div class="card">
+    <h2>오늘 배포한 기능 타임라인</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:#16A34A;"></span>feat</span>
+      <span><span class="dot" style="background:#2563EB;"></span>fix</span>
+    </div>
+    <div class="timeline">
+      <div class="event feat">
+        <div class="time">04-25 01:31 · <span class="hash">d66b49a</span></div>
+        <div class="msg">i18next Stage 1 — 한/영 다국어 지원 골격 + 공통 UI 번역</div>
+        <div>Header/Sidebar/FilterBar/Download/Drill 번역, 언어 감지 + 스위처</div>
+      </div>
+      <div class="event fix">
+        <div class="time">04-25 01:20 · <span class="hash">772990e</span></div>
+        <div class="msg">청구 import 중복 버그 + 완료탭 페이지네이션/연도 필터</div>
+        <div>dedup 키에 transfer_at 추가, db.flush(), pagination API</div>
+      </div>
+      <div class="event feat">
+        <div class="time">04-25 00:56 · <span class="hash">c85dd68</span></div>
+        <div class="msg">청구 관리 — 리포트→청구 수동 동기화 + 샘플 시드</div>
+        <div>sync_billing_from_reports() 공유 함수, 8법인 시드 데이터</div>
+      </div>
+      <div class="event feat">
+        <div class="time">04-25 00:40 · <span class="hash">2d7132f</span></div>
+        <div class="msg">청구 관리 페이지 (관리자 &gt; 청구 관리)</div>
+        <div>BillingEntry/Master/Exception 테이블, Billing.tsx, 관리자 사이드바 라우팅</div>
+      </div>
+      <div class="event feat">
+        <div class="time">04-25 00:25 · <span class="hash">e9689dd</span></div>
+        <div class="msg">PDF/Excel 다운로드 + 전체 드릴다운·업 + 증감률 천단위 구분기호</div>
+        <div>DownloadMenu + DrillButtons + TableExportContextMenu + 포맷 함수</div>
+      </div>
+      <div class="event feat">
+        <div class="time">04-24 22:08 · <span class="hash">2968b11</span></div>
+        <div class="msg">팀원 로컬 동기화 자동화 — startup FAQ upsert + inquiry_reply 마이그레이션</div>
+        <div>customer_faqs.json 번들, import_customer_faqs 자동 실행</div>
+      </div>
+      <div class="event feat">
+        <div class="time">04-24 22:02 · <span class="hash">6740100</span></div>
+        <div class="msg">문의게시판 댓글 리스트화 + 사이드바 + 메일 알림 + AI 단위/통화 컨텍스트 + FAQ 엑셀 import</div>
+        <div>inquiry_reply 테이블 신규, Power Automate webhook, Inquiry 사이드바 재구성</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>요약 테이블</h2>
+    <table class="data">
+      <thead><tr><th>#</th><th>영역</th><th>종류</th><th>커밋</th><th>변경 요지</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>문의게시판</td><td>feat</td><td>6740100</td><td>댓글 1:N 누적, 사이드바 [문의/FAQ], 메일 webhook</td></tr>
+        <tr><td>2</td><td>FAQ</td><td>feat</td><td>2968b11</td><td>고객사 24건 JSON 번들, startup 자동 upsert</td></tr>
+        <tr><td>3</td><td>리포트 다운로드</td><td>feat</td><td>e9689dd</td><td>PDF 현재/전체/선택, Excel 테이블, 우클릭 단일 표</td></tr>
+        <tr><td>4</td><td>리포트 UX</td><td>feat</td><td>e9689dd</td><td>PL·BS 계정분석 전체 드릴다운/업 버튼</td></tr>
+        <tr><td>5</td><td>포맷</td><td>feat</td><td>e9689dd</td><td>증감률 천단위 쉼표 (30+ 곳)</td></tr>
+        <tr><td>6</td><td>청구 관리</td><td>feat</td><td>2d7132f, c85dd68</td><td>관리자 사이드바 신규, 엑셀 import, 리포트→청구 동기화</td></tr>
+        <tr><td>7</td><td>청구 관리</td><td>fix</td><td>772990e</td><td>중복 import 버그, 페이지네이션 + 연도 필터</td></tr>
+        <tr><td>8</td><td>i18n</td><td>feat</td><td>d66b49a</td><td>한/영 자동 감지 + 수동 전환, 공통 UI 번역</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== 배포 ===== -->
+<div class="panel" id="deploy">
+  <div class="card">
+    <h2>저장소 & 배포</h2>
+    <table class="data">
+      <thead><tr><th>용도</th><th>저장소</th><th>브랜치</th><th>URL</th></tr></thead>
+      <tbody>
+        <tr><td>소스 (full-stack)</td><td>h55pxh9xr4-creator/easyview-api</td><td>master</td><td>GitHub</td></tr>
+        <tr><td>프론트 빌드 (정적)</td><td>h55pxh9xr4-creator/easyview</td><td>gh-pages</td><td>https://h55pxh9xr4-creator.github.io/easyview/</td></tr>
+        <tr><td>백엔드 서버</td><td>Render 자동배포 (master)</td><td>-</td><td>https://easyview-api.onrender.com</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>배포 워크플로</h2>
+    <div class="arch-diagram">1. 로컬 개발 → commit + push (master)
+2. Render 감지 → 백엔드 자동 재배포 (~2~3분)
+3. 수동 실행: bash deploy-to-easyview.sh "메시지"
+   └─ frontend/out 빌드 → easyview/gh-pages 강제 덮어쓰기
+4. GitHub Pages CDN 갱신 (~5~10분)</div>
+  </div>
+
+  <div class="card">
+    <h2>환경 변수</h2>
+    <table class="data">
+      <thead><tr><th>이름</th><th>위치</th><th>용도</th></tr></thead>
+      <tbody>
+        <tr><td>OPENAI_API_KEY</td><td>backend/.env · Render</td><td>PwC GenAI 인증</td></tr>
+        <tr><td>OPENAI_BASE_URL</td><td>backend/.env · Render</td><td>genai-sharedservice-americas.pwc.com</td></tr>
+        <tr><td>CHAT_MODEL</td><td>backend/.env</td><td>openai.gpt-4o (기본)</td></tr>
+        <tr><td>INQUIRY_NOTIFY_WEBHOOK_URL</td><td>backend/.env</td><td>Power Automate HTTP 트리거 URL</td></tr>
+        <tr><td>INQUIRY_NOTIFY_TO</td><td>backend/.env</td><td>sou-jung.park@pwc.com (기본)</td></tr>
+        <tr><td>NEXT_PUBLIC_API_URL</td><td>frontend 빌드시</td><td>https://easyview-api.onrender.com</td></tr>
+        <tr><td>NEXT_PUBLIC_BASE_PATH</td><td>frontend 빌드시</td><td>/easyview (GitHub Pages)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>gitignore 전략</h2>
+    <ul>
+      <li><b>Asset/</b> — 고객사 엑셀, Power Automate Flow 정의, 빌링 현황 (민감)</li>
+      <li><b>samilkim_nobg2_Faceonly.png</b> — 캐릭터 이미지 (CDN 제공)</li>
+      <li><b>deploy-to-easyview.sh</b> — 로컬 배포 스크립트</li>
+      <li><b>.env</b>, <b>*.env.local</b></li>
+      <li><b>node_modules/</b>, <b>.next/</b>, <b>out/</b>, <b>__pycache__/</b></li>
+    </ul>
+  </div>
+</div>
+
+</div>
+
+<script>
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+</script>
+
+</body>
+</html>

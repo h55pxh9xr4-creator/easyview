@@ -1,7 +1,6 @@
 "use client";
 
 import Loading from "@/components/ui/Loading";
-import DrillButtons from "@/components/ui/DrillButtons";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
@@ -228,27 +227,6 @@ export default function PLAccount() {
   const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
   const selectMgmt = (mgmt: string) => setSelected(prev => prev === mgmt ? null : mgmt);
 
-  const expandAll = () => {
-    const next: Record<string, boolean> = {};
-    orderedDisc.forEach(disc => {
-      next[`d-${disc}`] = true;
-      Object.keys(byDisclosure[disc] || {}).forEach(mgmt => {
-        next[`m-${disc}-${mgmt}`] = true;
-      });
-    });
-    setExpanded(next);
-  };
-  const collapseAll = () => {
-    const next: Record<string, boolean> = {};
-    orderedDisc.forEach(disc => {
-      next[`d-${disc}`] = false;
-      Object.keys(byDisclosure[disc] || {}).forEach(mgmt => {
-        next[`m-${disc}-${mgmt}`] = false;
-      });
-    });
-    setExpanded(next);
-  };
-
   const byDisclosure = rows.reduce<Record<string, Record<string, AcctRow[]>>>((acc, r) => {
     if (!acc[r.disclosure_acct]) acc[r.disclosure_acct] = {};
     if (!acc[r.disclosure_acct][r.mgmt_acct]) acc[r.disclosure_acct][r.mgmt_acct] = [];
@@ -290,9 +268,8 @@ export default function PLAccount() {
               style={{ position: "absolute", top: 12, right: 12, fontSize: 10, color: btnClr, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer", zIndex: 1 }}
             >선택 해제</button>
           )}
-          <div style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ marginBottom: 10 }}>
             <div className="card-title" style={{ marginBottom: 0 }}>손익항목</div>
-            <DrillButtons onExpandAll={expandAll} onCollapseAll={collapseAll} isDark={isDark} />
           </div>
           {!selected && (
             <div style={{
@@ -338,7 +315,6 @@ export default function PLAccount() {
                       const mgmtPri = accts.reduce((s, r) => s + r.prior, 0);
                       const mgmtChg = mgmtPri ? (mgmtCur - mgmtPri) / Math.abs(mgmtPri) : 0;
                       const mgmtKey = `m-${disc}-${mgmt}`;
-                      const mgmtOpen = expanded[mgmtKey];
                       const isActive = selected === mgmt;
 
                       const cmtCellStyle = (label: string): React.CSSProperties => ({
@@ -346,7 +322,7 @@ export default function PLAccount() {
                         background: ck.has(commentKey("PL 계정분석", label))
                           ? (isDark ? "rgba(232,119,34,0.12)" : "rgba(232,119,34,0.06)") : undefined,
                       });
-                      return [
+                      return (
                         <tr
                           key={mgmtKey}
                           style={{
@@ -354,14 +330,8 @@ export default function PLAccount() {
                             borderLeft: "3px solid transparent",
                           }}
                         >
-                          <td className="td-s1" style={{ color: isActive ? "#E87722" : undefined, fontWeight: isActive ? 700 : undefined, cursor: "pointer" }}
+                          <td className="td-s1" style={{ color: isActive ? "#E87722" : undefined, fontWeight: isActive ? 700 : undefined, cursor: "pointer", paddingLeft: 20 }}
                             onClick={() => selectMgmt(mgmt)}>
-                            <span
-                              style={{ marginRight: 4, fontSize: 10, color: arrowClr }}
-                              onClick={(e) => { e.stopPropagation(); toggle(mgmtKey); }}
-                            >
-                              {mgmtOpen ? "▼" : "▶"}
-                            </span>
                             {mgmt}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 당기`)}
@@ -376,18 +346,8 @@ export default function PLAccount() {
                             onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` }, { top: r.top, right: r.right }, e.currentTarget); }}>
                             {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                           </td>
-                        </tr>,
-                        ...(!mgmtOpen ? [] : accts.map(r => (
-                          <tr key={`${r.mgmt_acct}-${r.account_name}`} style={{ background: rowAcctBg }}>
-                            <td style={{ paddingLeft: 40, color: rowAcctClr }}>{r.account_name}</td>
-                            <td>{fmt(r.current)}</td>
-                            <td>{fmt(r.prior)}</td>
-                            <td className={r.change_pct >= 0 ? "up-t" : "dn-t"}>
-                              {r.change_pct >= 0 ? "▲" : "▼"}{Math.abs(r.change_pct * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
-                            </td>
-                          </tr>
-                        ))),
-                      ];
+                        </tr>
+                      );
                     })),
                   ];
                 })}
