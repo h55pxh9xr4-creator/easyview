@@ -13,9 +13,8 @@ import {
   KPIData, Top3Data, IndicatorData, PLTableRow, BSTableRow, ScenarioCountData,
 } from "@/lib/api";
 import ReactECharts from "echarts-for-react";
+import { useAmountFormat } from "@/lib/fmtAmount";
 
-const fmt    = (n: number) => Math.round(n).toLocaleString("ko-KR");
-const fmtB   = (n: number) => Math.round(n / 1_000_000).toLocaleString("ko-KR");
 const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
 const arrow  = (p: number) => p >= 0 ? "up" : "dn";
 const arrowTxt = (p: number) => p >= 0
@@ -31,6 +30,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
   onMonthClick: (idx: number | null) => void;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const { fmtAmt, unitLabel } = useAmountFormat();
 
   if (!data || data.length < 2) return null;
 
@@ -44,7 +44,7 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
       axisPointer: { type: "line" as const, lineStyle: { color: "#ddd", width: 1 } },
       formatter: (params: { dataIndex: number; value: number }[]) => {
         const p = params[0];
-        return `<span style="font-size:10px;color:#999">${months[p.dataIndex]}</span><br/><b>${fmtB(p.value)}백만</b>`;
+        return `<span style="font-size:10px;color:#999">${months[p.dataIndex]}</span><br/><b>${fmtAmt(p.value)}${unitLabel}</b>`;
       },
     },
     series: [{
@@ -98,21 +98,27 @@ function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
 export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub: string, label: string) => void }) {
   const isDark = useDarkMode();
   const filter = useFilter();
+  const { fmtAmt, unitLabel, unitSuffix } = useAmountFormat();
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const theadBg = isDark ? "#1C1F26" : "#FFF8F3";
   const lift = (label: string): React.CSSProperties => {
-    const on = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "Summary" && cmtTarget.label === label;
-    return on
-      ? { boxShadow: "0 12px 32px rgba(232,119,34,0.22), 0 0 0 2px rgba(232,119,34,0.45)", transform: "translateY(-5px)", zIndex: 10, transition: "box-shadow 0.25s, transform 0.25s" }
-      : { transition: "box-shadow 0.25s, transform 0.25s" };
+    const viewingInquiry = panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "Summary" && cmtTarget.label === label;
+    const selected = !!cmtTarget && !cmtTarget.inquiryId && cmtTarget.page === "Summary" && cmtTarget.label === label;
+    if (viewingInquiry) {
+      return { boxShadow: "0 8px 24px rgba(232,119,34,0.14), 0 0 0 2px rgba(232,119,34,0.28), 0 0 0 10px rgba(232,119,34,0.04)", borderRadius: 10, transform: "translateY(-4px)", zIndex: 10, transition: "all 0.25s" };
+    }
+    if (selected) {
+      return { boxShadow: "0 4px 14px rgba(232,119,34,0.1), 0 0 0 1.5px rgba(232,119,34,0.22), 0 0 0 8px rgba(232,119,34,0.05)", borderRadius: 10, zIndex: 10, transition: "all 0.25s" };
+    }
+    return { transition: "all 0.25s" };
   };
-  // 테이블 행/셀 강조: 원문 보기 시 해당 account + column 매칭
+  // 테이블 행/셀 강조
   const isRowHighlighted = (account: string) =>
-    panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "Summary" &&
+    !!cmtTarget && cmtTarget.page === "Summary" &&
     !!cmtTarget.label?.startsWith(account + " (");
   const isCellHighlighted = (account: string, col: string) =>
-    panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "Summary" &&
+    !!cmtTarget && cmtTarget.page === "Summary" &&
     cmtTarget.label === `${account} (${col})`;
   const [kpi,        setKpi]        = useState<KPIData | null>(null);
   const [top3,       setTop3]       = useState<Top3Data | null>(null);
@@ -204,7 +210,26 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           const d = kpi[key];
           const idx = selMonth[key];
           return (
-            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer", ...lift(label) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); const selVal = idx !== null ? fmtB(sparkData[key][idx]) : fmtB(d.value); const selLabel = idx !== null ? months[idx] : undefined; triggerComment({ page: "Summary", label, value: `${selVal}백만`, sub: selLabel ? `선택 월: ${selLabel}` : undefined }, { top: r.top, right: r.right }); }}>
+            <div key={key} className="kpi" style={{ borderTopColor: color, paddingBottom: 0, cursor: "pointer", ...lift(label) }} onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const selVal = idx !== null ? fmtAmt(sparkData[key][idx]) : fmtAmt(d.value);
+              const selLabel = idx !== null ? months[idx] : undefined;
+              const selRaw = idx !== null ? sparkData[key][idx] : d.value;
+              const chatSummary = idx !== null
+                ? `${label} ${selLabel}: ${fmtAmt(selRaw)}${unitLabel}`
+                : `${label}: 당기 ${fmtAmt(d.value)}${unitLabel}, 전기 ${fmtAmt(d.prior)}${unitLabel}, 증감률 ${fmtPct(d.change_pct)} (${d.vs})`;
+              triggerComment({
+                page: "Summary",
+                label,
+                value: `${selVal}${unitLabel}`,
+                sub: selLabel ? `선택 월: ${selLabel}` : undefined,
+                chatAttachment: {
+                  label: idx !== null ? `${label} ${selLabel} ${fmtAmt(selRaw)}${unitLabel}` : `${label} ${fmtAmt(d.value)}${unitLabel}`,
+                  summary: chatSummary,
+                  source: `Summary - ${label} KPI`,
+                },
+              }, { top: r.top, right: r.right }, e.currentTarget);
+            }}>
               {ck.has(commentKey("Summary", label)) && <CommentDot inquiryId={ck.get(commentKey("Summary", label))!} />}
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div className="kpi-lbl">{label}</div>
@@ -215,7 +240,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                 )}
               </div>
               <div className="kpi-val" style={{ color }}>
-                {fmtB(d.value)}<span className="u">백만</span>
+                {fmtAmt(d.value)}<span className="u">{unitLabel}</span>
               </div>
               <div className={`kpi-chg ${arrow(d.change_pct)}`}>
                 {arrowTxt(d.change_pct)}
@@ -255,7 +280,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               )}
             </div>
             {(activeTop3?.[key] ?? []).map((item) => (
-              <div key={item.rank} className="t3-item" style={{ cursor: "pointer", position: "relative", ...lift(item.name) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtB(item.value)}백만`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }); }}>
+              <div key={item.rank} className="t3-item" style={{ cursor: "pointer", position: "relative", ...lift(item.name) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label: item.name, value: `${fmtAmt(item.value)}${unitLabel}`, sub: title + (monthLabel ? ` (${monthLabel})` : "") }, { top: r.top, right: r.right }, e.currentTarget); }}>
                 {ck.has(commentKey("Summary", item.name)) && <CommentDot inquiryId={ck.get(commentKey("Summary", item.name))!} />}
                 <div className={`t3-badge${item.rank === 1 ? " r1" : ""}`}>{item.rank}</div>
                 <div className="t3-name">
@@ -265,7 +290,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                   </div>
                 </div>
                 <div className="t3-val" style={item.rank === 3 ? { color: "#aaa" } : {}}>
-                  {fmtB(item.value)}<small> 백만</small>
+                  {fmtAmt(item.value)}<small> {unitLabel}</small>
                 </div>
               </div>
             ))}
@@ -284,7 +309,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               { label: "영업이익률",   value: indicators.pl.operating_margin,    color: "#D5476E" },
               { label: "당기손익률",   value: indicators.pl.net_margin,          color: "#6D4C41" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative", ...lift(label) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+              <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative", ...lift(label) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                 {ck.has(commentKey("Summary", label)) && <CommentDot inquiryId={ck.get(commentKey("Summary", label))!} />}
                 <div className="ind-lbl">{label}</div>
                 <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
@@ -299,7 +324,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               { label: "부채비율", value: indicators.bs.debt_ratio,    color: "#2563EB" },
               { label: "유동비율", value: indicators.bs.current_ratio,  color: "#16A34A" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative", ...lift(label) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }); }}>
+              <div key={label} className="ind-item" style={{ cursor: "pointer", position: "relative", ...lift(label) }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "Summary", label, value: fmtPct(value) }, { top: r.top, right: r.right }, e.currentTarget); }}>
                 {ck.has(commentKey("Summary", label)) && <CommentDot inquiryId={ck.get(commentKey("Summary", label))!} />}
                 <div className="ind-lbl">{label}</div>
                 <div className="ind-val" style={{ color }}>{fmtPct(value)}</div>
@@ -315,13 +340,13 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">손익항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>공시용계정</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>당기</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>전기</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
+              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>공시용계정</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>당기({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>전기({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {plTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
                   const tc = (col: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
                     const r = e.currentTarget.getBoundingClientRect();
-                    triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right });
+                    triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right }, e.currentTarget);
                   };
                   const plDotId = ["당기", "전기", "증감률"].map(c => ck.get(commentKey("Summary", `${row.account} (${c})`))).find(v => v !== undefined);
                   const rowHl = isRowHighlighted(row.account);
@@ -335,8 +360,8 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                         {row.account}
                         {plDotId !== undefined && <CommentDot inquiryId={plDotId} inline />}
                       </td>
-                      <td style={cellBg("당기")} onClick={tc("당기", fmt(row.current))}>{fmt(row.current)}</td>
-                      <td style={cellBg("전기")} onClick={tc("전기", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td style={cellBg("당기")} onClick={tc("당기", fmtAmt(row.current))}>{fmtAmt(row.current)}</td>
+                      <td style={cellBg("전기")} onClick={tc("전기", fmtAmt(row.prior))}>{fmtAmt(row.prior)}</td>
                       <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={cellBg("증감률")} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
                     </tr>
                   );
@@ -349,13 +374,13 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
           <div className="card-title">재무항목</div>
           <div className="tbl-wrap">
             <table>
-              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>재무항목</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기말</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기초</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
+              <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>재무항목</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기말({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기초({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {bsTable.map((row) => {
                   const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
                   const tc = (col: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
                     const r = e.currentTarget.getBoundingClientRect();
-                    triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right });
+                    triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right }, e.currentTarget);
                   };
                   const bsDotId = ["기말", "기초", "증감률"].map(c => ck.get(commentKey("Summary", `${row.account} (${c})`))).find(v => v !== undefined);
                   const rowHl = isRowHighlighted(row.account);
@@ -369,8 +394,8 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
                         {row.account}
                         {bsDotId !== undefined && <CommentDot inquiryId={bsDotId} inline />}
                       </td>
-                      <td style={cellBg("기말")} onClick={tc("기말", fmt(row.current))}>{fmt(row.current)}</td>
-                      <td style={cellBg("기초")} onClick={tc("기초", fmt(row.prior))}>{fmt(row.prior)}</td>
+                      <td style={cellBg("기말")} onClick={tc("기말", fmtAmt(row.current))}>{fmtAmt(row.current)}</td>
+                      <td style={cellBg("기초")} onClick={tc("기초", fmtAmt(row.prior))}>{fmtAmt(row.prior)}</td>
                       <td className={row.change_pct >= 0 ? "up-t" : "dn-t"} style={cellBg("증감률")} onClick={tc("증감률", chgTxt)}>{chgTxt}</td>
                     </tr>
                   );

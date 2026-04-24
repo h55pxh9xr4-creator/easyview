@@ -33,7 +33,7 @@ export default function PLItems() {
   const { triggerComment, target: cmtTarget, panelOpen } = useComment();
   const ck = useCommentedItems(state => state.ck);
   const isHighlighted = (label: string) =>
-    panelOpen && !!cmtTarget?.inquiryId && cmtTarget.page === "손익항목" && cmtTarget.label === label;
+    !!cmtTarget && cmtTarget.page === "손익항목" && cmtTarget.label === label;
   const [viewType,  setViewType]  = useState<ViewType>("quarter");
   const [levelType, setLevelType] = useState<LevelType>("all");
   const [data,    setData]    = useState<TableData | null>(null);
@@ -238,7 +238,8 @@ export default function PLItems() {
                               const r = e.currentTarget.getBoundingClientRect();
                               triggerComment(
                                 { page: "손익항목", label: `${row.label} (${colLabel})`, value: fmt(v) },
-                                { top: r.top, right: r.right }
+                                { top: r.top, right: r.right },
+                                e.currentTarget
                               );
                             }}
                           >

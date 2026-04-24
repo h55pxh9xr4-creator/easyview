@@ -3,11 +3,26 @@
 import { useState, useEffect } from "react";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems } from "@/hooks/useCommentedItems";
+import { useChatAttachment } from "@/hooks/useChatAttachment";
 import { createInquiry, replyInquiry, INQUIRY_CATEGORIES } from "@/lib/api";
 
 export default function CommentPanel() {
   const { target, closeAll } = useComment();
   const refreshCommentedItems = useCommentedItems(state => state.refresh);
+  const addToChat = useChatAttachment(s => s.add);
+
+  const handleAskSamilkim = () => {
+    if (!target) return;
+    const parts: string[] = [`${target.page} - ${target.label}`];
+    if (target.value) parts.push(`값: ${target.value}`);
+    if (target.sub)   parts.push(target.sub);
+    addToChat({
+      label: `${target.label}${target.value ? ` ${target.value}` : ""}`,
+      summary: parts.join(" | "),
+      source: `${target.page} 페이지`,
+    });
+    closeAll();
+  };
 
   const currentUser = typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "";
   const isAdmin = typeof window !== "undefined" ? (sessionStorage.getItem("ev_role") === "admin") : false;
@@ -88,6 +103,22 @@ export default function CommentPanel() {
           <span className="cp-context-sep">›</span>
           <span className="cp-context-item">{target.label}</span>
           {target.value && <span className="cp-context-val">{target.value}</span>}
+        </div>
+      )}
+
+      {/* 김삼일 AI 즉시 질문 (문의 작성 모드에서만) */}
+      {target && !isViewMode && !done && (
+        <div className="cp-ai-shortcut">
+          <button type="button" className="cp-ai-btn" onClick={handleAskSamilkim}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              <line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
+            </svg>
+            <span>김삼일 매니저에게 먼저 물어볼까요?</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import SAMILKIM_IMG from "@/lib/samilkimImg";
 import { sendChatMessage, type ChatMessage } from "@/lib/api";
 import { useFilter } from "@/hooks/useFilter";
+import { useChatAttachment } from "@/hooks/useChatAttachment";
 
 interface Message {
   id: number;
@@ -38,6 +39,21 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
   // 현재 페이지/필터 컨텍스트
   const filter = useFilter();
   const currentPage = activePage;
+
+  // 첨부 데이터 (Add to Chat)
+  const attachments = useChatAttachment(s => s.attachments);
+  const removeAttachment = useChatAttachment(s => s.remove);
+  const clearAttachments = useChatAttachment(s => s.clear);
+  const shouldOpen = useChatAttachment(s => s.open);
+  const markOpened = useChatAttachment(s => s.markOpened);
+
+  // 첨부 추가 시 챗봇 자동 열기
+  useEffect(() => {
+    if (shouldOpen) {
+      setOpen(true);
+      markOpened();
+    }
+  }, [shouldOpen, markOpened]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -133,12 +149,14 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
         period_type: filter.periodType,
         page: currentPage,
         history,
+        attachments: attachments.map(a => ({ label: a.label, summary: a.summary, source: a.source })),
       });
 
       setMessages(prev => [
         ...prev,
         { id: Date.now(), role: "assistant", text: res.reply },
       ]);
+      clearAttachments();
     } catch {
       setMessages(prev => [
         ...prev,
@@ -172,7 +190,10 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
     "inquiry":     ["문의 현황 요약해줘", "답변 대기 중인 문의 있어?"],
   };
   const defaultSuggestions = ["매출액 알려줘", "재무비율 분석해줘", "이상 전표 있어?", "전기 대비 주요 변동은?"];
-  const currentSuggestions = SUGGESTIONS[currentPage] ?? defaultSuggestions;
+  const attachmentSuggestions = attachments.length > 0
+    ? ["이 데이터에 대해 분석해줘", "전기/전년 대비 어떻게 변했어?", "이상 징후가 있나?", "개선 방안을 제안해줘"]
+    : null;
+  const currentSuggestions = attachmentSuggestions ?? SUGGESTIONS[currentPage] ?? defaultSuggestions;
 
   const handleSuggestionClick = (question: string) => {
     setShowSuggestions(false);
@@ -186,8 +207,10 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
       period_type: filter.periodType,
       page: currentPage,
       history: messages.slice(-10).map(m => ({ role: m.role, text: m.text })),
+      attachments: attachments.map(a => ({ label: a.label, summary: a.summary, source: a.source })),
     }).then(res => {
       setMessages(prev => [...prev, { id: Date.now(), role: "assistant", text: res.reply }]);
+      clearAttachments();
     }).catch(() => {
       setMessages(prev => [...prev, { id: Date.now(), role: "assistant", text: "죄송합니다. 일시적인 오류가 발생했습니다." }]);
     }).finally(() => setLoading(false));
@@ -261,11 +284,31 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
             </div>
           )}
 
+          {attachments.length > 0 && (
+            <div className="chatbot-attachments">
+              {attachments.map(a => (
+                <div key={a.id} className="chatbot-attachment-chip" title={a.source}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                  <span className="chatbot-attachment-label">{a.label}</span>
+                  <button className="chatbot-attachment-remove" onClick={() => removeAttachment(a.id)} aria-label="제거">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="chatbot-input-area">
             <button className={`chatbot-suggest-toggle${showSuggestions ? " active" : ""}`} onClick={() => setShowSuggestions(prev => !prev)}>
               <span className="chatbot-tooltip">추천 질문</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                <path d="M9 18h6"/>
+                <path d="M10 22h4"/>
+                <path d="M12 2a7 7 0 00-4 12.74V17a1 1 0 001 1h6a1 1 0 001-1v-2.26A7 7 0 0012 2z"/>
               </svg>
             </button>
             <textarea
