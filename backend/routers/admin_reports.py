@@ -240,11 +240,19 @@ def _run_generate(report_id: int, db_url: str, actor: str):
 
         # ── TB 적재 ──────────────────────────────────────────
         df_tb = pd.read_excel(tb_file.file_path)
-        df_tb.columns = [
+        # 컬럼 수가 다를 수 있으므로 앞 10개만 사용
+        col_names = [
             "account_name_1", "account_name", "account_code",
             "disclosure_acct", "mgmt_acct", "section", "category",
             "sum_acct", "company_acct", "opening_balance",
         ]
+        df_tb = df_tb.iloc[:, :len(col_names)]
+        df_tb.columns = col_names
+        # 숫자로 변환 불가능한 행(소계·헤더 행 등) 제거
+        df_tb["opening_balance"] = pd.to_numeric(df_tb["opening_balance"], errors="coerce")
+        df_tb["account_code"]    = pd.to_numeric(df_tb["account_code"],    errors="coerce")
+        df_tb = df_tb.dropna(subset=["opening_balance", "account_code"]).reset_index(drop=True)
+
         with eng.connect() as conn:
             conn.execute(text("DELETE FROM tb_account"))
             conn.commit()
@@ -252,28 +260,34 @@ def _run_generate(report_id: int, db_url: str, actor: str):
         tb_records = []
         for _, row in df_tb.iterrows():
             sign = 1 if row["category"] == "자산" else -1
+            bal  = float(row["opening_balance"])
             tb_records.append({
-                "account_code": str(int(row["account_code"])),
-                "account_name": row["account_name"],
-                "account_name_1": row.get("account_name_1", ""),
+                "account_code":    str(int(row["account_code"])),
+                "account_name":    row["account_name"],
+                "account_name_1":  row.get("account_name_1", ""),
                 "disclosure_acct": row.get("disclosure_acct", ""),
-                "mgmt_acct": row.get("mgmt_acct", ""),
-                "sum_acct": row.get("sum_acct", ""),
-                "category": row["category"],
-                "section": row.get("section", ""),
-                "opening_balance": float(row["opening_balance"] or 0),
-                "opening_signed": float(row["opening_balance"] or 0) * sign,
+                "mgmt_acct":       row.get("mgmt_acct", ""),
+                "sum_acct":        row.get("sum_acct", ""),
+                "category":        row["category"],
+                "section":         row.get("section", ""),
+                "opening_balance": bal,
+                "opening_signed":  bal * sign,
             })
         pd.DataFrame(tb_records).to_sql("tb_account", eng, if_exists="append", index=False)
 
         # ── JE 적재 ──────────────────────────────────────────
         df_je = pd.read_excel(je_file.file_path)
-        df_je.columns = [
+        je_col_names = [
             "date", "voucher_no", "dr_cr", "amount",
             "counterparty_raw", "counterparty", "description_raw", "description",
             "account_code", "company_acct", "account_name_1", "account_name",
             "mgmt_acct", "disclosure_acct", "sum_acct", "category", "section", "record_id",
         ]
+        df_je = df_je.iloc[:, :len(je_col_names)]
+        df_je.columns = je_col_names
+        # 숫자 변환 불가 행 제거
+        df_je["amount"] = pd.to_numeric(df_je["amount"], errors="coerce")
+        df_je = df_je.dropna(subset=["amount", "date"]).reset_index(drop=True)
         df_je["date"] = pd.to_datetime(df_je["date"]).dt.date
         df_je["year_month"] = df_je["date"].astype(str).str[:7]
         df_je["signed_amount"] = df_je.apply(
