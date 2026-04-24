@@ -22,6 +22,7 @@ interface Company { id: number; name: string; subsidiary_name?: string; subsidia
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   upload:             { label: "파일 대기",  cls: "bg-gray-100 text-gray-600" },
   pending_generation: { label: "생성 대기",  cls: "bg-yellow-100 text-yellow-700" },
+  generating:         { label: "생성 중",    cls: "bg-orange-100 text-orange-700" },
   generated:          { label: "생성 완료",  cls: "bg-blue-100 text-blue-700" },
   reviewing:          { label: "검토 중",    cls: "bg-purple-100 text-purple-700" },
   active:             { label: "활성",       cls: "bg-green-100 text-green-700" },
@@ -167,134 +168,132 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
   const years = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
 
   return (
-    <div className="flex gap-6 items-start">
-      {/* ── 왼쪽 패널 ── */}
-      <div className="w-60 flex-shrink-0 space-y-4 sticky top-0">
-        {/* 결산 기간 */}
-        <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-pwc-black mb-4">결산 기간</h3>
+    <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: "16px 24px" }}>
 
-          <div className="mb-3">
-            <label className="block text-xs text-pwc-gray-500 mb-1">연도</label>
-            <select
-              value={year}
-              onChange={e => setYear(Number(e.target.value))}
-              className="input-field text-sm"
-            >
-              {years.map(y => <option key={y} value={y}>{y}년</option>)}
-            </select>
-          </div>
+      {/* 회사 미선택 시 전체 폭 안내 배너 */}
+      {!selectedParent && (
+        <div style={{ gridColumn: "1 / -1" }} className="rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700">
+          대상 회사를 먼저 선택하세요.
+        </div>
+      )}
 
-          <div className="mb-3">
-            <label className="block text-xs text-pwc-gray-500 mb-2">월</label>
-            <div className="grid grid-cols-4 gap-1">
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                <button
-                  key={m}
-                  onClick={() => setMonth(m)}
-                  className={`py-1.5 rounded text-xs font-medium transition-colors cursor-pointer ${
-                    month === m
-                      ? "bg-pwc-orange text-white"
-                      : "bg-pwc-gray-100 text-pwc-gray-600 hover:bg-pwc-gray-200"
-                  }`}
-                >
-                  {m}월
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* ── Row 1 Col 1: 결산 기간 ── */}
+      <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
+        <h3 className="text-sm font-semibold text-pwc-black mb-4">결산 기간</h3>
 
-          <div className="mt-3 py-2 px-3 bg-pwc-gray-50 rounded-lg text-center">
-            <span className="text-sm font-semibold text-pwc-black">{year}년 {month}월</span>
+        <div className="mb-3">
+          <label className="block text-xs text-pwc-gray-500 mb-1">연도</label>
+          <select
+            value={year}
+            onChange={e => setYear(Number(e.target.value))}
+            className="input-field text-sm"
+          >
+            {years.map(y => <option key={y} value={y}>{y}년</option>)}
+          </select>
+        </div>
+
+        <div className="mb-3">
+          <label className="block text-xs text-pwc-gray-500 mb-2">월</label>
+          <div className="grid grid-cols-4 gap-1">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+              <button
+                key={m}
+                onClick={() => setMonth(m)}
+                className={`py-1.5 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  month === m
+                    ? "bg-pwc-orange text-white"
+                    : "bg-pwc-gray-100 text-pwc-gray-600 hover:bg-pwc-gray-200"
+                }`}
+              >
+                {m}월
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* 대상 회사 — 2단계 선택 */}
-        <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-pwc-black mb-3">대상 회사</h3>
-          {companies.length === 0 ? (
-            <p className="text-xs text-pwc-gray-400 text-center py-4">등록된 회사 없음</p>
-          ) : (
-            <div className="space-y-1.5 max-h-72 overflow-y-auto">
-              {companies.map(c => {
-                const subs = c.subsidiaries ?? [];
-                const isParentSelected = selectedParent?.id === c.id;
-                return (
-                  <div key={c.id}>
-                    {/* 모회사 버튼 */}
-                    <button
-                      onClick={() => handleParentClick(c)}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer flex items-center justify-between ${
-                        isParentSelected
-                          ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange"
-                          : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50"
-                      }`}
-                    >
-                      <p className="text-sm font-medium text-pwc-black leading-tight">{c.name}</p>
-                      {subs.length > 0 && (
-                        <svg
-                          className={`w-3.5 h-3.5 text-pwc-gray-400 flex-shrink-0 transition-transform ${isParentSelected ? "rotate-180" : ""}`}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </button>
-
-                    {/* 자회사 목록 (모회사 선택 시 표시) */}
-                    {isParentSelected && subs.length > 0 && (
-                      <div className="ml-3 mt-1 space-y-1">
-                        {subs.map(sub => (
-                          <button
-                            key={sub.id}
-                            onClick={() => setSelectedSub(selectedSub?.id === sub.id ? null : sub)}
-                            className={`w-full text-left px-3 py-2 rounded-lg border transition-colors cursor-pointer text-xs ${
-                              selectedSub?.id === sub.id
-                                ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange font-medium text-pwc-black"
-                                : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50 text-pwc-gray-600"
-                            }`}
-                          >
-                            ↳ {sub.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* 선택 요약 */}
-          {selectedParent && (
-            <div className="mt-3 py-2 px-3 bg-orange-50 rounded-lg text-xs">
-              <span className="font-semibold text-pwc-orange">{selectedParent.name}</span>
-              {selectedSub && (
-                <span className="text-pwc-gray-600"> › {selectedSub.name}</span>
-              )}
-            </div>
-          )}
+        <div className="mt-3 py-2 px-3 bg-pwc-gray-50 rounded-lg text-center">
+          <span className="text-sm font-semibold text-pwc-black">{year}년 {month}월</span>
         </div>
       </div>
 
-      {/* ── 오른쪽 패널 ── */}
-      <div className="flex-1 space-y-4">
-        {!selectedParent && (
-          <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700">
-            왼쪽에서 대상 회사를 선택하세요.
+      {/* ── Row 1 Col 2: 분개장 (JE) ── */}
+      <UploadZone
+        label="분개장 (JE) / 계정원장 (GL)"
+        description="Journal Entry 또는 General Ledger 파일을 업로드합니다. (CSV, Excel, TXT)"
+        accept=".csv,.xlsx,.xls,.txt"
+        required
+        file={jeFile}
+        onFile={setJeFile}
+        disabled={!selectedParent}
+      />
+
+      {/* ── Row 2 Col 1: 대상 회사 ── */}
+      <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
+        <h3 className="text-sm font-semibold text-pwc-black mb-3">대상 회사</h3>
+        {companies.length === 0 ? (
+          <p className="text-xs text-pwc-gray-400 text-center py-4">등록된 회사 없음</p>
+        ) : (
+          <div className="space-y-1.5 max-h-72 overflow-y-auto">
+            {companies.map(c => {
+              const subs = c.subsidiaries ?? [];
+              const isParentSelected = selectedParent?.id === c.id;
+              return (
+                <div key={c.id}>
+                  <button
+                    onClick={() => handleParentClick(c)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer flex items-center justify-between ${
+                      isParentSelected
+                        ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange"
+                        : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50"
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-pwc-black leading-tight">{c.name}</p>
+                    {subs.length > 0 && (
+                      <svg
+                        className={`w-3.5 h-3.5 text-pwc-gray-400 flex-shrink-0 transition-transform ${isParentSelected ? "rotate-90" : ""}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* 자회사 — select 드롭다운 */}
+                  {isParentSelected && subs.length > 0 && (
+                    <div className="mt-1.5">
+                      <select
+                        value={selectedSub?.id ?? ""}
+                        onChange={e => {
+                          const sub = subs.find(s => s.id === Number(e.target.value));
+                          setSelectedSub(sub ?? null);
+                        }}
+                        className="input-field text-sm w-full"
+                      >
+                        <option value="">자회사 선택</option>
+                        {subs.map(sub => (
+                          <option key={sub.id} value={sub.id}>{sub.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
-        <UploadZone
-          label="분개장 (JE) / 계정원장 (GL)"
-          description="Journal Entry 또는 General Ledger 파일을 업로드합니다. (CSV, Excel, TXT)"
-          accept=".csv,.xlsx,.xls,.txt"
-          required
-          file={jeFile}
-          onFile={setJeFile}
-          disabled={!selectedParent}
-        />
+        {selectedParent && (
+          <div className="mt-3 py-2 px-3 bg-orange-50 rounded-lg text-xs">
+            <span className="font-semibold text-pwc-orange">{selectedParent.name}</span>
+            {selectedSub && (
+              <span className="text-pwc-gray-600"> › {selectedSub.name}</span>
+            )}
+          </div>
+        )}
+      </div>
 
+      {/* ── Row 2 Col 2: 시산표 (TB) + 생성 버튼 ── */}
+      <div className="flex flex-col gap-4">
         <UploadZone
           label="시산표 (TB)"
           description="Trial Balance 파일을 업로드합니다. (CSV, Excel, TXT)"
@@ -305,15 +304,14 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
           disabled={!selectedParent}
         />
 
-        {/* 생성 버튼 */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-1">
           <div className="text-xs text-pwc-gray-400">
             {!selectedParent && "회사 선택 필요"}
             {selectedParent && !jeFile && "JE 파일 업로드 필요"}
             {selectedParent && jeFile && !tbFile && "TB 파일 업로드 필요"}
             {canGenerate && (
               <span className="text-green-600 font-medium">
-                {selectedParent.name}{selectedSub ? ` - ${selectedSub.name}` : ""} · {year}년 {month}월 · JE + TB 준비 완료
+                {selectedParent.name}{selectedSub ? ` - ${selectedSub.name}` : ""} · {year}년 {month}월 · 준비 완료
               </span>
             )}
           </div>
@@ -326,17 +324,19 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
           </button>
         </div>
       </div>
+
     </div>
   );
 }
 
 // ── 현황 탭 ──────────────────────────────────────────────────
 const STATUS_GROUPS = [
-  { key: "all",       label: "전체" },
-  { key: "generated", label: "생성 완료" },
-  { key: "reviewing", label: "검토 중" },
-  { key: "active",    label: "활성" },
-  { key: "archived",  label: "보관" },
+  { key: "all",        label: "전체" },
+  { key: "generating", label: "생성 중" },
+  { key: "generated",  label: "생성 완료" },
+  { key: "reviewing",  label: "검토 중" },
+  { key: "active",     label: "활성" },
+  { key: "archived",   label: "보관" },
 ];
 
 function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () => void }) {
@@ -403,6 +403,12 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
                   <td className="py-3 px-4 text-xs text-pwc-gray-500 whitespace-nowrap">{r.activatedAt ? r.activatedAt.slice(0, 16) : "—"}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
+                      {r.status === "generating" && (
+                        <span className="text-xs text-orange-600 flex items-center gap-1.5">
+                          <span className="inline-block w-3 h-3 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                          생성 중...
+                        </span>
+                      )}
                       {r.status === "generated" && (
                         <button
                           onClick={() => changeStatus(r.id, "reviewing", "검토 중")}

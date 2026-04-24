@@ -8,12 +8,13 @@ from dotenv import load_dotenv
 load_dotenv()
 from routers import filters, summary, pl, bs, vch, scenario, inquiry, requests as req_router, chat
 from routers import admin_auth, admin_users, admin_audit, admin_groups, admin_permissions, admin_roles, admin_companies, admin_requests, admin_reports
-from admin_seed import seed_admin_data
+from admin_seed import seed_admin_data, patch_companies
 import admin_models  # noqa: F401 — registers tables with Base
 import chat_models   # noqa: F401 — registers chat session/FAQ tables
 
 Base.metadata.create_all(bind=engine)
 seed_admin_data()
+patch_companies()
 
 # FAQ 초기 데이터 seed
 from database import SessionLocal

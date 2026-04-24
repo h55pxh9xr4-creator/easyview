@@ -29,8 +29,8 @@ const USER_ROLES: Record<string, string> = {
 const USER_COMPANIES: Record<string, string> = {
   admin: "PwC",
   test_v: "test",
-  test_u: "test",
-  test_vu: "test",
+  test_u: "이엔에프테크놀로지",
+  test_vu: "풀무원식품",
 };
 
 // DB 연결 후 이 함수 내부를 API 호출로 교체하면 됨
