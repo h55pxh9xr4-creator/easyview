@@ -276,6 +276,41 @@ export default function LoginPage({ onLogin }: Props) {
             >
               {loading ? "확인 중..." : "로그인"}
             </button>
+
+            {/* 테스트용 빠른 로그인 */}
+            <div style={{ marginTop: "16px", borderTop: "1px dashed #E0E0E0", paddingTop: "14px" }}>
+              <p style={{ fontSize: "10px", color: "#bbb", marginBottom: "8px", textAlign: "center", letterSpacing: "0.3px" }}>
+                TEST ACCOUNTS
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                {(["admin", "test_v", "test_u", "test_vu"] as const).map(account => (
+                  <button
+                    key={account}
+                    type="button"
+                    onClick={async () => {
+                      const result = await authenticateUser(account, CREDENTIALS[account]);
+                      if (result) {
+                        sessionStorage.setItem("ev_auth", "1");
+                        sessionStorage.setItem("ev_user", account);
+                        sessionStorage.setItem("ev_role", result.role);
+                        sessionStorage.setItem("ev_company", result.company);
+                        onLogin();
+                      }
+                    }}
+                    style={{
+                      padding: "6px 4px", background: "#F5F5F5", color: "#555",
+                      border: "1px solid #E0E0E0", borderRadius: "5px",
+                      fontSize: "11px", fontWeight: 600, cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                    onMouseEnter={e => { (e.target as HTMLElement).style.background = "#EBEBEB"; }}
+                    onMouseLeave={e => { (e.target as HTMLElement).style.background = "#F5F5F5"; }}
+                  >
+                    {account}
+                  </button>
+                ))}
+              </div>
+            </div>
           </form>
         </div>
 

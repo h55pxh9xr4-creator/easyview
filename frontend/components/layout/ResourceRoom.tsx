@@ -239,7 +239,7 @@ function CheckTD({ checked, onChange }: { checked: boolean; onChange: (v: boolea
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ padding: "20px 24px" }}>
-      <div style={{ background: "var(--rr-bg)", borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)", padding: "20px 24px" }}>
+      <div style={{ background: "var(--rr-bg)", borderRadius: 12, border: "1px solid var(--rr-border)", boxShadow: "0 1px 6px rgba(0,0,0,.06)", padding: "20px 24px" }}>
         {children}
       </div>
     </div>
@@ -391,6 +391,10 @@ export default function ResourceRoom() {
   const [entityFilter, setEntityFilter]     = useState<string>("전체");
   const [parentFilter, setParentFilter]     = useState<string>("전체");
   const [myOnly, setMyOnly]                 = useState(true);
+  type DiscussionMsg = { id: number; author: string; text: string; ts: string; fileRef?: string };
+  const [discussionComments, setDiscussionComments] = useState<DiscussionMsg[]>([]);
+  const [discussionDraft, setDiscussionDraft]       = useState("");
+  const discussionStore = useRef<Map<number, DiscussionMsg[]>>(new Map());
 
   /* new-request form state */
   const [nTitle, setNTitle]         = useState("");
@@ -474,14 +478,28 @@ export default function ResourceRoom() {
     setIsEditing(true);
   };
 
-  /* 상세 뷰 열릴 때 파일 목록 로드 */
+  /* 상세 뷰 열릴 때 파일 목록 로드 + 논의 복원 */
   useEffect(() => {
-    if (!detailReq) { setDetailFiles([]); return; }
+    if (!detailReq) { setDetailFiles([]); setDiscussionComments([]); setDiscussionDraft(""); return; }
     setFilesLoading(true);
     fetchRequestFiles(detailReq.id)
       .then(f => setDetailFiles(f))
       .catch(() => setDetailFiles([]))
       .finally(() => setFilesLoading(false));
+    // 이미 저장된 메시지가 있으면 복원, 없으면 더미 초기 데이터
+    if (discussionStore.current.has(detailReq.id)) {
+      setDiscussionComments(discussionStore.current.get(detailReq.id)!);
+    } else {
+      const requester = detailReq.requester || "admin";
+      const assignee  = detailReq.assignee  || "법인담당자";
+      const init = [
+        { id: 1, author: requester, text: "첨부하신 파일 확인했습니다. TB 파일이 누락된 것 같습니다.", ts: "2026-04-21 14:32", fileRef: "분개장_Q1.xlsx" },
+        { id: 2, author: assignee,  text: "죄송합니다. 지금 바로 업로드하겠습니다.", ts: "2026-04-21 15:10" },
+      ];
+      discussionStore.current.set(detailReq.id, init);
+      setDiscussionComments(init);
+    }
+    setDiscussionDraft("");
   }, [detailReq?.id]);
 
   /* 파일 업로드 핸들러 */
@@ -615,7 +633,7 @@ export default function ResourceRoom() {
 
   /* ── Sidebar ── */
   const SidebarEl = () => (
-    <aside style={{ width: 250, flexShrink: 0, background: "var(--rr-bg)", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
+    <aside style={{ width: 220, flexShrink: 0, background: "var(--rr-bg)", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", boxShadow: "1px 0 4px rgba(0,0,0,.04)" }}>
       {SIDEBAR_ITEMS.map(item => {
         const active = page === item.key;
         return (
@@ -655,7 +673,10 @@ export default function ResourceRoom() {
     ? ENTITIES
     : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
   const filteredReqs = requests.filter(r => {
-    if (myOnly && currentUser && r.assignee !== currentUser) return false;
+    if (myOnly && currentUser) {
+      const mine = isAdmin ? r.requester === currentUser : r.assignee === currentUser;
+      if (!mine) return false;
+    }
     if (reqFilter !== "전체" && r.status !== reqFilter) return false;
     if (entityFilter !== "전체" && r.entity !== entityFilter) return false;
     if (!allowedEntities.includes(r.entity)) return false;
@@ -1009,19 +1030,24 @@ export default function ResourceRoom() {
 
       /* ── 논의 탭 ── */
       const DiscussionTab = () => {
-        const me = sessionStorage.getItem("ev_user") || "admin";
-        const myAvatar = localStorage.getItem("ev_avatar") || null;
-        const assignee = detailReq!.assignee || "법인담당자";
-        const [comments, setComments] = useState<{ id: number; author: string; text: string; ts: string; fileRef?: string }[]>([
-          { id: 1, author: me,       text: "첨부하신 파일 확인했습니다. TB 파일이 누락된 것 같습니다.", ts: "2026-04-21 14:32", fileRef: "분개장_Q1.xlsx" },
-          { id: 2, author: assignee, text: "죄송합니다. 지금 바로 업로드하겠습니다.", ts: "2026-04-21 15:10" },
-        ]);
-        const [draft, setDraft] = useState("");
+        const me       = sessionStorage.getItem("ev_user") || "admin";
+        const myRole   = sessionStorage.getItem("ev_role")  || "admin";
+        const myAvatar = localStorage.getItem("ev_avatar")  || null;
+        const comments = discussionComments;
+        const draft    = discussionDraft;
         const addComment = () => {
-          if (!draft.trim()) return;
-          setComments(p => [...p, { id: Date.now(), author: me, text: draft.trim(), ts: new Date().toLocaleString("sv").slice(0, 16) }]);
-          setDraft("");
+          if (!draft.trim() || !detailReq) return;
+          const msg = { id: Date.now(), author: me, text: draft.trim(), ts: new Date().toLocaleString("sv").slice(0, 16) };
+          setDiscussionComments(p => {
+            const next = [...p, msg];
+            discussionStore.current.set(detailReq.id, next);
+            return next;
+          });
+          setDiscussionDraft("");
         };
+        // requester(admin/PwC 쪽) 메시지는 왼쪽, assignee(클라이언트) 메시지는 오른쪽
+        const requester = detailReq!.requester || "admin";
+        const isManagerMsg = (author: string) => author === requester;
         return (
           <div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20, maxHeight: 400, overflowY: "auto", padding: "4px 0" }}>
@@ -1029,29 +1055,29 @@ export default function ResourceRoom() {
                 <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "24px 0" }}>아직 논의 내용이 없습니다.</p>
               )}
               {comments.map(c => {
-                const isMine = c.author === me;
+                const isLeft = isManagerMsg(c.author);
                 return (
-                  <div key={c.id} style={{ display: "flex", flexDirection: isMine ? "row-reverse" : "row", alignItems: "flex-end", gap: 8 }}>
+                  <div key={c.id} style={{ display: "flex", flexDirection: isLeft ? "row" : "row-reverse", alignItems: "flex-end", gap: 8 }}>
                     {/* 아바타 */}
-                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: isMine ? C.primary : "#6B7280", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0, overflow: "hidden" }}>
-                      {isMine && myAvatar
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: isLeft ? "#6B7280" : C.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0, overflow: "hidden" }}>
+                      {!isLeft && myAvatar
                         ? <img src={myAvatar} alt="me" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : c.author[0].toUpperCase()}
                     </div>
-                    <div style={{ maxWidth: "68%", display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start", gap: 3 }}>
-                      {/* 이름 (상대방만) */}
-                      {!isMine && <span style={{ fontSize: 11, fontWeight: 600, color: C.sub, paddingLeft: 2 }}>{c.author}</span>}
+                    <div style={{ maxWidth: "68%", display: "flex", flexDirection: "column", alignItems: isLeft ? "flex-start" : "flex-end", gap: 3 }}>
+                      {/* 이름 (왼쪽 말풍선만 표시) */}
+                      {isLeft && <span style={{ fontSize: 11, fontWeight: 600, color: C.sub, paddingLeft: 2 }}>{c.author}</span>}
                       {/* 파일 참조 */}
                       {c.fileRef && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 12, background: isMine ? "#FFE8D6" : "#F0F0F0", color: isMine ? C.primary : "#555", fontSize: 11 }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 12, background: isLeft ? "#F0F0F0" : "#FFE8D6", color: isLeft ? "#555" : C.primary, fontSize: 11 }}>
                           📎 {c.fileRef}
                         </div>
                       )}
                       {/* 말풍선 */}
                       <div style={{
-                        padding: "9px 13px", borderRadius: isMine ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
-                        background: "var(--rr-surface)",
-                        color: C.text,
+                        padding: "9px 13px", borderRadius: isLeft ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
+                        background: isLeft ? "var(--rr-surface)" : "#FFE8D6",
+                        color: isLeft ? C.text : "#7A3300",
                         fontSize: 13, lineHeight: 1.6,
                       }}>
                         {c.text}
@@ -1066,7 +1092,7 @@ export default function ResourceRoom() {
             <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
               <textarea
                 value={draft}
-                onChange={e => setDraft(e.target.value)}
+                onChange={e => setDiscussionDraft(e.target.value)}
                 placeholder="메시지를 입력하세요... (Enter 전송 / Shift+Enter 줄바꿈)"
                 rows={2}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addComment(); } }}
@@ -1126,10 +1152,10 @@ export default function ResourceRoom() {
       /* ── 탭 콘텐츠 묶음 ── */
       const TabbedSection = () => (
         <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20, marginTop: 8 }}>
-          <TabBar />
+          {TabBar()}
           {detailTab === "upload"     && <UploadTab />}
-          {detailTab === "discussion" && <DiscussionTab />}
-          {detailTab === "history"    && <HistoryTab />}
+          {detailTab === "discussion" && DiscussionTab()}
+          {detailTab === "history"    && HistoryTab()}
         </div>
       );
 
@@ -1707,10 +1733,10 @@ export default function ResourceRoom() {
   );
 
   return (
-    <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text }}>
+    <div style={{ display: "flex", height: "100%", fontFamily: "'Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif", fontSize: 13, color: C.text, background: "var(--body-bg, #F5F5F5)" }}>
       {SidebarEl()}
 
-      <main style={{ flex: 1, overflow: "auto", background: C.bg }}>
+      <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", background: "var(--body-bg, #F5F5F5)" }}>
         {/* Page title bar */}
         <div style={{
           background: "var(--rr-bg)", borderBottom: `1px solid ${C.border}`,
