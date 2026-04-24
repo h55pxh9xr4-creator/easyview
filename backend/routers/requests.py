@@ -4,13 +4,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import uuid, shutil
 from database import get_db
 from models import DataRequest, RequestFile, RequestComment, RequestHistory
 
 router = APIRouter()
+
+KST = timezone(timedelta(hours=9))
+
+def _to_kst_str(dt: datetime) -> str:
+    if not dt:
+        return ""
+    return dt.replace(tzinfo=timezone.utc).astimezone(KST).strftime("%Y-%m-%d %H:%M:%S")
 
 MEDIA_DIR = Path(__file__).parent.parent / "media" / "requests"
 
@@ -70,7 +77,7 @@ def _fmt_comment(c: RequestComment):
         "role":      c.role or "viewer",
         "text":      c.text,
         "fileRef":   c.file_ref,
-        "ts":        c.created_at.strftime("%Y-%m-%d %H:%M:%S") if c.created_at else "",
+        "ts":        _to_kst_str(c.created_at),
     }
 
 def _fmt_file(rf: RequestFile):
@@ -81,7 +88,7 @@ def _fmt_file(rf: RequestFile):
         "originalName": rf.original_name,
         "uploader":     rf.uploader or "",
         "size":         rf.size or 0,
-        "uploadedAt":   rf.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if rf.uploaded_at else "",
+        "uploadedAt":   _to_kst_str(rf.uploaded_at),
         "url":          f"/media/requests/{rf.request_id}/{rf.filename}",
     }
 
@@ -92,7 +99,7 @@ def _fmt_history(h: RequestHistory):
         "actor":     h.actor or "—",
         "eventType": h.event_type,
         "detail":    h.detail or "",
-        "ts":        h.created_at.strftime("%Y-%m-%d %H:%M:%S") if h.created_at else "",
+        "ts":        _to_kst_str(h.created_at),
     }
 
 def _next_code(db: Session) -> str:

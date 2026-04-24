@@ -1099,7 +1099,7 @@ export default function ResourceRoom() {
           createComment(detailReq.id, { author: me, role: myRole, text: optimistic.text })
             .then((saved: RequestComment) => {
               setDiscussionComments(p => {
-                const next = p.map(c => c.id === optimistic.id ? { ...c, id: saved.id, ts: saved.ts } : c);
+                const next = p.map(c => c.id === optimistic.id ? { ...c, id: saved.id } : c);
                 discussionStore.current.set(detailReq.id, next);
                 return next;
               });
