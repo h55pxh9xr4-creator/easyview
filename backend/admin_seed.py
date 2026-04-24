@@ -124,3 +124,26 @@ def seed_admin_data(force=False):
     db.commit()
     db.close()
     print("Admin seed data inserted successfully.")
+
+
+def patch_companies():
+    """Ensure ENF and Pulmuone companies/subsidiaries exist (idempotent)."""
+    db = SessionLocal()
+    try:
+        needed = [
+            ("이엔에프테크놀로지", ["ENF Kyle Technology, LLC"]),
+            ("풀무원식품", ["Pulmuone Vietnam Co., Ltd."]),
+        ]
+        for company_name, subs in needed:
+            co = db.query(AdminCompany).filter_by(name=company_name).first()
+            if not co:
+                co = AdminCompany(name=company_name)
+                db.add(co)
+                db.flush()
+            for sub_name in subs:
+                exists = db.query(AdminSubsidiary).filter_by(company_id=co.id, name=sub_name).first()
+                if not exists:
+                    db.add(AdminSubsidiary(company_id=co.id, name=sub_name))
+        db.commit()
+    finally:
+        db.close()
