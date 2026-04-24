@@ -386,7 +386,7 @@ export default function ResourceRoom() {
   } | null>(null);
   const [detailFiles, setDetailFiles]       = useState<ReqFile[]>([]);
   const [filesLoading, setFilesLoading]     = useState(false);
-  const [deletionHistory, setDeletionHistory] = useState<ReqHistoryEntry[]>([]);
+  const [fileHistory, setFileHistory] = useState<ReqHistoryEntry[]>([]);
   const [uploading, setUploading]           = useState(false);
   const fileInputRef                        = useRef<HTMLInputElement>(null);
   const [groupByEntity, setGroupByEntity]   = useState(false);
@@ -483,15 +483,15 @@ export default function ResourceRoom() {
 
   /* 상세 뷰 열릴 때 파일 목록 로드 + 논의 복원 */
   useEffect(() => {
-    if (!detailReq) { setDetailFiles([]); setDiscussionComments([]); setDiscussionDraft(""); setDeletionHistory([]); return; }
+    if (!detailReq) { setDetailFiles([]); setDiscussionComments([]); setDiscussionDraft(""); setFileHistory([]); return; }
     setFilesLoading(true);
     fetchRequestFiles(detailReq.id)
       .then(f => setDetailFiles(f))
       .catch(() => setDetailFiles([]))
       .finally(() => setFilesLoading(false));
     fetchRequestHistory(detailReq.id)
-      .then(h => setDeletionHistory(h))
-      .catch(() => setDeletionHistory([]));
+      .then(h => setFileHistory(h))
+      .catch(() => setFileHistory([]));
     // DB에서 댓글 로드
     fetchComments(detailReq.id)
       .then((data: RequestComment[]) => {
@@ -519,6 +519,7 @@ export default function ResourceRoom() {
         setDetailFiles(prev => [rf, ...prev]);
       }
       showToast(`${files.length}개 파일이 업로드되었습니다.`);
+      fetchRequestHistory(detailReq.id).then(h => setFileHistory(h)).catch(() => {});
     } catch { showToast("업로드 중 오류가 발생했습니다."); }
     finally { setUploading(false); }
   };
@@ -561,7 +562,7 @@ export default function ResourceRoom() {
     const actor = sessionStorage.getItem("ev_user") ?? "";
     await deleteRequestFile(detailReq.id, fileId, actor);
     setDetailFiles(prev => prev.filter(f => f.id !== fileId));
-    fetchRequestHistory(detailReq.id).then(h => setDeletionHistory(h)).catch(() => {});
+    fetchRequestHistory(detailReq.id).then(h => setFileHistory(h)).catch(() => {});
     showToast("파일이 삭제되었습니다.");
   };
 
@@ -1098,7 +1099,7 @@ export default function ResourceRoom() {
           createComment(detailReq.id, { author: me, role: myRole, text: optimistic.text })
             .then((saved: RequestComment) => {
               setDiscussionComments(p => {
-                const next = p.map(c => c.id === optimistic.id ? { ...c, id: saved.id } : c);
+                const next = p.map(c => c.id === optimistic.id ? { ...c, id: saved.id, ts: saved.ts } : c);
                 discussionStore.current.set(detailReq.id, next);
                 return next;
               });
@@ -1171,23 +1172,17 @@ export default function ResourceRoom() {
       const HistoryTab = () => {
         const logs = [
           { ts: (detailReq!.createdDate || "0000-00-00") + " 00:00:00", actor: detailReq!.requester || "—", type: "create" as const, detail: `요청 생성 (${detailReq!.reqCode})` },
-          ...detailFiles.map(f => ({
-            ts: f.uploadedAt || "0000-00-00 00:00:00",
-            actor: f.uploader || "—",
-            type: "upload" as const,
-            detail: `파일 업로드: ${f.originalName}`,
+          ...fileHistory.map(h => ({
+            ts: h.ts || "0000-00-00 00:00:00",
+            actor: h.actor,
+            type: (h.eventType === "upload_file" ? "upload" : "delete") as "upload" | "delete",
+            detail: h.detail,
           })),
           ...discussionComments.map(c => ({
             ts: c.ts || "0000-00-00 00:00:00",
             actor: c.author,
             type: "comment" as const,
             detail: `논의: "${c.text.slice(0, 50)}${c.text.length > 50 ? "…" : ""}"`,
-          })),
-          ...deletionHistory.map(h => ({
-            ts: h.ts || "0000-00-00 00:00:00",
-            actor: h.actor,
-            type: "delete" as const,
-            detail: h.detail,
           })),
         ].sort((a, b) => a.ts.localeCompare(b.ts));
 

@@ -223,6 +223,12 @@ async def upload_file(
         size=dest.stat().st_size,
     )
     db.add(rf)
+    db.add(RequestHistory(
+        request_id=req_id,
+        actor=uploader,
+        event_type="upload_file",
+        detail=f"파일 업로드: {file.filename}",
+    ))
     db.commit()
     db.refresh(rf)
     return _fmt_file(rf)
