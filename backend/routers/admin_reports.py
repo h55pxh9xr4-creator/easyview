@@ -58,6 +58,15 @@ def _fmt_file(f: ReportFile) -> dict:
     }
 
 
+# ── 공개: 현재 활성 리포트 회사 정보 (인증 불필요) ──────────────────
+@router.get("/active-info")
+def get_active_report_info(db: Session = Depends(get_db)):
+    report = db.query(Report).filter(Report.is_active == True).first()
+    if not report:
+        return {"active": False, "company": None, "period": None, "title": None}
+    return {"active": True, "company": report.company, "period": report.period, "title": report.title}
+
+
 # ── 자료실 Accept 요청 목록 ─────────────────────────────────────
 @router.get("/accepted-requests")
 def list_accepted_requests(db: Session = Depends(get_db), _: AdminUser = Depends(get_current_admin)):

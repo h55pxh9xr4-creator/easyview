@@ -448,6 +448,16 @@ export const fetchRequestHistory = (reqId: number) =>
 export const getFileUrl = (url: string) => `${BASE}${url}`;
 export const getDownloadUrl = (reqId: number, fileId: number) => `${BASE}/api/requests/${reqId}/files/${fileId}/download`;
 
+// ── Report visibility ────────────────────────────────────────
+export interface ActiveReportInfo {
+  active: boolean;
+  company: string | null;
+  period: string | null;
+  title: string | null;
+}
+export const fetchActiveReportInfo = () =>
+  get<ActiveReportInfo>('/api/admin/reports/active-info');
+
 // ── Chat (김삼일 AI) ─────────────────────────────────────────
 export interface ChatMessage {
   role: "user" | "assistant";
