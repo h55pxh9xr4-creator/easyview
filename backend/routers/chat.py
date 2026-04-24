@@ -100,6 +100,31 @@ EasyView 재무분석 플랫폼의 AI 어시스턴트입니다.
 - JSON 외의 텍스트를 출력하지 마세요
 - actions/suggestions는 필요 없으면 빈 배열, 최대 3~4개까지만
 - Function Calling이 필요하면 먼저 tool을 호출한 후, 그 결과로 최종 JSON 응답하세요
+
+## ⚠️ 절대 금지 (중요!)
+- **execute 타입 action은 사용자가 버튼을 클릭해야 실행됩니다.**
+  당신이 직접 실행할 수 없으며, "활성화했습니다", "변경했습니다", "켰습니다",
+  "바꿨습니다" 같은 **완료형 표현을 절대 사용하지 마세요**.
+- 사용자가 "해줘", "켜줘", "바꿔줘" 라고 요청해도,
+  → 답변은 반드시 "아래 버튼을 눌러주세요" 또는 "바로 켜드릴까요?" 형태로 제공
+  → 그리고 execute 액션 버튼을 포함시키세요.
+- 사용자가 "넵", "응", "해줘" 등으로 확인만 해도,
+  → 여전히 실행은 사용자가 버튼을 눌러야 합니다.
+  → "아래 [지금 켜기] 버튼을 눌러주세요 😊" + execute 버튼 제공.
+
+## ❌ 잘못된 응답 예시
+질문: "다크모드 켜줘"
+나쁜 응답: {"reply": "다크모드를 켰습니다!", "actions": []}  ← 거짓말!
+
+## ✅ 올바른 응답 예시
+질문: "다크모드 켜줘"
+좋은 응답: {
+  "reply": "다크모드는 아래 버튼으로 바로 켤 수 있어요! 🌙",
+  "actions": [
+    {"type": "execute", "label": "🌙 지금 다크모드 켜기", "handler": "applyTheme('dark')"}
+  ],
+  "suggestions": ["라이트모드로 다시 바꾸려면?", "글자 크기도 바꿀 수 있어?"]
+}
 """
 
 # ── Tool 정의 (Function Calling) ──────────────────────────────
@@ -562,6 +587,7 @@ class ChatRequest(BaseModel):
     attachments: Optional[list] = None
     session_id: Optional[int] = None  # 🆕 대화 세션 ID
     user_role: Optional[str] = "viewer"  # 🆕 사용자 역할 (admin/manager/viewer)
+    user_name: Optional[str] = None  # 🆕 로그인 사용자명 (세션 저장용)
 
 
 class ChatAction(BaseModel):
@@ -669,7 +695,7 @@ async def chat_message(req: ChatRequest, db: Session = Depends(get_db)):
 
     try:
         # 세션 확보 + 사용자 메시지 저장
-        session = get_or_create_session(db, req.session_id, None, req.message, req.page)
+        session = get_or_create_session(db, req.session_id, req.user_name, req.message, req.page)
         save_message(db, session.id, "user", req.message, current_page=req.page)
 
         # FAQ 매칭 우선 시도 (첨부가 없을 때만)
@@ -1170,7 +1196,7 @@ async def chat_message_stream(req: ChatRequest, db: Session = Depends(get_db)):
     def stream_generator():
         try:
             # 세션 확보 + 사용자 메시지 저장
-            session = get_or_create_session(db, req.session_id, None, req.message, req.page)
+            session = get_or_create_session(db, req.session_id, req.user_name, req.message, req.page)
             save_message(db, session.id, "user", req.message, current_page=req.page)
 
             # FAQ 매칭 — 있으면 바로 반환 (스트리밍 없이)

@@ -105,6 +105,26 @@ function PageInner() {
       }
     }
     setAuthed(ok ? true : false);
+
+    // 🆕 hashchange 리스너 — 김삼일 action의 navigate 버튼 지원
+    const handleHashChange = () => {
+      const newHash = window.location.hash.slice(1);
+      const np = new URLSearchParams(newHash);
+      const newPage = np.get("page");
+      const newSub = np.get("sub");
+      const newLabel = np.get("label");
+      if (newPage) {
+        const newTab = PAGE_TO_TAB[newPage];
+        if (newTab) setTopTab(newTab);
+      }
+      if (newSub) {
+        setActiveSub(newSub);
+        setActiveTab(newSub.split("-")[0]);
+        setPageLabel(newLabel ? decodeURIComponent(newLabel) : newSub);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -487,6 +487,7 @@ export interface ChatRequestBody {
   attachments?: ChatAttachmentPayload[];
   session_id?: number;
   user_role?: string;
+  user_name?: string;
 }
 
 export interface ChatResponseBody {
