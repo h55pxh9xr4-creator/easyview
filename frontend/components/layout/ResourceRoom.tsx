@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   fetchRequests, createRequests, updateRequest, deleteRequest,
   fetchRequestFiles, uploadRequestFile, deleteRequestFile, getFileUrl,
-  type DataRequest as ApiRequest, type ReqFile,
+  fetchComments, createComment,
+  type DataRequest as ApiRequest, type ReqFile, type RequestComment,
 } from "@/lib/api";
 
 
@@ -391,7 +392,7 @@ export default function ResourceRoom() {
   const [entityFilter, setEntityFilter]     = useState<string>("전체");
   const [parentFilter, setParentFilter]     = useState<string>("전체");
   const [myOnly, setMyOnly]                 = useState(true);
-  type DiscussionMsg = { id: number; author: string; text: string; ts: string; fileRef?: string };
+  type DiscussionMsg = { id: number; author: string; role?: string; text: string; ts: string; fileRef?: string };
   const [discussionComments, setDiscussionComments] = useState<DiscussionMsg[]>([]);
   const [discussionDraft, setDiscussionDraft]       = useState("");
   const discussionStore = useRef<Map<number, DiscussionMsg[]>>(new Map());
@@ -486,19 +487,20 @@ export default function ResourceRoom() {
       .then(f => setDetailFiles(f))
       .catch(() => setDetailFiles([]))
       .finally(() => setFilesLoading(false));
-    // 이미 저장된 메시지가 있으면 복원, 없으면 더미 초기 데이터
-    if (discussionStore.current.has(detailReq.id)) {
-      setDiscussionComments(discussionStore.current.get(detailReq.id)!);
-    } else {
-      const requester = detailReq.requester || "admin";
-      const assignee  = detailReq.assignee  || "법인담당자";
-      const init = [
-        { id: 1, author: requester, text: "첨부하신 파일 확인했습니다. TB 파일이 누락된 것 같습니다.", ts: "2026-04-21 14:32", fileRef: "분개장_Q1.xlsx" },
-        { id: 2, author: assignee,  text: "죄송합니다. 지금 바로 업로드하겠습니다.", ts: "2026-04-21 15:10" },
-      ];
-      discussionStore.current.set(detailReq.id, init);
-      setDiscussionComments(init);
-    }
+    // DB에서 댓글 로드
+    fetchComments(detailReq.id)
+      .then((data: RequestComment[]) => {
+        const msgs: DiscussionMsg[] = data.map(c => ({
+          id: c.id, author: c.author, role: c.role, text: c.text, ts: c.ts, fileRef: c.fileRef ?? undefined,
+        }));
+        discussionStore.current.set(detailReq.id, msgs);
+        setDiscussionComments(msgs);
+      })
+      .catch(() => {
+        // 백엔드 미연결 시 캐시 or 빈 목록
+        const cached = discussionStore.current.get(detailReq.id);
+        setDiscussionComments(cached ?? []);
+      });
     setDiscussionDraft("");
   }, [detailReq?.id]);
 
@@ -749,7 +751,7 @@ export default function ResourceRoom() {
   };
 
   const ReqRow = ({ req, hideEntity }: { req: Request; hideEntity?: boolean }) => {
-    const sc = STATUS_CFG[req.status];
+    const sc = STATUS_CFG[req.status as ReqStatus] ?? { bg: "#F0F0F0", color: "#666" };
     return (
       <tr
         style={{ cursor: "pointer" }}
@@ -921,7 +923,7 @@ export default function ResourceRoom() {
     }
 
     if (detailReq) {
-      const sc       = STATUS_CFG[detailReq.status];
+      const sc       = STATUS_CFG[detailReq.status as ReqStatus] ?? { bg: "#F0F0F0", color: "#666" };
       const canEdit  = detailReq.status !== "Accepted";
 
       const fieldLabel: React.CSSProperties = {
@@ -1037,17 +1039,25 @@ export default function ResourceRoom() {
         const draft    = discussionDraft;
         const addComment = () => {
           if (!draft.trim() || !detailReq) return;
-          const msg = { id: Date.now(), author: me, text: draft.trim(), ts: new Date().toLocaleString("sv").slice(0, 16) };
+          const optimistic: DiscussionMsg = { id: Date.now(), author: me, role: myRole, text: draft.trim(), ts: new Date().toLocaleString("sv").slice(0, 16) };
           setDiscussionComments(p => {
-            const next = [...p, msg];
+            const next = [...p, optimistic];
             discussionStore.current.set(detailReq.id, next);
             return next;
           });
           setDiscussionDraft("");
+          createComment(detailReq.id, { author: me, role: myRole, text: optimistic.text })
+            .then((saved: RequestComment) => {
+              setDiscussionComments(p => {
+                const next = p.map(c => c.id === optimistic.id ? { ...c, id: saved.id } : c);
+                discussionStore.current.set(detailReq.id, next);
+                return next;
+              });
+            })
+            .catch(() => {});
         };
-        // requester(admin/PwC 쪽) 메시지는 왼쪽, assignee(클라이언트) 메시지는 오른쪽
-        const requester = detailReq!.requester || "admin";
-        const isManagerMsg = (author: string) => author === requester;
+        // admin 역할이면 왼쪽(매니저), 나머지는 오른쪽(클라이언트)
+        const isManagerMsg = (c: DiscussionMsg) => c.role === "admin";
         return (
           <div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20, maxHeight: 400, overflowY: "auto", padding: "4px 0" }}>
@@ -1055,7 +1065,7 @@ export default function ResourceRoom() {
                 <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "24px 0" }}>아직 논의 내용이 없습니다.</p>
               )}
               {comments.map(c => {
-                const isLeft = isManagerMsg(c.author);
+                const isLeft = isManagerMsg(c);
                 return (
                   <div key={c.id} style={{ display: "flex", flexDirection: isLeft ? "row" : "row-reverse", alignItems: "flex-end", gap: 8 }}>
                     {/* 아바타 */}
@@ -1110,19 +1120,20 @@ export default function ResourceRoom() {
 
       /* ── 히스토리 탭 ── */
       const HistoryTab = () => {
-        const assignee = detailReq!.assignee || "법인담당자";
-        const me = sessionStorage.getItem("ev_user") || "admin";
-        const mockUploads = detailFiles.length > 0
-          ? detailFiles.map(f => ({ ts: f.uploadedAt, actor: assignee, type: "upload" as const, detail: `파일 업로드: ${f.originalName}` }))
-          : [
-              { ts: "2026-04-21 10:15", actor: assignee, type: "upload" as const, detail: "파일 업로드: 재무제표_2026Q1.xlsx" },
-              { ts: "2026-04-21 10:16", actor: assignee, type: "upload" as const, detail: "파일 업로드: 손익계산서_2026Q1.pdf" },
-            ];
         const logs = [
-          { ts: detailReq!.createdDate + " 09:00", actor: detailReq!.requester, type: "create"  as const, detail: `요청 생성 (${detailReq!.reqCode})` },
-          ...mockUploads,
-          { ts: "2026-04-21 14:32", actor: me,       type: "comment" as const, detail: "논의 댓글 작성: \"TB 파일이 누락된 것 같습니다.\"" },
-          { ts: "2026-04-21 15:10", actor: assignee, type: "comment" as const, detail: "논의 댓글 작성: \"지금 바로 업로드하겠습니다.\"" },
+          { ts: (detailReq!.createdDate || "0000-00-00") + " 00:00", actor: detailReq!.requester || "—", type: "create" as const, detail: `요청 생성 (${detailReq!.reqCode})` },
+          ...detailFiles.map(f => ({
+            ts: f.uploadedAt || "0000-00-00 00:00",
+            actor: f.uploader || "—",
+            type: "upload" as const,
+            detail: `파일 업로드: ${f.originalName}`,
+          })),
+          ...discussionComments.map(c => ({
+            ts: c.ts || "0000-00-00 00:00",
+            actor: c.author,
+            type: "comment" as const,
+            detail: `논의: "${c.text.slice(0, 50)}${c.text.length > 50 ? "…" : ""}"`,
+          })),
         ].sort((a, b) => b.ts.localeCompare(a.ts));
 
         const iconMap = { upload: "📤", download: "📥", comment: "💬", create: "📋", status: "🔄" } as const;

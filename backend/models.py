@@ -88,6 +88,18 @@ class RequestFile(Base):
     uploaded_at   = Column(DateTime, default=datetime.now)
 
 
+class RequestComment(Base):
+    __tablename__ = "request_comment"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    request_id = Column(Integer, ForeignKey("data_request.id", ondelete="CASCADE"), nullable=False)
+    author     = Column(String, nullable=False)
+    role       = Column(String, default="viewer")   # admin | viewer | uploader | viewer_uploader
+    text       = Column(Text,   nullable=False)
+    file_ref   = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.now)
+
+
 # 인덱스 정의
 Index("idx_je_yearmonth", JE.year_month)
 Index("idx_je_section", JE.section)

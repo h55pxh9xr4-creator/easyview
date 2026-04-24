@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 import uuid, shutil
 from database import get_db
-from models import DataRequest, RequestFile
+from models import DataRequest, RequestFile, RequestComment
 
 router = APIRouter()
 
@@ -27,6 +27,12 @@ class RequestCreate(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: str
+
+class CommentCreate(BaseModel):
+    author:   str
+    role:     str = "viewer"
+    text:     str
+    file_ref: Optional[str] = None
 
 class RequestUpdate(BaseModel):
     title:       Optional[str] = None
@@ -53,6 +59,17 @@ def _fmt(r: DataRequest):
         "dueDate":     r.due_date or "—",
         "createdDate": r.created_at.strftime("%Y-%m-%d") if r.created_at else "",
         "description": r.description or "",
+    }
+
+def _fmt_comment(c: RequestComment):
+    return {
+        "id":        c.id,
+        "requestId": c.request_id,
+        "author":    c.author,
+        "role":      c.role or "viewer",
+        "text":      c.text,
+        "fileRef":   c.file_ref,
+        "ts":        c.created_at.strftime("%Y-%m-%d %H:%M") if c.created_at else "",
     }
 
 def _fmt_file(rf: RequestFile):
@@ -124,6 +141,30 @@ def delete_request(req_id: int, db: Session = Depends(get_db)):
         shutil.rmtree(req_dir, ignore_errors=True)
     db.query(RequestFile).filter(RequestFile.request_id == req_id).delete()
     db.delete(row)
+    db.commit()
+    return {"ok": True}
+
+
+# ── Comments ─────────────────────────────────────────────────
+@router.get("/{req_id}/comments")
+def list_comments(req_id: int, db: Session = Depends(get_db)):
+    rows = db.query(RequestComment).filter(RequestComment.request_id == req_id).order_by(RequestComment.created_at).all()
+    return [_fmt_comment(c) for c in rows]
+
+@router.post("/{req_id}/comments", status_code=201)
+def create_comment(req_id: int, body: CommentCreate, db: Session = Depends(get_db)):
+    row = RequestComment(request_id=req_id, **body.model_dump())
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _fmt_comment(row)
+
+@router.delete("/{req_id}/comments/{comment_id}")
+def delete_comment(req_id: int, comment_id: int, db: Session = Depends(get_db)):
+    c = db.query(RequestComment).filter(RequestComment.id == comment_id, RequestComment.request_id == req_id).first()
+    if not c:
+        raise HTTPException(404, "Not found")
+    db.delete(c)
     db.commit()
     return {"ok": True}
 

@@ -394,6 +394,22 @@ export const updateRequest = (id: number, body: Partial<RequestCreateBody>) =>
 export const deleteRequest = (id: number) =>
   mut<{ ok: boolean }>(`${BASE}/api/requests/${id}`, "DELETE");
 
+export interface RequestComment {
+  id:        number;
+  requestId: number;
+  author:    string;
+  role:      string;
+  text:      string;
+  fileRef?:  string | null;
+  ts:        string;
+}
+
+export const fetchComments = (reqId: number) =>
+  get<RequestComment[]>(`/api/requests/${reqId}/comments`);
+
+export const createComment = (reqId: number, body: { author: string; role: string; text: string; file_ref?: string }) =>
+  mut<RequestComment>(`${BASE}/api/requests/${reqId}/comments`, "POST", body);
+
 function mapFile(raw: any): ReqFile {
   return {
     id:           raw.id,
