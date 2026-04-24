@@ -254,7 +254,7 @@ def _run_generate(report_id: int, db_url: str, actor: str):
         df_tb = df_tb.dropna(subset=["opening_balance", "account_code"]).reset_index(drop=True)
 
         with eng.connect() as conn:
-            conn.execute(text("DELETE FROM tb_account"))
+            conn.execute(text("DELETE FROM tb_data WHERE report_id = :rid"), {"rid": report_id})
             conn.commit()
 
         tb_records = []
@@ -262,6 +262,7 @@ def _run_generate(report_id: int, db_url: str, actor: str):
             sign = 1 if row["category"] == "자산" else -1
             bal  = float(row["opening_balance"])
             tb_records.append({
+                "report_id":       report_id,
                 "account_code":    str(int(row["account_code"])),
                 "account_name":    row["account_name"],
                 "account_name_1":  row.get("account_name_1", ""),
@@ -273,7 +274,7 @@ def _run_generate(report_id: int, db_url: str, actor: str):
                 "opening_balance": bal,
                 "opening_signed":  bal * sign,
             })
-        pd.DataFrame(tb_records).to_sql("tb_account", eng, if_exists="append", index=False)
+        pd.DataFrame(tb_records).to_sql("tb_data", eng, if_exists="append", index=False)
 
         # ── JE 적재 ──────────────────────────────────────────
         df_je = pd.read_excel(je_file.file_path)
@@ -296,20 +297,21 @@ def _run_generate(report_id: int, db_url: str, actor: str):
         df_je["is_weekend"] = pd.to_datetime(df_je["date"]).dt.dayofweek >= 5
         df_je["is_cash"] = df_je["disclosure_acct"].str.contains("현금", na=False)
         df_je["account_code"] = df_je["account_code"].astype(str)
+        df_je["report_id"] = report_id
 
         out = df_je[[
-            "record_id", "date", "year_month", "voucher_no", "dr_cr", "amount",
+            "report_id", "record_id", "date", "year_month", "voucher_no", "dr_cr", "amount",
             "signed_amount", "counterparty", "counterparty_raw", "description",
             "description_raw", "account_code", "account_name", "disclosure_acct",
             "mgmt_acct", "sum_acct", "category", "section", "is_weekend", "is_cash",
         ]]
         with eng.connect() as conn:
-            conn.execute(text("DELETE FROM je"))
+            conn.execute(text("DELETE FROM je_data WHERE report_id = :rid"), {"rid": report_id})
             conn.commit()
 
         CHUNK = 5000
         for i in range(0, len(out), CHUNK):
-            out.iloc[i:i + CHUNK].to_sql("je", eng, if_exists="append", index=False)
+            out.iloc[i:i + CHUNK].to_sql("je_data", eng, if_exists="append", index=False)
 
         # ── 상태 업데이트 ────────────────────────────────────
         report.status = "generated"
