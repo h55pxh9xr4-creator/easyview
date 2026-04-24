@@ -637,6 +637,7 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
 
 /* ── ResourceRoom CSS 변수 ── */
 :root {
+  --body-bg: #F5F5F5;
   --rr-bg: #fff;
   --rr-surface: #fafafa;
   --rr-input-bg: #fff;
@@ -650,6 +651,7 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
   --rr-muted: #aaa;
 }
 [data-theme="dark"] {
+  --body-bg: #13151A;
   --rr-bg: #1C1F26;
   --rr-surface: #252830;
   --rr-input-bg: #252830;
