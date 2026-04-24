@@ -30,7 +30,7 @@ ChartJS.register(
   Tooltip, Legend,
 );
 
-const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
+const fmtPct = (p: number) => `${(p * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 const sign   = (n: number) => n >= 0 ? "▲" : "▼";
 
 const ORANGE = "#E87722";
@@ -657,7 +657,7 @@ export default function PLSales() {
                     return [x - w / 2, isTop ? y - h - 16 : y + 16];
                   },
                   formatter: (p: { name: string; value: number; percent: number }) =>
-                    `${p.name}<br/>${fmtAmt(p.value)}${unitLabel} (${p.percent.toFixed(1)}%)`,
+                    `${p.name}<br/>${fmtAmt(p.value)}${unitLabel} (${p.percent.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`,
                 },
                 legend: { show: false },
                 graphic: hoverDonut ? [{
@@ -667,7 +667,7 @@ export default function PLSales() {
                   children: [
                     { type: "text", z: 100, left: "center", top: -22, style: { text: hoverDonut.name.length > 10 ? hoverDonut.name.slice(0, 10) + "…" : hoverDonut.name, font: `700 12px sans-serif`, fill: isDark ? "#E2E5EC" : "#222", textAlign: "center" } },
                     { type: "text", z: 100, left: "center", top: 2,   style: { text: `${fmtAmt(hoverDonut.value)}${unitLabel}`, font: `800 15px sans-serif`, fill: ORANGE, textAlign: "center" } },
-                    { type: "text", z: 100, left: "center", top: 24,  style: { text: `(${hoverDonut.percent.toFixed(1)}%)`, font: `400 11px sans-serif`, fill: isDark ? "#9198A8" : "#888", textAlign: "center" } },
+                    { type: "text", z: 100, left: "center", top: 24,  style: { text: `(${hoverDonut.percent.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`, font: `400 11px sans-serif`, fill: isDark ? "#9198A8" : "#888", textAlign: "center" } },
                   ],
                 }] : [],
                 series: [{
@@ -683,7 +683,7 @@ export default function PLSales() {
                     position: "outside",
                     formatter: (p: { name: string; value: number; percent: number }) => {
                       const n = p.name.length > 14 ? p.name.slice(0, 14) + "…" : p.name;
-                      return `${n}\n${p.percent.toFixed(1)}%`;
+                      return `${n}\n${p.percent.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
                     },
                     fontSize: 10,
                     lineHeight: 15,

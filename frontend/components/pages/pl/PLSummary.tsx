@@ -23,7 +23,7 @@ ChartJS.register(
   Tooltip, Legend,
 );
 
-const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
+const fmtPct = (p: number) => `${(p * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 
 function useDark() {
   const [dark, setDark] = useState(false);
@@ -458,7 +458,7 @@ export default function PLSummary() {
                     <StatRow label="증감" value={`${fmtAmt(diff)}${unitLabel}`} cls={diff >= 0 ? "up-t" : "dn-t"} dark={dark} />
                     <StatRow
                       label="△%"
-                      value={chg >= 0 ? `▲${Math.abs(chg * 100).toFixed(1)}%` : `▼${Math.abs(chg * 100).toFixed(1)}%`}
+                      value={chg >= 0 ? `▲${Math.abs(chg * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : `▼${Math.abs(chg * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
                       cls={chg >= 0 ? "up-t" : "dn-t"} dark={dark}
                     />
                     {isRev && (

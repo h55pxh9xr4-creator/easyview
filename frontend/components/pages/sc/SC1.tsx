@@ -130,11 +130,21 @@ export default function SC1() {
             />
             <div style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
               <input type="date" value={dateFrom}
-                onChange={e => { setDateFrom(e.target.value); setTsFrom(strToTs(e.target.value)); }}
+                onChange={e => {
+                  const v = e.target.value;
+                  setDateFrom(v);
+                  const ts = strToTs(v);
+                  if (!Number.isNaN(ts)) setTsFrom(ts);
+                }}
                 style={{ ...inputSt, width: 116 }} />
               <span style={{ fontSize: 11, color: dimTxt }}>~</span>
               <input type="date" value={dateTo}
-                onChange={e => { setDateTo(e.target.value); setTsTo(strToTs(e.target.value)); }}
+                onChange={e => {
+                  const v = e.target.value;
+                  setDateTo(v);
+                  const ts = strToTs(v);
+                  if (!Number.isNaN(ts)) setTsTo(ts);
+                }}
                 style={{ ...inputSt, width: 116 }} />
             </div>
           </div>

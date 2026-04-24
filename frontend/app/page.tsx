@@ -10,6 +10,8 @@ import ServiceIntro from "@/components/pages/ServiceIntro";
 import FilterBar from "@/components/layout/FilterBar";
 import CommentPanel from "@/components/layout/CommentPanel";
 import ChatBot from "@/components/ui/ChatBot";
+import DownloadMenu from "@/components/ui/DownloadMenu";
+import TableExportContextMenu from "@/components/ui/TableExportContextMenu";
 import LoginPage from "@/components/layout/LoginPage";
 import Inquiry from "@/components/pages/Inquiry";
 import Settings, { applyTheme } from "@/components/pages/Settings";
@@ -308,10 +310,20 @@ function PageInner() {
               <div className={`main-content${panelOpen ? " panel-open" : ""}`}>
                 <div className="ptb">
                   <span className="ptb-sub">{pageLabel}</span>
-                  <FilterBar activeSub={activeSub} inline />
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", position: "relative" }}>
+                    <FilterBar activeSub={activeSub} inline />
+                    <DownloadMenu
+                      activeSub={activeSub}
+                      pageLabel={pageLabel}
+                      setActiveSub={setActiveSub}
+                      setActiveTab={setActiveTab}
+                      setPageLabel={setPageLabel}
+                    />
+                  </div>
                 </div>
                 <ActivePage onNavigate={handleNavigate} />
               </div>
+              <TableExportContextMenu pageLabel={pageLabel} />
             </>
           );
         })()}

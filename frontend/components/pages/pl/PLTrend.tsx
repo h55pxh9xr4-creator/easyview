@@ -517,7 +517,7 @@ export default function PLTrend() {
                   { label: "당기금액", value: fmtAmt(Math.abs(kpiCur)) + unitLabel, color: ORANGE },
                   { label: "전기금액", value: fmtAmt(Math.abs(kpiPri)) + unitLabel, color: "#555" },
                   { label: "증감액",   value: (kpiChg < 0 ? "-" : "") + fmtAmt(Math.abs(kpiChg)) + unitLabel, color: kpiChg >= 0 ? "#EF4444" : BLUE },
-                  { label: "증감률",   value: kpiChgPct !== null ? `${kpiChg >= 0 ? "▲" : "▼"}${Math.abs(kpiChgPct).toFixed(1)}%` : "-", color: kpiChg >= 0 ? "#EF4444" : BLUE },
+                  { label: "증감률",   value: kpiChgPct !== null ? `${kpiChg >= 0 ? "▲" : "▼"}${Math.abs(kpiChgPct).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : "-", color: kpiChg >= 0 ? "#EF4444" : BLUE },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="card">
                     <div style={{ fontSize: 11, fontWeight: 700, color: "#999", marginBottom: 6 }}>

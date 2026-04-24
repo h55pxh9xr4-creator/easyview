@@ -24,7 +24,7 @@ ChartJS.register(
   Filler, Tooltip, Legend,
 );
 
-const fmtPct = (p: number) => `${p >= 0 ? "▲" : "▼"}${Math.abs(p * 100).toFixed(1)}%`;
+const fmtPct = (p: number) => `${p >= 0 ? "▲" : "▼"}${Math.abs(p * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 const ORANGE = "rgba(232,119,34,0.9)";
 const BLUE   = "rgba(37,99,235,0.9)";
 const RED    = "rgba(220,38,38,0.9)";
@@ -460,7 +460,7 @@ export default function BSSummary() {
               : <RatioChart labels={rLabels} height={160} isDark={isDark} series={[
                   { name: "당좌비율", data: ratios.map(r => r.당좌비율), color: ORANGE },
                   { name: "유동비율", data: ratios.map(r => r.유동비율), color: BLUE },
-                ]} yFmt={v => `${v.toFixed(1)}%`} />
+                ]} yFmt={v => `${v.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} />
             }
           </div>
           <div className="card">
@@ -469,7 +469,7 @@ export default function BSSummary() {
               ? <ChartLoading height={160} isDark={isDark} />
               : <RatioChart labels={rLabels} height={160} showLegend={false} isDark={isDark} series={[
                   { name: "부채비율", data: ratios.map(r => r.부채비율), color: RED },
-                ]} yFmt={v => `${v.toFixed(1)}%`} />
+                ]} yFmt={v => `${v.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`} />
             }
           </div>
         </div>

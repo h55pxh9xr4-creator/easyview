@@ -417,7 +417,7 @@ export default function VCHAnalysis() {
                     textStyle: { color: tipTxt, fontSize: 11 },
                     formatter: (p: { name: string; value: number; data?: { pct?: number } }) => {
                       if (!p.data?.pct) return "";
-                      return `${p.name}<br/>${fmtN(p.value)}건 (${p.data.pct.toFixed(1)}%)`;
+                      return `${p.name}<br/>${fmtN(p.value)}건 (${p.data.pct.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`;
                     },
                   },
                   series: [{
@@ -430,7 +430,7 @@ export default function VCHAnalysis() {
                     label: {
                       show: true,
                       formatter: (p: { name: string; data?: { pct?: number } }) =>
-                        p.data?.pct ? `${p.name}\n${p.data.pct.toFixed(1)}%` : p.name,
+                        p.data?.pct ? `${p.name}\n${p.data.pct.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : p.name,
                       fontSize: 11, color: "#fff", fontWeight: 600,
                     },
                     upperLabel: { show: false },

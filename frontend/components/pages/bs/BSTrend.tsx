@@ -95,7 +95,7 @@ function makePolylinePlugin(isDark: boolean): Plugin<"doughnut"> {
         ctx.fillText(short, xText, lbl.y3 - 6);
         ctx.fillStyle = isDark ? "#9198A8" : "#888";
         ctx.font = "9px Inter, sans-serif";
-        ctx.fillText(`${lbl.pct.toFixed(1)}%`, xText, lbl.y3 + 6);
+        ctx.fillText(`${lbl.pct.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`, xText, lbl.y3 + 6);
       });
       ctx.restore();
     },
@@ -151,7 +151,7 @@ function CpPie({ items, colors, isDark }: {
               callbacks: {
                 label: ctx => {
                   const v = ctx.parsed as number;
-                  return ` ${ctx.label}: ${fmtAmt(v)}${unitLabel} (${(v / total * 100).toFixed(1)}%)`;
+                  return ` ${ctx.label}: ${fmtAmt(v)}${unitLabel} (${(v / total * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`;
                 },
               },
             },

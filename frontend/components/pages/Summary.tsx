@@ -15,11 +15,12 @@ import {
 import ReactECharts from "echarts-for-react";
 import { useAmountFormat } from "@/lib/fmtAmount";
 
-const fmtPct = (p: number) => `${(p * 100).toFixed(1)}%`;
+const _pctFmt = (v: number) => v.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmtPct = (p: number) => `${_pctFmt(p * 100)}%`;
 const arrow  = (p: number) => p >= 0 ? "up" : "dn";
 const arrowTxt = (p: number) => p >= 0
-  ? `▲ ${Math.abs(p * 100).toFixed(1)}%`
-  : `▼ ${Math.abs(p * 100).toFixed(1)}%`;
+  ? `▲ ${_pctFmt(Math.abs(p * 100))}%`
+  : `▼ ${_pctFmt(Math.abs(p * 100))}%`;
 
 // ── ECharts Sparkline ─────────────────────────────────────────
 function Sparkline({ data, months, color, selectedIdx, onMonthClick }: {
@@ -343,7 +344,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>공시용계정</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>당기({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>전기({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {plTable.map((row) => {
-                  const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
+                  const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${_pctFmt(Math.abs(row.change_pct * 100))}%`;
                   const tc = (col: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
                     const r = e.currentTarget.getBoundingClientRect();
                     triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right }, e.currentTarget);
@@ -377,7 +378,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <thead><tr><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>재무항목</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기말({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>기초({unitSuffix})</th><th style={{ background: theadBg, borderBottom: "2px solid #E87722" }}>증감률</th></tr></thead>
               <tbody>
                 {bsTable.map((row) => {
-                  const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${Math.abs(row.change_pct * 100).toFixed(1)}%`;
+                  const chgTxt = `${row.change_pct >= 0 ? "▲" : "▼"}${_pctFmt(Math.abs(row.change_pct * 100))}%`;
                   const tc = (col: string, value: string) => (e: React.MouseEvent<HTMLTableCellElement>) => {
                     const r = e.currentTarget.getBoundingClientRect();
                     triggerComment({ page: "Summary", label: `${row.account} (${col})`, value }, { top: r.top, right: r.right }, e.currentTarget);
@@ -425,7 +426,7 @@ export default function Summary({ onNavigate }: { onNavigate?: (tab: string, sub
               <div className="vc-hover-badge">자세히 보기 →</div>
               <div className="vc-lbl">{label}</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <div className="vc-val">{scCount[key]}</div>
+                <div className="vc-val">{(scCount[key] ?? 0).toLocaleString("ko-KR")}</div>
                 <div className="vc-unit">건</div>
               </div>
             </div>

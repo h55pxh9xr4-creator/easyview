@@ -1,6 +1,18 @@
 import { useFilter } from "@/hooks/useFilter";
 import type { AmountUnit } from "@/hooks/useFilter";
 
+/** 퍼센트 숫자를 천단위 쉼표 + 소수 n자리로 포맷. 예: fmtPct(2172.7) = "2,172.7" */
+export const fmtPct = (n: number, digits: number = 1): string => {
+  if (!isFinite(n)) return "0";
+  return n.toLocaleString("ko-KR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+};
+
+/** 정수 건수/카운트를 천단위 쉼표로. 예: fmtCount(3025) = "3,025" */
+export const fmtCount = (n: number): string => {
+  if (!isFinite(n)) return "0";
+  return Math.round(n).toLocaleString("ko-KR");
+};
+
 export const fmtByUnit = (n: number, unit: AmountUnit): string => {
   const sign = n < 0 ? "-" : "";
   const abs = Math.abs(n);

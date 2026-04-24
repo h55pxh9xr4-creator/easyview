@@ -1,6 +1,7 @@
 "use client";
 
 import Loading from "@/components/ui/Loading";
+import DrillButtons from "@/components/ui/DrillButtons";
 import { useEffect, useRef, useState } from "react";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
@@ -64,7 +65,7 @@ function TopCounterpartyPie({
         return [x - w / 2, isTop ? y - h - 16 : y + 16];
       },
       formatter: (p: { name: string; value: number; percent: number }) =>
-        `${p.name}<br/>${fmtAmt(p.value)}${unitLabel} (${p.percent.toFixed(1)}%)`,
+        `${p.name}<br/>${fmtAmt(p.value)}${unitLabel} (${p.percent.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`,
     },
     legend: { show: false },
     graphic: hoverDonut ? [{
@@ -74,7 +75,7 @@ function TopCounterpartyPie({
       children: [
         { type: "text", z: 100, left: "center", top: -22, style: { text: hoverDonut.name.length > 10 ? hoverDonut.name.slice(0, 10) + "…" : hoverDonut.name, font: `700 12px sans-serif`, fill: isDark ? "#E2E5EC" : "#222", textAlign: "center" } },
         { type: "text", z: 100, left: "center", top: 2,   style: { text: `${fmtAmt(hoverDonut.value)}${unitLabel}`, font: `800 15px sans-serif`, fill: ORANGE, textAlign: "center" } },
-        { type: "text", z: 100, left: "center", top: 24,  style: { text: `(${hoverDonut.percent.toFixed(1)}%)`, font: `400 11px sans-serif`, fill: isDark ? "#9198A8" : "#888", textAlign: "center" } },
+        { type: "text", z: 100, left: "center", top: 24,  style: { text: `(${hoverDonut.percent.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`, font: `400 11px sans-serif`, fill: isDark ? "#9198A8" : "#888", textAlign: "center" } },
       ],
     }] : [],
     series: [{
@@ -91,7 +92,7 @@ function TopCounterpartyPie({
         position: "outside",
         formatter: (p: { name: string; percent: number }) => {
           const n = p.name.length > 14 ? p.name.slice(0, 14) + "…" : p.name;
-          return `${n}\n${p.percent.toFixed(1)}%`;
+          return `${n}\n${p.percent.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
         },
         fontSize: 10,
         lineHeight: 15,
@@ -227,6 +228,27 @@ export default function PLAccount() {
   const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
   const selectMgmt = (mgmt: string) => setSelected(prev => prev === mgmt ? null : mgmt);
 
+  const expandAll = () => {
+    const next: Record<string, boolean> = {};
+    orderedDisc.forEach(disc => {
+      next[`d-${disc}`] = true;
+      Object.keys(byDisclosure[disc] || {}).forEach(mgmt => {
+        next[`m-${disc}-${mgmt}`] = true;
+      });
+    });
+    setExpanded(next);
+  };
+  const collapseAll = () => {
+    const next: Record<string, boolean> = {};
+    orderedDisc.forEach(disc => {
+      next[`d-${disc}`] = false;
+      Object.keys(byDisclosure[disc] || {}).forEach(mgmt => {
+        next[`m-${disc}-${mgmt}`] = false;
+      });
+    });
+    setExpanded(next);
+  };
+
   const byDisclosure = rows.reduce<Record<string, Record<string, AcctRow[]>>>((acc, r) => {
     if (!acc[r.disclosure_acct]) acc[r.disclosure_acct] = {};
     if (!acc[r.disclosure_acct][r.mgmt_acct]) acc[r.disclosure_acct][r.mgmt_acct] = [];
@@ -268,8 +290,9 @@ export default function PLAccount() {
               style={{ position: "absolute", top: 12, right: 12, fontSize: 10, color: btnClr, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer", zIndex: 1 }}
             >선택 해제</button>
           )}
-          <div style={{ marginBottom: 10 }}>
+          <div style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <div className="card-title" style={{ marginBottom: 0 }}>손익항목</div>
+            <DrillButtons onExpandAll={expandAll} onCollapseAll={collapseAll} isDark={isDark} />
           </div>
           {!selected && (
             <div style={{
@@ -307,7 +330,7 @@ export default function PLAccount() {
                       <td>{fmt(discCur)}</td>
                       <td>{fmt(discPri)}</td>
                       <td className={discChg >= 0 ? "up-t" : "dn-t"}>
-                        {discChg >= 0 ? "▲" : "▼"}{Math.abs(discChg * 100).toFixed(1)}%
+                        {discChg >= 0 ? "▲" : "▼"}{Math.abs(discChg * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                       </td>
                     </tr>,
                     ...(!discOpen ? [] : Object.entries(mgmtMap).map(([mgmt, accts]) => {
@@ -350,8 +373,8 @@ export default function PLAccount() {
                             {fmt(mgmtPri)}
                           </td>
                           <td style={cmtCellStyle(`${mgmt} 증감`)} className={mgmtChg >= 0 ? "up-t" : "dn-t"}
-                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toFixed(1)}%` }, { top: r.top, right: r.right }, e.currentTarget); }}>
-                            {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toFixed(1)}%
+                            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); triggerComment({ page: "PL 계정분석", label: `${mgmt} 증감`, value: `${mgmtChg >= 0 ? "▲" : "▼"}${Math.abs(mgmtChg * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` }, { top: r.top, right: r.right }, e.currentTarget); }}>
+                            {mgmtChg >= 0 ? "▲" : "▼"}{Math.abs(mgmtChg * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                           </td>
                         </tr>,
                         ...(!mgmtOpen ? [] : accts.map(r => (
@@ -360,7 +383,7 @@ export default function PLAccount() {
                             <td>{fmt(r.current)}</td>
                             <td>{fmt(r.prior)}</td>
                             <td className={r.change_pct >= 0 ? "up-t" : "dn-t"}>
-                              {r.change_pct >= 0 ? "▲" : "▼"}{Math.abs(r.change_pct * 100).toFixed(1)}%
+                              {r.change_pct >= 0 ? "▲" : "▼"}{Math.abs(r.change_pct * 100).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                             </td>
                           </tr>
                         ))),
@@ -415,7 +438,7 @@ export default function PLAccount() {
                         { label: `당기금액(${unitSuffix(amountUnit)})`, display: fmtByUnit(Math.abs(kCur), amountUnit), color: kpiValClr },
                         { label: `전기금액(${unitSuffix(amountUnit)})`, display: fmtByUnit(Math.abs(kPri), amountUnit), color: kpiValClr },
                         { label: `증감액(${unitSuffix(amountUnit)})`,   display: (kChg < 0 ? "-" : "") + fmtByUnit(Math.abs(kChg), amountUnit), color: kChg >= 0 ? "#EF4444" : "#2563EB" },
-                        { label: "증감률",   display: `${kChgPct >= 0 ? "▲" : "▼"}${Math.abs(kChgPct).toFixed(1)}%`, color: kChgPct >= 0 ? "#EF4444" : "#2563EB" },
+                        { label: "증감률",   display: `${kChgPct >= 0 ? "▲" : "▼"}${Math.abs(kChgPct).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`, color: kChgPct >= 0 ? "#EF4444" : "#2563EB" },
                       ].map(({ label, display, color }) => (
                         <div key={label} style={{ background: kpiCardBg, borderRadius: 6, padding: "10px 14px", textAlign: "center" }}>
                           <div style={{ fontSize: 10, color: kpiLabelClr, marginBottom: 4 }}>{label}</div>
