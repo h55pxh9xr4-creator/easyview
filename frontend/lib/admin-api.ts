@@ -150,7 +150,7 @@ async function uploadFile(path: string, formData: FormData) {
 export const adminReportsApi = {
   acceptedRequests: () => api.get('/api/admin/reports/accepted-requests'),
   list: () => api.get('/api/admin/reports'),
-  create: (data: { data_request_id: number; period?: string }) =>
+  create: (data: { company: string; period?: string; title?: string; data_request_id?: number }) =>
     api.post('/api/admin/reports', data),
   uploadFile: (reportId: number, fileType: 'JE' | 'TB', file: File) => {
     const fd = new FormData();

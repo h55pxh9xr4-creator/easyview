@@ -58,6 +58,15 @@ def _fmt_file(f: ReportFile) -> dict:
     }
 
 
+# ── 공개: 현재 활성 리포트 회사 정보 (인증 불필요) ──────────────────
+@router.get("/active-info")
+def get_active_report_info(db: Session = Depends(get_db)):
+    report = db.query(Report).filter(Report.is_active == True).first()
+    if not report:
+        return {"active": False, "company": None, "period": None, "title": None}
+    return {"active": True, "company": report.company, "period": report.period, "title": report.title}
+
+
 # ── 자료실 Accept 요청 목록 ─────────────────────────────────────
 @router.get("/accepted-requests")
 def list_accepted_requests(db: Session = Depends(get_db), _: AdminUser = Depends(get_current_admin)):
@@ -103,10 +112,12 @@ def list_reports(db: Session = Depends(get_db), _: AdminUser = Depends(get_curre
     return {"reports": result}
 
 
-# ── 리포트 생성 (자료실 요청 → 리포트 레코드 신설) ──────────────
+# ── 리포트 레코드 신설 ──────────────────────────────────────────
 class ReportCreate(BaseModel):
-    data_request_id: int
+    company: str
     period: Optional[str] = ""
+    title: Optional[str] = ""
+    data_request_id: Optional[int] = None
 
 @router.post("", status_code=201)
 def create_report(
@@ -114,26 +125,23 @@ def create_report(
     db: Session = Depends(get_db),
     current_user: AdminUser = Depends(get_current_admin),
 ):
-    req = db.query(DataRequest).filter(DataRequest.id == body.data_request_id).first()
-    if not req:
-        raise HTTPException(404, "자료 요청을 찾을 수 없습니다.")
-    if req.status != "Accepted":
-        raise HTTPException(400, "Accept된 요청만 리포트로 전환할 수 있습니다.")
+    # 자료실 요청에서 연결된 경우 중복 방지
+    if body.data_request_id:
+        existing = db.query(Report).filter(Report.data_request_id == body.data_request_id).first()
+        if existing:
+            raise HTTPException(400, "이미 리포트가 생성된 요청입니다.")
 
-    existing = db.query(Report).filter(Report.data_request_id == req.id).first()
-    if existing:
-        raise HTTPException(400, "이미 리포트가 생성된 요청입니다.")
-
+    title = body.title or f"{body.company} {body.period or ''} 리포트".strip()
     report = Report(
-        data_request_id=req.id,
-        company=req.entity or "",
-        title=req.title,
+        data_request_id=body.data_request_id,
+        company=body.company,
+        title=title,
         period=body.period or "",
         status="upload",
     )
     db.add(report)
     db.add(AuditLog(actor=current_user.name, action_type="리포트 생성 시작",
-                    detail=f"{req.req_code} → 리포트 생성 시작", target=req.title))
+                    detail=f"{body.company} {body.period} 리포트 생성 시작", target=title))
     db.commit()
     db.refresh(report)
     return _fmt_report(report)

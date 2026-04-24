@@ -18,6 +18,7 @@ import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 import { useChatAttachment } from "@/hooks/useChatAttachment";
 import { adminAuthApi } from "@/lib/admin-api";
+import { fetchActiveReportInfo } from "@/lib/api";
 
 const AdminAccounts  = dynamic(() => import("@/app/admin/accounts/page"),  { ssr: false });
 const AdminCompanies = dynamic(() => import("@/app/admin/companies/page"), { ssr: false });
@@ -67,6 +68,8 @@ function PageInner() {
   const [pageLabel, setPageLabel] = useState("Summary");
   const [user, setUser]           = useState("");
   const [role, setRole]           = useState("admin");
+  const [userCompany, setUserCompany] = useState("");
+  const [activeReportCompany, setActiveReportCompany] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const { target: commentTarget, rect: commentRect, panelOpen, openPanel, closeAll } = useComment();
@@ -87,6 +90,7 @@ function PageInner() {
     const label = hp.get("label");
     setUser(sessionStorage.getItem("ev_user") ?? "");
     setRole(sessionStorage.getItem("ev_role") ?? "admin");
+    setUserCompany(sessionStorage.getItem("ev_company") ?? "");
     if (ok) loadCommentedItems();
     const savedTheme = localStorage.getItem("ev_theme") as "light" | "dark" | null;
     if (savedTheme) applyTheme(savedTheme);
@@ -161,6 +165,14 @@ function PageInner() {
       .catch(() => {});
   }, []);
 
+  // 활성 리포트 회사 조회
+  useEffect(() => {
+    if (!authed) return;
+    fetchActiveReportInfo()
+      .then((info) => setActiveReportCompany(info.active ? info.company : null))
+      .catch(() => setActiveReportCompany(null));
+  }, [authed]);
+
   if (authed === null) return null;
 
   const handleLogout = () => {
@@ -177,6 +189,7 @@ function PageInner() {
     return <LoginPage onLogin={() => {
       setUser(sessionStorage.getItem("ev_user") ?? "");
       setRole(sessionStorage.getItem("ev_role") ?? "admin");
+      setUserCompany(sessionStorage.getItem("ev_company") ?? "");
       loadCommentedItems();
       setTopTab("서비스 소개");
       setAuthed(true);
@@ -245,18 +258,33 @@ function PageInner() {
       })()}
 
       <div className="app-body" style={{ display: topTab !== "리포트" && topTab !== "자료실" ? "none" : undefined }}>
-        {topTab === "리포트" && (
-          <>
-            <Sidebar activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(p => !p)} />
-            <div className={`main-content${panelOpen ? " panel-open" : ""}`}>
-              <div className="ptb">
-                <span className="ptb-sub">{pageLabel}</span>
-                <FilterBar activeSub={activeSub} inline />
+        {topTab === "리포트" && (() => {
+          const isAdmin = role === "admin";
+          const hasAccess = isAdmin || (activeReportCompany !== null && activeReportCompany === userCompany);
+          if (!hasAccess) {
+            return (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, color: "#6b7280", padding: 40 }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <p style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>귀사의 리포트가 아직 준비되지 않았습니다.</p>
+                <p style={{ fontSize: 13, margin: 0, opacity: 0.7 }}>관리자가 리포트를 배포하면 이 페이지에서 확인할 수 있습니다.</p>
               </div>
-              <ActivePage onNavigate={handleNavigate} />
-            </div>
-          </>
-        )}
+            );
+          }
+          return (
+            <>
+              <Sidebar activeTab={activeTab} activeSub={activeSub} onNavigate={handleNavigate} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(p => !p)} />
+              <div className={`main-content${panelOpen ? " panel-open" : ""}`}>
+                <div className="ptb">
+                  <span className="ptb-sub">{pageLabel}</span>
+                  <FilterBar activeSub={activeSub} inline />
+                </div>
+                <ActivePage onNavigate={handleNavigate} />
+              </div>
+            </>
+          );
+        })()}
 
         {topTab === "자료실" && (
           <div style={{ flex: 1, overflow: "hidden" }}><ResourceRoom /></div>
