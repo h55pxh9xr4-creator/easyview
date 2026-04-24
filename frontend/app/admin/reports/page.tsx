@@ -132,14 +132,10 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
   const period = `${year}-${String(month).padStart(2, "0")}`;
   const canGenerate = !!selectedParent && !!jeFile && !!tbFile;
 
-  const handleParentClick = (c: Company) => {
-    if (selectedParent?.id === c.id) {
-      setSelectedParent(null);
-      setSelectedSub(null);
-    } else {
-      setSelectedParent(c);
-      setSelectedSub(null);
-    }
+  const handleParentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const c = companies.find(co => co.id === Number(e.target.value)) ?? null;
+    setSelectedParent(c);
+    setSelectedSub(null);
   };
 
   const handleGenerate = async () => {
@@ -231,66 +227,48 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
       {/* ── Row 2 Col 1: 대상 회사 ── */}
       <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
         <h3 className="text-sm font-semibold text-pwc-black mb-3">대상 회사</h3>
-        {companies.length === 0 ? (
-          <p className="text-xs text-pwc-gray-400 text-center py-4">등록된 회사 없음</p>
-        ) : (
-          <div className="space-y-1.5 max-h-72 overflow-y-auto">
-            {companies.map(c => {
-              const subs = c.subsidiaries ?? [];
-              const isParentSelected = selectedParent?.id === c.id;
-              return (
-                <div key={c.id}>
-                  <button
-                    onClick={() => handleParentClick(c)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer flex items-center justify-between ${
-                      isParentSelected
-                        ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange"
-                        : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50"
-                    }`}
-                  >
-                    <p className="text-sm font-medium text-pwc-black leading-tight">{c.name}</p>
-                    {subs.length > 0 && (
-                      <svg
-                        className={`w-3.5 h-3.5 text-pwc-gray-400 flex-shrink-0 transition-transform ${isParentSelected ? "rotate-90" : ""}`}
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    )}
-                  </button>
 
-                  {/* 자회사 — select 드롭다운 */}
-                  {isParentSelected && subs.length > 0 && (
-                    <div className="mt-1.5">
-                      <select
-                        value={selectedSub?.id ?? ""}
-                        onChange={e => {
-                          const sub = subs.find(s => s.id === Number(e.target.value));
-                          setSelectedSub(sub ?? null);
-                        }}
-                        className="input-field text-sm w-full"
-                      >
-                        <option value="">자회사 선택</option>
-                        {subs.map(sub => (
-                          <option key={sub.id} value={sub.id}>{sub.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-pwc-gray-500 mb-1">회사명</label>
+            <select
+              value={selectedParent?.id ?? ""}
+              onChange={handleParentChange}
+              className="input-field text-sm w-full"
+            >
+              <option value="">회사를 선택하세요</option>
+              {companies.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
-        )}
 
-        {selectedParent && (
-          <div className="mt-3 py-2 px-3 bg-orange-50 rounded-lg text-xs">
-            <span className="font-semibold text-pwc-orange">{selectedParent.name}</span>
-            {selectedSub && (
-              <span className="text-pwc-gray-600"> › {selectedSub.name}</span>
-            )}
-          </div>
-        )}
+          {selectedParent && (selectedParent.subsidiaries ?? []).length > 0 && (
+            <div>
+              <label className="block text-xs text-pwc-gray-500 mb-1">자회사</label>
+              <select
+                value={selectedSub?.id ?? ""}
+                onChange={e => {
+                  const subs = selectedParent.subsidiaries ?? [];
+                  setSelectedSub(subs.find(s => s.id === Number(e.target.value)) ?? null);
+                }}
+                className="input-field text-sm w-full"
+              >
+                <option value="">자회사 선택 (선택사항)</option>
+                {(selectedParent.subsidiaries ?? []).map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {selectedParent && (
+            <div className="py-2 px-3 bg-orange-50 rounded-lg text-xs">
+              <span className="font-semibold text-pwc-orange">{selectedParent.name}</span>
+              {selectedSub && <span className="text-pwc-gray-600"> › {selectedSub.name}</span>}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Row 2 Col 2: 시산표 (TB) + 생성 버튼 ── */}
