@@ -187,9 +187,12 @@ export default function CompaniesPage() {
               {/* 자회사 목록 */}
               <div className="bg-white rounded-xl shadow-sm border border-pwc-gray-200 p-6">
                 <h3 className="text-sm font-semibold text-pwc-black mb-4">자회사 목록</h3>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-pwc-gray-700 mb-1">국가</label>
-                  <input type="text" value={form.country} onChange={f("country")} className="input-field" placeholder="Korea" />
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-pwc-gray-700 mb-1">국가</label>
+                    <input type="text" value={form.country} onChange={f("country")} className="input-field" placeholder="Korea" />
+                  </div>
                 </div>
 
                 {visibleSubs.length === 0 && (
