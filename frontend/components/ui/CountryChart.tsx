@@ -109,7 +109,7 @@ export default function CountryChart() {
 
   useEffect(() => {
     if (mapRegistered) { setReady(true); return; }
-    fetch("/easyview/world.json")
+    fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/world.json`)
       .then(r => r.json())
       .then(json => {
         echarts.registerMap("world", json);

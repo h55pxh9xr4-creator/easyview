@@ -728,6 +728,10 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }
 }
+@keyframes drawSparkline {
+  from { stroke-dashoffset: 300; }
+  to   { stroke-dashoffset: 0; }
+}
 .svc-intro-wrap { overflow-x: hidden; }
 .svc-intro-wrap { width: 100%; overflow-x: hidden; }
 

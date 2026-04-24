@@ -189,7 +189,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
             </div>
 
             {/* ── Right: Easy View Summary Dashboard mockup ── */}
-            <div className="relative hidden md:block" style={{ animation: "heroFloat 7s ease-in-out infinite, fadeSlideUp 0.9s ease-out both" }}>
+            <div className="relative hidden md:block" style={{ animation: "fadeSlideUp 0.9s ease-out both, heroFloat 7s 1s ease-in-out infinite" }}>
               {/* Outer glow */}
               <div className="absolute -inset-4 bg-gradient-to-br from-[#FD5108]/12 to-[#FF9F00]/8 rounded-3xl blur-2xl" />
 
@@ -294,8 +294,18 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            style={{ strokeDasharray: 300, strokeDashoffset: 300, animation: `drawSparkline 1.4s ${0.6 + i * 0.15}s ease-out forwards` }}
-                          />
+                            strokeDasharray="300"
+                            strokeDashoffset="300"
+                          >
+                            <animate
+                              attributeName="stroke-dashoffset"
+                              from="300"
+                              to="0"
+                              dur="1.4s"
+                              begin={`${0.6 + i * 0.15}s`}
+                              fill="freeze"
+                            />
+                          </path>
                         </svg>
                       </div>
                     ))}
