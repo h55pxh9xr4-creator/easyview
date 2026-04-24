@@ -239,19 +239,20 @@ def _run_generate(report_id: int, db_url: str, actor: str):
             return
 
         # ── TB 적재 ──────────────────────────────────────────
-        df_tb = pd.read_excel(tb_file.file_path)
-        # 컬럼 수가 다를 수 있으므로 앞 10개만 사용
-        col_names = [
-            "account_name_1", "account_name", "account_code",
-            "disclosure_acct", "mgmt_acct", "section", "category",
-            "sum_acct", "company_acct", "opening_balance",
-        ]
-        df_tb = df_tb.iloc[:, :len(col_names)].copy()
-        df_tb.columns = col_names
-        # 숫자로 변환 불가능한 행(소계·헤더 행 등) 제거
-        df_tb["opening_balance"] = pd.to_numeric(df_tb["opening_balance"], errors="coerce")
-        df_tb["account_code"]    = pd.to_numeric(df_tb["account_code"],    errors="coerce")
+        _TB_COL_MAP = {
+            "1차 번역": "account_name_1", "계정과목": "account_name",
+            "계정코드": "account_code",   "공시용계정": "disclosure_acct",
+            "관리계정": "mgmt_acct",      "구분": "section",
+            "분류": "category",           "합산계정": "sum_acct",
+            "회사계정": "company_acct",   "기초": "opening_balance",
+        }
+        df_tb = pd.read_excel(tb_file.file_path).rename(columns=_TB_COL_MAP)
+        df_tb = df_tb.assign(
+            opening_balance=pd.to_numeric(df_tb["opening_balance"], errors="coerce"),
+            account_code=pd.to_numeric(df_tb["account_code"], errors="coerce"),
+        )
         df_tb = df_tb.dropna(subset=["opening_balance", "account_code"]).reset_index(drop=True)
+        df_tb = df_tb.drop_duplicates(subset=["account_code"], keep="last")
 
         with eng.connect() as conn:
             conn.execute(text("DELETE FROM tb_data WHERE report_id = :rid"), {"rid": report_id})
@@ -277,18 +278,22 @@ def _run_generate(report_id: int, db_url: str, actor: str):
         pd.DataFrame(tb_records).to_sql("tb_data", eng, if_exists="append", index=False)
 
         # ── JE 적재 ──────────────────────────────────────────
-        df_je = pd.read_excel(je_file.file_path)
-        je_col_names = [
-            "date", "voucher_no", "dr_cr", "amount",
-            "counterparty_raw", "counterparty", "description_raw", "description",
-            "account_code", "company_acct", "account_name_1", "account_name",
-            "mgmt_acct", "disclosure_acct", "sum_acct", "category", "section", "record_id",
-        ]
-        df_je = df_je.iloc[:, :len(je_col_names)].copy()
-        df_je.columns = je_col_names
-        # 숫자 변환 불가 행 제거
-        df_je["amount"] = pd.to_numeric(df_je["amount"], errors="coerce")
+        _JE_COL_MAP = {
+            "일자": "date",              "전표식별번호": "voucher_no",
+            "차대": "dr_cr",             "금액": "amount",
+            "거래처": "counterparty_raw", "거래처(번역)": "counterparty",
+            "적요": "description_raw",   "적요(번역)": "description",
+            "계정코드": "account_code",   "회사계정": "company_acct",
+            "1차 번역": "account_name_1", "계정과목": "account_name",
+            "관리계정": "mgmt_acct",      "공시용계정": "disclosure_acct",
+            "합산계정": "sum_acct",       "분류": "category",
+            "구분": "section",            "RecordID": "record_id",
+        }
+        df_je = pd.read_excel(je_file.file_path).rename(columns=_JE_COL_MAP)
+        df_je = df_je.assign(amount=pd.to_numeric(df_je["amount"], errors="coerce"))
         df_je = df_je.dropna(subset=["amount", "date"]).reset_index(drop=True)
+        if "record_id" not in df_je.columns:
+            df_je = df_je.assign(record_id=range(1, len(df_je) + 1))
         df_je["date"] = pd.to_datetime(df_je["date"]).dt.date
         df_je["year_month"] = df_je["date"].astype(str).str[:7]
         df_je["signed_amount"] = df_je.apply(
