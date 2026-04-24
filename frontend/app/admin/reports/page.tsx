@@ -16,7 +16,7 @@ interface Report {
   reviewedBy: string; reviewedAt: string; activatedAt: string; createdAt: string;
   files?: Record<string, ReportFile>;
 }
-interface Company { id: number; name: string; subsidiary_name?: string; }
+interface Company { id: number; name: string; subsidiary_name?: string; subsidiaries?: { id: number; name: string }[]; }
 
 // ── 상태 배지 ────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -109,11 +109,14 @@ function UploadZone({
 
 // ── 업로드 탭 ────────────────────────────────────────────────
 function UploadTab({ onRefresh }: { onRefresh: () => void }) {
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(currentYear);
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const now = new Date();
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const currentYear = now.getFullYear();
+  const [year, setYear] = useState(prevMonthDate.getFullYear());
+  const [month, setMonth] = useState(prevMonthDate.getMonth() + 1);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedParent, setSelectedParent] = useState<Company | null>(null);
+  const [selectedSub, setSelectedSub] = useState<{ id: number; name: string } | null>(null);
   const [jeFile, setJeFile] = useState<File | null>(null);
   const [tbFile, setTbFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -125,30 +128,34 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
   }, []);
 
   const period = `${year}-${String(month).padStart(2, "0")}`;
-  const canGenerate = !!selectedCompany && !!jeFile && !!tbFile;
+  const canGenerate = !!selectedParent && !!jeFile && !!tbFile;
+
+  const handleParentClick = (c: Company) => {
+    if (selectedParent?.id === c.id) {
+      setSelectedParent(null);
+      setSelectedSub(null);
+    } else {
+      setSelectedParent(c);
+      setSelectedSub(null);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setSubmitting(true);
+    const companyName = selectedParent!.name;
+    const subName = selectedSub?.name;
+    const title = subName
+      ? `${companyName} - ${subName} ${year}년 ${month}월 리포트`
+      : `${companyName} ${year}년 ${month}월 리포트`;
     try {
-      // 1. 리포트 레코드 생성
-      const rep: Report = await adminReportsApi.create({
-        company: selectedCompany!.name,
-        period,
-        title: `${selectedCompany!.name} ${year}년 ${month}월 리포트`,
-      });
-
-      // 2. JE 업로드
+      const rep: Report = await adminReportsApi.create({ company: companyName, period, title });
       await adminReportsApi.uploadFile(rep.id, "JE", jeFile!);
-      // 3. TB 업로드
       await adminReportsApi.uploadFile(rep.id, "TB", tbFile!);
-
-      // 4. 리포트 생성 트리거
       const res = await adminReportsApi.generate(rep.id);
       showToast(res.message ?? "리포트 생성을 시작했습니다.", "success");
-
-      // 초기화
       setJeFile(null); setTbFile(null);
+      setSelectedParent(null); setSelectedSub(null);
       onRefresh();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "오류 발생", "error");
@@ -162,7 +169,7 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
   return (
     <div className="flex gap-6 items-start">
       {/* ── 왼쪽 패널 ── */}
-      <div className="w-56 flex-shrink-0 space-y-4 sticky top-0">
+      <div className="w-60 flex-shrink-0 space-y-4 sticky top-0">
         {/* 결산 기간 */}
         <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
           <h3 className="text-sm font-semibold text-pwc-black mb-4">결산 기간</h3>
@@ -202,29 +209,69 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
           </div>
         </div>
 
-        {/* 대상 회사 */}
+        {/* 대상 회사 — 2단계 선택 */}
         <div className="bg-white rounded-xl border border-pwc-gray-200 p-5">
           <h3 className="text-sm font-semibold text-pwc-black mb-3">대상 회사</h3>
           {companies.length === 0 ? (
-            <p className="text-xs text-pwc-gray-400 text-center py-4">회사 없음</p>
+            <p className="text-xs text-pwc-gray-400 text-center py-4">등록된 회사 없음</p>
           ) : (
-            <div className="space-y-1.5 max-h-64 overflow-y-auto">
-              {companies.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCompany(c)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
-                    selectedCompany?.id === c.id
-                      ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange"
-                      : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50"
-                  }`}
-                >
-                  <p className="text-sm font-medium text-pwc-black leading-tight">{c.name}</p>
-                  {c.subsidiary_name && (
-                    <p className="text-xs text-pwc-gray-400 mt-0.5">{c.subsidiary_name}</p>
-                  )}
-                </button>
-              ))}
+            <div className="space-y-1.5 max-h-72 overflow-y-auto">
+              {companies.map(c => {
+                const subs = c.subsidiaries ?? [];
+                const isParentSelected = selectedParent?.id === c.id;
+                return (
+                  <div key={c.id}>
+                    {/* 모회사 버튼 */}
+                    <button
+                      onClick={() => handleParentClick(c)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer flex items-center justify-between ${
+                        isParentSelected
+                          ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange"
+                          : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50"
+                      }`}
+                    >
+                      <p className="text-sm font-medium text-pwc-black leading-tight">{c.name}</p>
+                      {subs.length > 0 && (
+                        <svg
+                          className={`w-3.5 h-3.5 text-pwc-gray-400 flex-shrink-0 transition-transform ${isParentSelected ? "rotate-180" : ""}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* 자회사 목록 (모회사 선택 시 표시) */}
+                    {isParentSelected && subs.length > 0 && (
+                      <div className="ml-3 mt-1 space-y-1">
+                        {subs.map(sub => (
+                          <button
+                            key={sub.id}
+                            onClick={() => setSelectedSub(selectedSub?.id === sub.id ? null : sub)}
+                            className={`w-full text-left px-3 py-2 rounded-lg border transition-colors cursor-pointer text-xs ${
+                              selectedSub?.id === sub.id
+                                ? "border-pwc-orange bg-orange-50 ring-1 ring-pwc-orange font-medium text-pwc-black"
+                                : "border-pwc-gray-200 hover:border-pwc-gray-300 hover:bg-pwc-gray-50 text-pwc-gray-600"
+                            }`}
+                          >
+                            ↳ {sub.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 선택 요약 */}
+          {selectedParent && (
+            <div className="mt-3 py-2 px-3 bg-orange-50 rounded-lg text-xs">
+              <span className="font-semibold text-pwc-orange">{selectedParent.name}</span>
+              {selectedSub && (
+                <span className="text-pwc-gray-600"> › {selectedSub.name}</span>
+              )}
             </div>
           )}
         </div>
@@ -232,7 +279,7 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
 
       {/* ── 오른쪽 패널 ── */}
       <div className="flex-1 space-y-4">
-        {!selectedCompany && (
+        {!selectedParent && (
           <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700">
             왼쪽에서 대상 회사를 선택하세요.
           </div>
@@ -245,7 +292,7 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
           required
           file={jeFile}
           onFile={setJeFile}
-          disabled={!selectedCompany}
+          disabled={!selectedParent}
         />
 
         <UploadZone
@@ -255,18 +302,18 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
           required
           file={tbFile}
           onFile={setTbFile}
-          disabled={!selectedCompany}
+          disabled={!selectedParent}
         />
 
         {/* 생성 버튼 */}
         <div className="flex items-center justify-between pt-2">
           <div className="text-xs text-pwc-gray-400">
-            {!selectedCompany && "회사 선택 필요"}
-            {selectedCompany && !jeFile && "JE 파일 업로드 필요"}
-            {selectedCompany && jeFile && !tbFile && "TB 파일 업로드 필요"}
+            {!selectedParent && "회사 선택 필요"}
+            {selectedParent && !jeFile && "JE 파일 업로드 필요"}
+            {selectedParent && jeFile && !tbFile && "TB 파일 업로드 필요"}
             {canGenerate && (
               <span className="text-green-600 font-medium">
-                {selectedCompany.name} · {year}년 {month}월 · JE + TB 준비 완료
+                {selectedParent.name}{selectedSub ? ` - ${selectedSub.name}` : ""} · {year}년 {month}월 · JE + TB 준비 완료
               </span>
             )}
           </div>
