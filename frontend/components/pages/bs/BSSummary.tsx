@@ -287,7 +287,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent, isDark = fal
         )}
         <div style={{ borderTop: `1px solid ${divClr}`, margin: "2px 0" }} />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>당기기초 금액</span>
+          <span>당기 기초 잔액</span>
           <span style={{ color: valClr }}>
             {fmtAmt(data.yr_start)}{unitLabel}&nbsp;
             <span className={data.yr_chg_pct >= 0 ? "up-t" : "dn-t"} style={{ fontSize: 10 }}>
@@ -296,7 +296,7 @@ function BSKpiCard({ cat, data, selectedLabel, current, noncurrent, isDark = fal
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>당월 기초 금액</span>
+          <span>당월 기초 잔액</span>
           <span style={{ color: valClr }}>
             {fmtAmt(data.mo_start)}{unitLabel}&nbsp;
             <span className={data.mo_chg_pct >= 0 ? "up-t" : "dn-t"} style={{ fontSize: 10 }}>

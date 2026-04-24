@@ -137,14 +137,14 @@ function MarginLineChart({ curMargins, priMargins, labels, color, title, dark }:
   const data = {
     labels,
     datasets: [
-      { type: "line" as const, label: "당기", data: curMargins.map(v => parseFloat((v * 100).toFixed(1))), borderColor: color, backgroundColor: color, tension: 0.3, pointRadius: 3, pointHoverRadius: 5 },
-      { type: "line" as const, label: "전기", data: priMargins.map(v => parseFloat((v * 100).toFixed(1))), borderColor: priColor, backgroundColor: priColor, tension: 0.3, pointRadius: 2, borderDash: [3, 3] },
+      { type: "line" as const, label: "당기", data: curMargins.map(v => parseFloat((v * 100).toFixed(1))), borderColor: color, backgroundColor: color, tension: 0.3, pointRadius: 3, pointHoverRadius: 5, pointStyle: "rect" as const },
+      { type: "line" as const, label: "전기", data: priMargins.map(v => parseFloat((v * 100).toFixed(1))), borderColor: priColor, backgroundColor: priColor, tension: 0.3, pointRadius: 2, borderDash: [3, 3], pointStyle: "rect" as const },
     ],
   };
   const opts = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: legendColor, font: { size: 11 }, boxWidth: 8 } },
+      legend: { labels: { color: legendColor, font: { size: 11 }, boxWidth: 8, usePointStyle: true, pointStyle: "rect" } },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y}%` } },
     },
@@ -164,10 +164,21 @@ function MarginLineChart({ curMargins, priMargins, labels, color, title, dark }:
 
 // ── 통계 행 ──────────────────────────────────────────────────
 function StatRow({ label, value, cls, dark }: { label: string; value: string; cls?: string; dark: boolean }) {
+  // 라벨(한글)+값(숫자) 합쳐 190px 내에 들어가는지 대략 추정. 넘으면 2줄(라벨 위, 값 아래)로 스택.
+  const approxPx = label.length * 13 + value.length * 6.5;
+  const stack = approxPx > 170;
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${dark ? "#2E3039" : "#F8F8F8"}`, fontSize: 12 }}>
-      <span style={{ color: dark ? "#5A6070" : "#bbb", fontWeight: 500 }}>{label}</span>
-      <span className={cls} style={{ fontWeight: 700 }}>{value}</span>
+    <div style={{
+      display: "flex",
+      flexDirection: stack ? "column" : "row",
+      justifyContent: stack ? "flex-start" : "space-between",
+      alignItems: stack ? "flex-start" : "baseline",
+      padding: "4px 0",
+      borderBottom: `1px solid ${dark ? "#2E3039" : "#F8F8F8"}`,
+      fontSize: 12, gap: stack ? 1 : 6,
+    }}>
+      <span style={{ color: dark ? "#5A6070" : "#bbb", fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>{label}</span>
+      <span className={cls} style={{ fontWeight: 700, whiteSpace: "nowrap", textAlign: "right", alignSelf: stack ? "flex-end" : undefined }}>{value}</span>
     </div>
   );
 }
@@ -446,10 +457,17 @@ export default function PLSummary() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: card.color, letterSpacing: "-1px", lineHeight: 1 }}>
-                    {fmtAmt(cur)}
-                    <span style={{ fontSize: 12, fontWeight: 400, color: dark ? "#5A6070" : "#bbb", marginLeft: 3 }}>{unitLabel}</span>
-                  </div>
+                  {(() => {
+                    const valStr = fmtAmt(cur);
+                    // 문자열 길이에 따라 반응형 축소 (한 셀 안에 보이게)
+                    const amtFs = valStr.length >= 14 ? 18 : valStr.length >= 11 ? 21 : valStr.length >= 9 ? 24 : 26;
+                    return (
+                      <div style={{ fontSize: amtFs, fontWeight: 800, color: card.color, letterSpacing: "-1px", lineHeight: 1, whiteSpace: "nowrap" }}>
+                        {valStr}
+                        <span style={{ fontSize: 12, fontWeight: 400, color: dark ? "#5A6070" : "#bbb", marginLeft: 3 }}>{unitLabel}</span>
+                      </div>
+                    );
+                  })()}
                   {margin !== null && margin !== undefined && (
                     <MarginGauge value={margin} label={card.marginLabel} color={card.color} dark={dark} />
                   )}

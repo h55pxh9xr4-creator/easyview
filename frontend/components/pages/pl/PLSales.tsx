@@ -83,15 +83,28 @@ function KpiCard({ label, value, unit, prior, change, changePct, vsPrevMonth, is
     <div className="kpi" style={{ flex: 1 }}>
       <div className="kpi-lbl">{label}</div>
       <div className="kpi-val">{typeof value === "number" ? value.toLocaleString("ko-KR") : value}<span className="u">{unit}</span></div>
-      <div style={{ marginTop: 10, fontSize: 11, color: secClr, display: "flex", flexDirection: "column", gap: 3 }}>
-        <div>전기 &nbsp;<span style={{ color: priorClr }}>{typeof prior === "number" ? prior.toLocaleString("ko-KR") : prior}{unit}</span></div>
-        <div>증감 &nbsp;
-          <span className={up ? "up-t" : "dn-t"}>{sign(change)}{typeof change === "number" ? Math.abs(change).toLocaleString("ko-KR") : change}{unit}</span>
+      <div style={{
+        marginTop: 10, fontSize: 11, color: secClr,
+        display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 12, rowGap: 3,
+        alignItems: "baseline",
+      }}>
+        <span style={{ whiteSpace: "nowrap" }}>전기</span>
+        <span style={{ color: priorClr, whiteSpace: "nowrap" }}>
+          {typeof prior === "number" ? prior.toLocaleString("ko-KR") : prior}{unit}
+        </span>
+
+        <span style={{ whiteSpace: "nowrap" }}>증감</span>
+        <span style={{ whiteSpace: "nowrap" }}>
+          <span className={up ? "up-t" : "dn-t"}>
+            {sign(change)}{typeof change === "number" ? Math.abs(change).toLocaleString("ko-KR") : change}{unit}
+          </span>
           &nbsp;<span style={{ fontSize: 10 }}>({fmtPct(Math.abs(changePct))})</span>
-        </div>
-        <div>전월대비증감 &nbsp;
-          <span className={vsPrevMonth >= 0 ? "up-t" : "dn-t"}>{sign(vsPrevMonth)}{Math.abs(vsPrevMonth).toLocaleString("ko-KR")}{unit}</span>
-        </div>
+        </span>
+
+        <span style={{ whiteSpace: "nowrap" }}>전월대비증감</span>
+        <span className={vsPrevMonth >= 0 ? "up-t" : "dn-t"} style={{ whiteSpace: "nowrap" }}>
+          {sign(vsPrevMonth)}{Math.abs(vsPrevMonth).toLocaleString("ko-KR")}{unit}
+        </span>
       </div>
     </div>
   );

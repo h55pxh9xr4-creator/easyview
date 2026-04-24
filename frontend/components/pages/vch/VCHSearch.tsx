@@ -43,7 +43,7 @@ export default function VCHSearch() {
 
   const [w1, setW1] = useState<Record<string, number>>({ date: 90, vno: 130, acct: 220, cp: 80, dr: 150, cr: 150 });
   const [w2, setW2] = useState<Record<string, number>>({ acct: 150, disc: 130, dr: 90, cr: 90 });
-  const [w3, setW3] = useState<Record<string, number>>({ acct: 150, cp: 100, dr: 90, cr: 90 });
+  const [w3, setW3] = useState<Record<string, number>>({ acct: 150, cp: 100, dr: 120, cr: 120 });
 
   const startResize = (setter: React.Dispatch<React.SetStateAction<Record<string, number>>>, col: string, curW: number, e: React.MouseEvent) => {
     e.preventDefault();
@@ -384,7 +384,7 @@ export default function VCHSearch() {
               {/* 전표 라인 상세 */}
               <div className="card">
                 <div className="card-title">전표 상세 내역</div>
-                <div style={{ height: 260, overflowY: "auto", overflowX: "auto" }}>
+                <div style={{ height: 260, overflowY: "auto", overflowX: "hidden" }}>
                   <table style={{ tableLayout: "fixed", width: "100%" }}>
                     <thead style={{ position: "sticky", top: 0, background: theadBg, zIndex: 1 }}>
                       <tr>
@@ -413,10 +413,10 @@ export default function VCHSearch() {
                           <td style={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{v.account_name}</td>
                           <td style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>{v.counterparty}</td>
                           <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: valTxt, textAlign: "left" }}>{v.description}</td>
-                          <td style={{ textAlign: "right", color: v.dr_cr === "차변" ? BLUE : zeroClr, whiteSpace: "nowrap" }}>
+                          <td style={{ textAlign: v.dr_cr === "차변" ? "right" : "center", color: v.dr_cr === "차변" ? BLUE : zeroClr, whiteSpace: "nowrap", paddingRight: v.dr_cr === "차변" ? 12 : undefined }}>
                             {v.dr_cr === "차변" ? fmtN(v.amount) : "-"}
                           </td>
-                          <td style={{ textAlign: "right", color: v.dr_cr === "대변" ? RED : zeroClr, whiteSpace: "nowrap" }}>
+                          <td style={{ textAlign: v.dr_cr === "대변" ? "right" : "center", color: v.dr_cr === "대변" ? RED : zeroClr, whiteSpace: "nowrap", paddingRight: v.dr_cr === "대변" ? 12 : undefined }}>
                             {v.dr_cr === "대변" ? fmtN(v.amount) : "-"}
                           </td>
                         </tr>
@@ -425,10 +425,10 @@ export default function VCHSearch() {
                     <tfoot>
                       <tr style={{ fontWeight: 700, background: tfootBg }}>
                         <td colSpan={3}>합계</td>
-                        <td style={{ textAlign: "right", color: BLUE, whiteSpace: "nowrap" }}>
+                        <td style={{ textAlign: "right", color: BLUE, whiteSpace: "nowrap", paddingRight: 12 }}>
                           {fmtN(detail.filter(v => v.dr_cr === "차변").reduce((s, v) => s + v.amount, 0))}
                         </td>
-                        <td style={{ textAlign: "right", color: RED, whiteSpace: "nowrap" }}>
+                        <td style={{ textAlign: "right", color: RED, whiteSpace: "nowrap", paddingRight: 12 }}>
                           {fmtN(detail.filter(v => v.dr_cr === "대변").reduce((s, v) => s + v.amount, 0))}
                         </td>
                       </tr>

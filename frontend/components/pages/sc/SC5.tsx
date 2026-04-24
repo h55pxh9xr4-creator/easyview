@@ -9,6 +9,7 @@ import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import { useAmountFormat } from "@/lib/fmtAmount";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   PointElement, LineElement, Tooltip,
@@ -21,10 +22,6 @@ const ORANGE = "#E87722";
 const BLUE   = "rgba(37,99,235,1)";
 const RED    = "rgba(220,38,38,1)";
 const fmtN   = (n: number) => Math.round(n).toLocaleString("ko-KR");
-const fmtM   = (n: number) => {
-  if (n >= 100_000_000) return `${Math.round(n / 100_000_000).toLocaleString()}억`;
-  return `${Math.round(n / 10_000).toLocaleString()}만`;
-};
 
 const DATE_MIN = new Date("2024-01-01").getTime();
 const DATE_MAX = new Date("2025-12-31").getTime();
@@ -38,6 +35,7 @@ export default function SC5() {
   const isDark = useDarkMode();
   const { triggerComment } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const [dateFrom, setDateFrom] = useState("2024-01-01");
   const [dateTo,   setDateTo]   = useState("2025-09-30");
   const [tsFrom,   setTsFrom]   = useState(strToTs("2024-01-01"));
@@ -124,7 +122,7 @@ export default function SC5() {
   const chartData = {
     labels: summary?.map(r => r.date) ?? [],
     datasets: [{
-      data: summary?.map(r => r.total_cash / 10_000) ?? [],
+      data: summary?.map(r => r.total_cash) ?? [],
       borderColor: "rgba(147,51,234,1)",
       backgroundColor: summary?.map(r => r.date === selDate ? "rgba(147,51,234,1)" : "rgba(147,51,234,0.35)") ?? [],
       pointRadius: summary?.map(r => r.date === selDate ? 8 : 5) ?? [],
@@ -153,7 +151,7 @@ export default function SC5() {
         callbacks: {
           label: (ctx: { parsed: { y: number }; dataIndex: number }) =>
             summary
-              ? ` 현금 ${fmtN(ctx.parsed.y)}만 · 비용 ${fmtM(summary[ctx.dataIndex].total_expense)} · ${summary[ctx.dataIndex].cnt}건`
+              ? ` 현금 ${fmtAmt(ctx.parsed.y)}${unitLabel} · 비용 ${fmtAmt(summary[ctx.dataIndex].total_expense)}${unitLabel} · ${summary[ctx.dataIndex].cnt}건`
               : "",
         },
       },
@@ -167,7 +165,7 @@ export default function SC5() {
         ticks: {
           font: { size: 10 },
           color: tickClr,
-          callback: (v: number | string) => `${Number(v).toLocaleString()}만`,
+          callback: (v: number | string) => fmtAmt(Number(v)),
         },
         grid: { color: gridClr },
       },
@@ -206,8 +204,8 @@ export default function SC5() {
       {summary && (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
           <KpiCard label="탐지 전표 수" value={`${fmtN(kpiCnt)}건`} sub={kpiSub} active={!!selDate} isDark={isDark} />
-          <KpiCard label="현금지급 합계" value={fmtM(kpiCash)} sub={kpiSub} active={!!selDate} isDark={isDark} color={RED} />
-          <KpiCard label="비용인식 합계" value={fmtM(kpiExpense)} sub={kpiSub} active={!!selDate} isDark={isDark} color={BLUE} />
+          <KpiCard label="현금지급 합계" value={`${fmtAmt(kpiCash)}${unitLabel}`} sub={kpiSub} active={!!selDate} isDark={isDark} color={RED} />
+          <KpiCard label="비용인식 합계" value={`${fmtAmt(kpiExpense)}${unitLabel}`} sub={kpiSub} active={!!selDate} isDark={isDark} color={BLUE} />
           <KpiCard label={selDate ? "선택 날짜" : "탐지 일수"} value={selDate ? selDate : `${fmtN(uniqueDays)}일`} sub={kpiSub} active={!!selDate} isDark={isDark} />
         </div>
       )}

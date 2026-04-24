@@ -42,13 +42,43 @@ export default function PLItems() {
   useEffect(() => {
     setLoading(true);
     fetchPLItemsTable(filter, viewType, levelType)
-      .then(d => setData(d as TableData))
+      .then(d => {
+        const raw = d as TableData;
+        // 연도 블록 단위로 swap: 과거→현재 순서 → 현재(당기) 왼쪽, 과거(전기) 오른쪽
+        // (회계 관례: 당기가 왼쪽)
+        const groups: number[][] = [];
+        let lastYear = "";
+        let cur: number[] = [];
+        raw.columns.forEach((col, i) => {
+          const y = col.split("/")[0];
+          if (y !== lastYear) {
+            if (cur.length) groups.push(cur);
+            cur = [];
+            lastYear = y;
+          }
+          cur.push(i);
+        });
+        if (cur.length) groups.push(cur);
+        groups.reverse();  // 연도 블록 순서만 뒤집고 내부 Q/월 순서는 유지
+        const order = groups.flat();
+        const flipped: TableData = {
+          columns: order.map(i => raw.columns[i]),
+          rows: raw.rows.map(r => ({ ...r, values: order.map(i => r.values[i]) })),
+        };
+        setData(flipped);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [filter.baseYm, viewType, levelType]);
 
-  // 서버가 level에 맞춰 rows를 주므로 추가 필터 불필요
-  const visibleRows = data?.rows ?? [];
+  // 클라이언트 사이드 필터 — 백엔드가 level 파라미터를 무시하는 구버전이어도 동작
+  const visibleRows = (data?.rows ?? []).filter(r => {
+    if (r.type === "subtotal") return true;  // 소계는 항상 표시
+    if (levelType === "disclosure") return r.type === "disclosure";
+    if (levelType === "mgmt")       return r.type === "disclosure" || r.type === "mgmt";
+    // levelType === "account": 전체 표시
+    return true;
+  });
 
   // 연도 그룹 계산
   const colGroups: { label: string; indices: number[] }[] = [];

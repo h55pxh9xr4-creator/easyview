@@ -131,6 +131,18 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          {currency !== "KRW" && exchangeRates[currency] ? (
+            <span
+              title={`1 ${currency} = ${(1 / exchangeRates[currency]).toLocaleString("ko-KR", { maximumFractionDigits: 2 })} KRW`}
+              style={{
+                fontSize: 10.5, color: "#888", fontWeight: 500,
+                padding: "2px 6px", background: "rgba(232,119,34,0.08)",
+                borderRadius: 4, whiteSpace: "nowrap",
+              }}
+            >
+              1 {currency} ≈ {(1 / exchangeRates[currency]).toLocaleString("ko-KR", { maximumFractionDigits: 2 })} KRW
+            </span>
+          ) : null}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="flabel">{t("filter.unit")}</span>

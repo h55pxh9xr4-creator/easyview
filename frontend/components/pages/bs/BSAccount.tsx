@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import DrillButtons from "@/components/ui/DrillButtons";
 import { useFilter } from "@/hooks/useFilter";
 import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
@@ -114,27 +113,6 @@ export default function BSAccount() {
     return acc;
   }, {});
 
-  const expandAll = () => {
-    const next: Record<string, boolean> = {};
-    Object.keys(byCategory).forEach(cat => {
-      next[`c-${cat}`] = true;
-      Object.keys(byCategory[cat] || {}).forEach(sum => {
-        next[`s-${cat}-${sum}`] = true;
-      });
-    });
-    setExpanded(next);
-  };
-  const collapseAll = () => {
-    const next: Record<string, boolean> = {};
-    Object.keys(byCategory).forEach(cat => {
-      next[`c-${cat}`] = false;
-      Object.keys(byCategory[cat] || {}).forEach(sum => {
-        next[`s-${cat}-${sum}`] = false;
-      });
-    });
-    setExpanded(next);
-  };
-
   const selRows   = selected ? rows.filter(r => r.disclosure_acct === selected) : [];
   const selEnd    = selRows.reduce((s, r) => s + r.ending, 0);
   const selOpn    = selRows.reduce((s, r) => s + r.opening, 0);
@@ -174,9 +152,8 @@ export default function BSAccount() {
               style={{ position: "absolute", top: 12, right: 12, fontSize: 10, color: subTxt, background: "none", border: `1px solid ${btnBdr}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer", zIndex: 1 }}
             >선택 해제</button>
           )}
-          <div style={{ marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ marginBottom: 10 }}>
             <div className="card-title" style={{ marginBottom: 0 }}>재무항목</div>
-            <DrillButtons onExpandAll={expandAll} onCollapseAll={collapseAll} isDark={isDark} />
           </div>
           {!selected && (
             <div style={{
@@ -433,7 +410,7 @@ export default function BSAccount() {
                             <div style={{ flex: 1, height: 18, background: barTrack, borderRadius: 3, overflow: "hidden" }}>
                               <div style={{ width: `${pct}%`, height: "100%", background: isPos ? BLUE : RED, borderRadius: 3 }} />
                             </div>
-                            <div style={{ width: 70, fontSize: 10, color: isPos ? BLUE : RED, textAlign: "right", flexShrink: 0, fontWeight: 700 }}>
+                            <div style={{ minWidth: 130, fontSize: 10, color: isPos ? BLUE : RED, textAlign: "right", flexShrink: 0, fontWeight: 700, whiteSpace: "nowrap" }}>
                               {fmtAmt(Math.abs(cp.net))}{unitLabel}
                             </div>
                           </div>

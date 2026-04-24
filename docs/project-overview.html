@@ -175,6 +175,7 @@ table.data tr:hover td { background: #FFF8F3; }
   <button data-tab="features">주요 기능</button>
   <button data-tab="today">오늘 변경사항</button>
   <button data-tab="deploy">배포·환경</button>
+  <button data-tab="roadmap">향후 과제</button>
 </nav>
 
 <div class="container">
@@ -635,6 +636,108 @@ table.data tr:hover td { background: #FFF8F3; }
       <li><b>deploy-to-easyview.sh</b> — 로컬 배포 스크립트</li>
       <li><b>.env</b>, <b>*.env.local</b></li>
       <li><b>node_modules/</b>, <b>.next/</b>, <b>out/</b>, <b>__pycache__/</b></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== 향후 과제 ===== -->
+<div class="panel" id="roadmap">
+  <div class="card">
+    <h2>향후 해결해야 하는 과제</h2>
+    <p style="font-size:12px;color:var(--text-sub);margin:0 0 12px;">
+      현재까지 적용된 것은 체크(✅), 진행 중(🟡), 예정(⏳)으로 표기.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>🌐 다국어 (i18next) — 진행 중</h3>
+    <table class="data">
+      <thead><tr><th>단계</th><th>범위</th><th>상태</th><th>작업량</th></tr></thead>
+      <tbody>
+        <tr><td>Stage 1</td><td>Header · Sidebar · FilterBar · Download/Drill 공통 UI</td><td>✅ 배포 완료</td><td>1일</td></tr>
+        <tr><td>Stage 2</td><td>Summary · PL · BS · VCH 페이지 내부 라벨 (매출액/영업이익/증감률/공시용계정 등)</td><td>⏳ 예정</td><td>1~2일</td></tr>
+        <tr><td>Stage 3</td><td>청구 · 문의 · 관리자 페이지</td><td>⏳ 예정</td><td>1일</td></tr>
+        <tr><td>Stage 4</td><td>김삼일 AI 다국어 응답 (system prompt + action label 언어 분기)</td><td>⏳ 예정</td><td>0.5일</td></tr>
+        <tr><td>Stage 5</td><td>ECharts/Chart.js 로케일, 날짜 포맷 (date-fns locale)</td><td>⏳ 예정</td><td>0.5일</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>🏦 청구 관리 자동화</h3>
+    <ul>
+      <li><b>B → A 옵션 업그레이드</b>: 리포트 status 전환 시 <code>sync_billing_from_reports(db, [report.id])</code> 1줄 추가. 현재는 수동 버튼 (<span style="color:var(--primary);font-weight:700;">🟡 코드는 준비됨, 훅 삽입만 남음</span>)</li>
+      <li><b>Outlook 메일 자동화</b>: Power Automate Flow 정의 (<code>EasyViewForms_20260424101705</code>) 참고해서 빌링 완료 시 청구서 PDF + 세금계산서 링크 메일 발송</li>
+      <li><b>입금 매칭 자동화</b>: 은행 이체 내역 CSV import → <code>billing_entry.deposit_date</code> 자동 채움</li>
+      <li><b>장기 AR 경보</b>: 90일 이상 미입금 건 대시보드 + 담당자에게 알림</li>
+      <li><b>PDF 청구서 생성</b>: 엑셀 템플릿 대신 서버에서 PDF 동적 생성 (WeasyPrint or jsPDF SSR)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>🤖 김삼일 AI 고도화</h3>
+    <ul>
+      <li><b>Personalization</b>: 사용자별 선호/대화 이력 기반 응답 조정 (<code>USER_PREFERENCES</code> 테이블)</li>
+      <li><b>Vector DB FAQ 검색</b>: 현재 키워드 매칭 → 임베딩 기반 semantic search</li>
+      <li><b>Proactive 알림</b>: 이상 전표 자동 감지 시 김삼일이 먼저 말 걸기 (예: "SC1에 중복 전표 14건 발견")</li>
+      <li><b>Voice I/O</b>: 음성 질문/답변 (Web Speech API)</li>
+      <li><b>Chart responses</b>: AI 답변에 차트 embedded (ECharts spec 반환)</li>
+      <li><b>Multi-model routing</b>: 간단한 질문 → Haiku, 복잡한 분석 → Sonnet/Opus</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>📊 리포트 UX 개선</h3>
+    <ul>
+      <li><b>페이지 이동 시 상태 기억</b>: 드릴다운 펼침/선택/시나리오 필터가 페이지 이동 후 초기화됨. Zustand 전역 store로 승격 or sessionStorage 복원</li>
+      <li><b>PDF 다운로드 성능</b>: 전체 17페이지 ~60초 소요. 병렬 capture + Web Worker로 단축</li>
+      <li><b>PDF lazy loading</b>: 현재 jsPDF/html2canvas/xlsx 합산 ~585KB gz가 초기 로드에 포함 → 다운로드 버튼 클릭 시에만 로드되도록 dynamic import</li>
+      <li><b>SC 페이지 단위 토글</b>: 현재 SC 페이지는 통화/단위 필터 미노출 (자체 금액 범위 슬라이더와 충돌 방지). 슬라이더를 단위 인식형으로 개선 후 토글 노출</li>
+      <li><b>차트 데이터 export</b>: ECharts 차트를 PNG/SVG 개별 저장</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>🔒 운영·보안</h3>
+    <ul>
+      <li><b>인증 강화</b>: 현재는 로컬 세션 기반. SSO(PwC SAML) 또는 OIDC 연동</li>
+      <li><b>감사 로그</b>: 리포트 조회 · 다운로드 · 코멘트 · 청구 처리 이벤트 모두 <code>audit_log</code> 기록 (일부만 구현)</li>
+      <li><b>데이터 격리</b>: 현재 SQLite 단일 파일. 고객사별 DB 분리 or Postgres row-level security</li>
+      <li><b>백업/복구</b>: 정기 스냅샷 + 포인트-인-타임 복구 전략</li>
+      <li><b>민감 데이터 마스킹</b>: 비관리자 계정은 거래처 / 담당자 이메일 마스킹</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>🧪 품질·테스트</h3>
+    <ul>
+      <li><b>백엔드 unit test</b>: pytest + FastAPI TestClient. 현재 0건</li>
+      <li><b>프론트 컴포넌트 테스트</b>: Vitest + Testing Library. 드릴다운/다운로드/필터 회귀 방지</li>
+      <li><b>E2E</b>: Playwright로 "리포트 조회 → 코멘트 → PDF 다운로드" 시나리오</li>
+      <li><b>CI/CD</b>: GitHub Actions에 TS check + 백엔드 test 통과 조건 추가</li>
+      <li><b>스냅샷 테스트</b>: KPI 수치 regression (데이터 레이어 변경 시 감지)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>🏛 아키텍처</h3>
+    <ul>
+      <li><b>SQLite → PostgreSQL</b>: 동시성 · 대용량 대응. 현재 단일 파일 기반</li>
+      <li><b>백엔드 분리</b>: 모노리식 FastAPI → 기능별 (report-api, chat-api, billing-api) 분리로 장애 격리</li>
+      <li><b>캐싱 레이어</b>: Redis 추가. KPI 등 빈번한 계산 캐시</li>
+      <li><b>OpenAPI SDK 자동생성</b>: 현재 <code>lib/api.ts</code>는 수동 작성. openapi-typescript로 자동화</li>
+      <li><b>모노레포화</b>: Turborepo/pnpm workspace로 frontend · backend · docs 통합 관리</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>🐛 알려진 이슈 / 기술 부채</h3>
+    <ul>
+      <li><b>SC 페이지 날짜/금액 input NaN</b> — 방어 처리 완료, 단 input 비우면 range 무효화됨. UX 개선 필요</li>
+      <li><b>html2canvas `&lt;select&gt;` 렌더링</b> — 한글 깨짐 대응으로 캡처 시 <code>&lt;span&gt;</code> 치환. 원본 드롭다운을 유지하며 깔끔히 렌더할 방안 필요</li>
+      <li><b>canvas 32,767px 한계</b> — 대량 전표 페이지는 일부 스크롤 영역을 펼치지 못함. Excel 다운로드로 우회 안내 중</li>
+      <li><b>Render 자동배포 지연</b> — 간헐적으로 배포가 수분~수시간 밀림. 프론트와 백엔드 버전 불일치 상황 발생 가능</li>
+      <li><b>다국어 미적용 하드코딩</b> — SC/VCH/Billing 페이지에 한글 리터럴 다수. Stage 2/3에서 순차 정리</li>
     </ul>
   </div>
 </div>

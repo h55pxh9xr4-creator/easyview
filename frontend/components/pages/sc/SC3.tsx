@@ -9,6 +9,7 @@ import { useComment } from "@/hooks/useComment";
 import { useCommentedItems, commentKey } from "@/hooks/useCommentedItems";
 import { CommentDot } from "@/components/ui/CommentDot";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import { useAmountFormat } from "@/lib/fmtAmount";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   PointElement, LineElement, Tooltip,
@@ -21,7 +22,6 @@ const ORANGE = "#E87722";
 const BLUE   = "rgba(37,99,235,1)";
 const RED    = "rgba(220,38,38,1)";
 const fmtN   = (n: number) => Math.round(n).toLocaleString("ko-KR");
-const fmtM   = (n: number) => `${Math.round(n / 10000).toLocaleString("ko-KR")}만`;
 
 const DATE_MIN = new Date("2024-01-01").getTime();
 const DATE_MAX = new Date("2025-12-31").getTime();
@@ -35,6 +35,7 @@ export default function SC3() {
   const isDark = useDarkMode();
   const { triggerComment } = useComment();
   const ck = useCommentedItems(state => state.ck);
+  const { fmtAmt, unitLabel } = useAmountFormat();
   const [dateFrom, setDateFrom] = useState("2024-01-01");
   const [dateTo,   setDateTo]   = useState("2025-09-30");
   const [tsFrom,   setTsFrom]   = useState(strToTs("2024-01-01"));
@@ -122,7 +123,7 @@ export default function SC3() {
   const chartData = {
     labels: summary?.map(r => r.date) ?? [],
     datasets: [{
-      data: summary?.map(r => r.total_amount / 10000) ?? [],
+      data: summary?.map(r => r.total_amount) ?? [],
       borderColor: ORANGE,
       backgroundColor: summary?.map(r => r.date === selDate ? ORANGE : "rgba(232,119,34,0.35)") ?? [],
       pointRadius: summary?.map(r => r.date === selDate ? 8 : 5) ?? [],
@@ -150,7 +151,7 @@ export default function SC3() {
         bodyColor: isDark ? "#9198A8" : "#666",
         callbacks: {
           label: (ctx: { parsed: { y: number }; dataIndex: number }) =>
-            summary ? ` ${fmtN(ctx.parsed.y)}만원 · ${summary[ctx.dataIndex].cnt}건` : "",
+            summary ? ` ${fmtAmt(ctx.parsed.y)}${unitLabel} · ${summary[ctx.dataIndex].cnt}건` : "",
         },
       },
     },
@@ -163,7 +164,7 @@ export default function SC3() {
         ticks: {
           font: { size: 10 },
           color: tickClr,
-          callback: (v: number | string) => `${Number(v).toLocaleString()}만`,
+          callback: (v: number | string) => fmtAmt(Number(v)),
         },
         grid: { color: gridClr },
       },
@@ -202,7 +203,7 @@ export default function SC3() {
       {summary && (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
           <KpiCard label="탐지 건수" value={`${fmtN(kpiCnt)}건`} sub={kpiSub} active={!!selDate} isDark={isDark} />
-          <KpiCard label="대변 합계" value={`${fmtM(kpiAmt)}원`} sub={kpiSub} active={!!selDate} isDark={isDark} />
+          <KpiCard label="대변 합계" value={`${fmtAmt(kpiAmt)}${unitLabel}`} sub={kpiSub} active={!!selDate} isDark={isDark} />
           <KpiCard label={selDate ? "선택 날짜" : "주말 일수"} value={selDate ? selDate : `${fmtN(kpiDays)}일`} sub={kpiSub} active={!!selDate} isDark={isDark} />
         </div>
       )}
