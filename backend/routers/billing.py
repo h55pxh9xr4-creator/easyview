@@ -173,9 +173,12 @@ def _entry_dict(e: BillingEntry) -> dict:
 
 @router.get("/entries")
 def list_entries(
-    status: Optional[str] = None,   # pending | completed | all (기본 all)
+    status: Optional[str] = None,   # pending | completed | all
     parent: Optional[str] = None,
     q: Optional[str] = None,
+    year: Optional[int] = None,     # 이관일/세금계산서일 연도 필터 (완료 탭용)
+    page: int = 1,
+    page_size: int = 100,
     db: Session = Depends(get_db),
 ):
     query = db.query(BillingEntry)
@@ -193,9 +196,36 @@ def list_entries(
             BillingEntry.mgmt_no.ilike(like),
             BillingEntry.assignee.ilike(like),
             BillingEntry.invoice_manager.ilike(like),
+            BillingEntry.report_ym.ilike(like),
         ))
-    rows = query.order_by(BillingEntry.invoice_date.asc().nulls_last(), BillingEntry.id.desc()).limit(2000).all()
-    return {"count": len(rows), "entries": [_entry_dict(r) for r in rows]}
+    if year:
+        # 연도 범위 문자열 매칭 (report_ym "2025년 12월" 포함 여부)
+        query = query.filter(BillingEntry.report_ym.ilike(f"{year}년%"))
+
+    total = query.count()
+    # 정렬: 완료는 최신(이관일 desc)부터, 대기는 세금계산서일(asc) 순
+    if status == "completed":
+        query = query.order_by(
+            BillingEntry.transfer_at.desc().nulls_last(),
+            BillingEntry.invoice_date.desc().nulls_last(),
+            BillingEntry.id.desc(),
+        )
+    else:
+        query = query.order_by(
+            BillingEntry.invoice_date.asc().nulls_last(),
+            BillingEntry.id.desc(),
+        )
+
+    page = max(1, page)
+    page_size = min(max(10, page_size), 500)
+    rows = query.offset((page - 1) * page_size).limit(page_size).all()
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "count": len(rows),
+        "entries": [_entry_dict(r) for r in rows],
+    }
 
 
 @router.get("/entries/{entry_id}")
@@ -329,6 +359,47 @@ def sync_from_reports(db: Session = Depends(get_db)):
     """
     result = sync_billing_from_reports(db)
     return {"ok": True, **result}
+
+
+@router.post("/dedupe")
+def dedupe_entries(db: Session = Depends(get_db)):
+    """(mgmt_no, report_ym, transfer_at, is_completed) 기준 중복 제거 — 최신 id만 남김.
+    기존 중복 import로 생긴 오염 1회성 정리용."""
+    from sqlalchemy import func
+    # 그룹별 최대 id만 남기고 나머지 삭제
+    dups = (
+        db.query(
+            BillingEntry.mgmt_no,
+            BillingEntry.report_ym,
+            BillingEntry.transfer_at,
+            BillingEntry.is_completed,
+            func.max(BillingEntry.id).label("keep_id"),
+            func.count("*").label("c"),
+        )
+        .group_by(
+            BillingEntry.mgmt_no,
+            BillingEntry.report_ym,
+            BillingEntry.transfer_at,
+            BillingEntry.is_completed,
+        )
+        .having(func.count("*") > 1)
+        .all()
+    )
+    deleted = 0
+    for d in dups:
+        q = db.query(BillingEntry).filter(
+            BillingEntry.mgmt_no == d.mgmt_no,
+            BillingEntry.report_ym == d.report_ym,
+            BillingEntry.is_completed == d.is_completed,
+            BillingEntry.id != d.keep_id,
+        )
+        if d.transfer_at is None:
+            q = q.filter(BillingEntry.transfer_at.is_(None))
+        else:
+            q = q.filter(BillingEntry.transfer_at == d.transfer_at)
+        deleted += q.delete(synchronize_session=False)
+    db.commit()
+    return {"ok": True, "dup_groups": len(dups), "deleted": deleted}
 
 
 @router.post("/import")

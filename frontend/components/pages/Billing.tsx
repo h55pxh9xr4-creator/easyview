@@ -21,6 +21,10 @@ export default function Billing() {
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
   const [parentFilter, setParentFilter] = useState<string>("");
+  const [yearFilter, setYearFilter] = useState<number | "">("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [pageSize] = useState(100);
   const [selected, setSelected] = useState<BillingEntry | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -41,9 +45,13 @@ export default function Billing() {
   const loadStats = () => fetchBillingStats().then(setStats).catch(() => setStats(null));
   const loadEntries = (status: "pending" | "completed") => {
     setLoading(true);
-    fetchBillingEntries({ status, q: q || undefined, parent: parentFilter || undefined })
-      .then(r => setEntries(r.entries))
-      .catch(() => setEntries([]))
+    fetchBillingEntries({
+      status, q: q || undefined, parent: parentFilter || undefined,
+      year: status === "completed" && yearFilter ? yearFilter as number : undefined,
+      page, page_size: pageSize,
+    })
+      .then(r => { setEntries(r.entries); setTotal(r.total); })
+      .catch(() => { setEntries([]); setTotal(0); })
       .finally(() => setLoading(false));
   };
   const loadMaster = () => {
@@ -62,7 +70,11 @@ export default function Billing() {
     if (tab === "pending" || tab === "completed") loadEntries(tab);
     else if (tab === "master") loadMaster();
     else if (tab === "exceptions") loadExceptions();
-  }, [tab, q, parentFilter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, q, parentFilter, yearFilter, page]);
+
+  // 탭/검색/필터 바뀌면 1페이지로
+  useEffect(() => { setPage(1); }, [tab, q, parentFilter, yearFilter]);
 
   const parents = useMemo(() => {
     const set = new Set<string>();
@@ -197,11 +209,11 @@ export default function Billing() {
 
       {/* ── 툴바 ── */}
       {(tab === "pending" || tab === "completed") && (
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
           <input
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="모회사 / 자회사 / 관리번호 / 담당자 검색"
+            placeholder="모회사 / 자회사 / 관리번호 / 담당자 / 기준월 검색"
             style={{
               flex: 1, maxWidth: 360, padding: "8px 12px", fontSize: 12,
               border: `1px solid ${bdr}`, borderRadius: 6, fontFamily: "inherit",
@@ -220,7 +232,25 @@ export default function Billing() {
             <option value="">모든 모회사</option>
             {parents.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
-          <span style={{ fontSize: 11, color: txtDim }}>{entries.length}건</span>
+          {tab === "completed" && (
+            <select
+              value={yearFilter}
+              onChange={e => setYearFilter(e.target.value ? Number(e.target.value) : "")}
+              style={{
+                padding: "8px 12px", fontSize: 12, border: `1px solid ${bdr}`,
+                borderRadius: 6, fontFamily: "inherit", background: bgCard, color: txtP,
+                cursor: "pointer",
+              }}
+            >
+              <option value="">전체 연도</option>
+              {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map(y => (
+                <option key={y} value={y}>{y}년</option>
+              ))}
+            </select>
+          )}
+          <span style={{ fontSize: 11, color: txtDim }}>
+            {total > 0 ? `${((page - 1) * pageSize + 1).toLocaleString("ko-KR")}-${Math.min(page * pageSize, total).toLocaleString("ko-KR")} / ${total.toLocaleString("ko-KR")}건` : `${entries.length}건`}
+          </span>
         </div>
       )}
 
@@ -280,6 +310,33 @@ export default function Billing() {
                 ))}
               </tbody>
             </table>
+            {total > pageSize && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, padding: "14px", borderTop: `1px solid ${bdr2}` }}>
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  style={{
+                    padding: "6px 12px", fontSize: 12, fontWeight: 600,
+                    background: bgCard, color: page <= 1 ? txtDim : txtP,
+                    border: `1px solid ${bdr}`, borderRadius: 5,
+                    cursor: page <= 1 ? "default" : "pointer", fontFamily: "inherit",
+                  }}
+                >← 이전</button>
+                <span style={{ fontSize: 12, color: txtS }}>
+                  {page} / {Math.max(1, Math.ceil(total / pageSize))}
+                </span>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page * pageSize >= total}
+                  style={{
+                    padding: "6px 12px", fontSize: 12, fontWeight: 600,
+                    background: bgCard, color: page * pageSize >= total ? txtDim : txtP,
+                    border: `1px solid ${bdr}`, borderRadius: 5,
+                    cursor: page * pageSize >= total ? "default" : "pointer", fontFamily: "inherit",
+                  }}
+                >다음 →</button>
+              </div>
+            )}
           </div>
         )}
 

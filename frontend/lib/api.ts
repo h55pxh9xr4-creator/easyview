@@ -515,9 +515,10 @@ export interface BillingStats {
   unpaid: number;
 }
 
-export const fetchBillingEntries = (opts: { status?: "pending" | "completed" | "all"; parent?: string; q?: string } = {}) =>
-  get<{ count: number; entries: BillingEntry[] }>("/api/billing/entries", {
+export const fetchBillingEntries = (opts: { status?: "pending" | "completed" | "all"; parent?: string; q?: string; year?: number; page?: number; page_size?: number } = {}) =>
+  get<{ total: number; page: number; page_size: number; count: number; entries: BillingEntry[] }>("/api/billing/entries", {
     status: opts.status, parent: opts.parent, q: opts.q,
+    year: opts.year, page: opts.page, page_size: opts.page_size,
   });
 
 export const fetchBillingEntry = (id: number) =>

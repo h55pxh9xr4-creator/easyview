@@ -89,27 +89,36 @@ def import_billing():
                 manager_email = _to_str(row[14])
                 manager_phone = _to_str(row[15])
 
-                key = (mgmt_no, report_ym)
+                # pending 엔트리는 transfer_at=NULL 기준으로 dedup
                 exists = db.query(BillingEntry).filter(
                     BillingEntry.mgmt_no == mgmt_no,
                     BillingEntry.report_ym == report_ym,
+                    BillingEntry.transfer_at.is_(None),
+                    BillingEntry.is_completed == False,
                 ).first()
                 payload = dict(
                     parent=parent, subsidiary=subsidiary, mgmt_no=mgmt_no,
                     assignee=assignee, report_ym=report_ym, delivery_ym=delivery_ym,
                     billing_date=billing_date, invoice_date=invoice_date,
-                    status=status, deposit_date=deposit_date, memo=memo,
+                    status=status, deposit_date=deposit_date,
                     amount=amount, invoice_request_day=invoice_request_day,
                     invoice_manager=invoice_manager, manager_email=manager_email,
                     manager_phone=manager_phone, is_completed=False,
                 )
                 if exists:
+                    # 🔒 UI 편집 보호: memo/deposit_date는 엑셀이 비었으면 기존 값 유지
+                    if memo:
+                        exists.memo = memo
+                    if deposit_date:
+                        exists.deposit_date = deposit_date
                     for k, v in payload.items():
                         setattr(exists, k, v)
                     upd_entry += 1
                 else:
+                    payload["memo"] = memo
                     db.add(BillingEntry(**payload))
                     ins_entry += 1
+                db.flush()  # 같은 run 안에서 즉시 가시화
 
         # ── 완료리스트 ────────────────────────────────────────────
         if "완료리스트" in wb.sheetnames:
@@ -135,26 +144,36 @@ def import_billing():
                 invoice_request_day = _to_str(row[13])
                 invoice_manager = _to_str(row[14])
 
+                # completed 엔트리는 (mgmt_no, report_ym, transfer_at) 조합으로 dedup
+                # → 같은 고객의 같은 기준월이라도 이관일이 다르면 별개 이력으로 보관
                 exists = db.query(BillingEntry).filter(
                     BillingEntry.mgmt_no == mgmt_no,
                     BillingEntry.report_ym == report_ym,
+                    BillingEntry.transfer_at == transfer_at,
+                    BillingEntry.is_completed == True,
                 ).first()
                 payload = dict(
                     parent=parent, subsidiary=subsidiary, mgmt_no=mgmt_no,
                     assignee=assignee, report_ym=report_ym, delivery_ym=delivery_ym,
                     billing_date=billing_date, invoice_date=invoice_date,
-                    status=status, deposit_date=deposit_date, memo=memo,
+                    status=status, deposit_date=deposit_date,
                     amount=amount, invoice_request_day=invoice_request_day,
                     invoice_manager=invoice_manager, is_completed=True,
                     transfer_at=transfer_at,
                 )
                 if exists:
+                    if memo:
+                        exists.memo = memo
+                    if deposit_date:
+                        exists.deposit_date = deposit_date
                     for k, v in payload.items():
                         setattr(exists, k, v)
                     upd_entry += 1
                 else:
+                    payload["memo"] = memo
                     db.add(BillingEntry(**payload))
                     ins_entry += 1
+                db.flush()
 
         # ── Master ───────────────────────────────────────────────
         if "Master" in wb.sheetnames:
