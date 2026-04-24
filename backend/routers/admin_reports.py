@@ -246,7 +246,7 @@ def _run_generate(report_id: int, db_url: str, actor: str):
             "disclosure_acct", "mgmt_acct", "section", "category",
             "sum_acct", "company_acct", "opening_balance",
         ]
-        df_tb = df_tb.iloc[:, :len(col_names)]
+        df_tb = df_tb.iloc[:, :len(col_names)].copy()
         df_tb.columns = col_names
         # 숫자로 변환 불가능한 행(소계·헤더 행 등) 제거
         df_tb["opening_balance"] = pd.to_numeric(df_tb["opening_balance"], errors="coerce")
@@ -283,7 +283,7 @@ def _run_generate(report_id: int, db_url: str, actor: str):
             "account_code", "company_acct", "account_name_1", "account_name",
             "mgmt_acct", "disclosure_acct", "sum_acct", "category", "section", "record_id",
         ]
-        df_je = df_je.iloc[:, :len(je_col_names)]
+        df_je = df_je.iloc[:, :len(je_col_names)].copy()
         df_je.columns = je_col_names
         # 숫자 변환 불가 행 제거
         df_je["amount"] = pd.to_numeric(df_je["amount"], errors="coerce")
