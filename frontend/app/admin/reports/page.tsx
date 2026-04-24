@@ -22,6 +22,7 @@ interface Company { id: number; name: string; subsidiary_name?: string; subsidia
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   upload:             { label: "파일 대기",  cls: "bg-gray-100 text-gray-600" },
   pending_generation: { label: "생성 대기",  cls: "bg-yellow-100 text-yellow-700" },
+  generating:         { label: "생성 중",    cls: "bg-orange-100 text-orange-700" },
   generated:          { label: "생성 완료",  cls: "bg-blue-100 text-blue-700" },
   reviewing:          { label: "검토 중",    cls: "bg-purple-100 text-purple-700" },
   active:             { label: "활성",       cls: "bg-green-100 text-green-700" },
@@ -330,11 +331,12 @@ function UploadTab({ onRefresh }: { onRefresh: () => void }) {
 
 // ── 현황 탭 ──────────────────────────────────────────────────
 const STATUS_GROUPS = [
-  { key: "all",       label: "전체" },
-  { key: "generated", label: "생성 완료" },
-  { key: "reviewing", label: "검토 중" },
-  { key: "active",    label: "활성" },
-  { key: "archived",  label: "보관" },
+  { key: "all",        label: "전체" },
+  { key: "generating", label: "생성 중" },
+  { key: "generated",  label: "생성 완료" },
+  { key: "reviewing",  label: "검토 중" },
+  { key: "active",     label: "활성" },
+  { key: "archived",   label: "보관" },
 ];
 
 function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () => void }) {
@@ -401,6 +403,12 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
                   <td className="py-3 px-4 text-xs text-pwc-gray-500 whitespace-nowrap">{r.activatedAt ? r.activatedAt.slice(0, 16) : "—"}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
+                      {r.status === "generating" && (
+                        <span className="text-xs text-orange-600 flex items-center gap-1.5">
+                          <span className="inline-block w-3 h-3 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                          생성 중...
+                        </span>
+                      )}
                       {r.status === "generated" && (
                         <button
                           onClick={() => changeStatus(r.id, "reviewing", "검토 중")}

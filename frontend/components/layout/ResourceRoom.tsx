@@ -8,6 +8,7 @@ import {
   fetchRequestHistory,
   type DataRequest as ApiRequest, type ReqFile, type RequestComment, type ReqHistoryEntry,
 } from "@/lib/api";
+import { adminCompaniesApi, adminUsersApi } from "@/lib/admin-api";
 
 
 /* ── types ── */
@@ -409,6 +410,12 @@ export default function ResourceRoom() {
   const [nRequester, setNRequester] = useState(() =>
     typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : ""
   );
+  const [nParentId, setNParentId] = useState<number | null>(null);
+  const [editParentId, setEditParentId] = useState<number | null>(null);
+  type DbCompany = { id: number; name: string; subsidiaries?: { id: number; name: string }[] };
+  type DbUser    = { id: number; name: string; company: string };
+  const [dbCompanies, setDbCompanies] = useState<DbCompany[]>([]);
+  const [dbUsers,     setDbUsers]     = useState<DbUser[]>([]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -460,6 +467,16 @@ export default function ResourceRoom() {
 
   useEffect(() => { loadRequests(); }, [loadRequests]);
 
+  useEffect(() => {
+    adminCompaniesApi.list()
+      .then((d: { companies: DbCompany[] }) => setDbCompanies(d.companies ?? []))
+      .catch(() => {});
+    adminUsersApi.list()
+      .then((d: { users: DbUser[] }) => setDbUsers(d.users ?? []))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* detailReq 변경 시 편집 모드 초기화 */
   useEffect(() => {
     setIsEditing(false);
@@ -469,6 +486,10 @@ export default function ResourceRoom() {
 
   const startEditing = () => {
     if (!detailReq) return;
+    const parentComp = dbCompanies.find(c =>
+      c.name === detailReq.entity || (c.subsidiaries ?? []).some(s => s.name === detailReq.entity)
+    );
+    setEditParentId(parentComp?.id ?? null);
     setEditDraft({
       title:       detailReq.title,
       entity:      detailReq.entity,
@@ -568,7 +589,7 @@ export default function ResourceRoom() {
 
   const resetNewForm = () => {
     setNTitle(""); setNDesc(""); setNDue(""); setNAssignees([]);
-    setNEntity(ENTITIES[0]); setNStatus("Requested");
+    setNEntity(ENTITIES[0]); setNStatus("Requested"); setNParentId(null);
     setNRequester(typeof window !== "undefined" ? (sessionStorage.getItem("ev_user") ?? "") : "");
   };
 
@@ -673,9 +694,20 @@ export default function ResourceRoom() {
   const userCompany = typeof window !== "undefined" ? (sessionStorage.getItem("ev_company") ?? "PwC") : "PwC";
   const isAdmin     = typeof window !== "undefined" ? (sessionStorage.getItem("ev_role") === "admin") : true;
   // PwC 또는 admin → 전체 법인. 그 외 → 소속 회사 이름이 포함된 법인만
-  const allowedEntities = (isAdmin || userCompany === "PwC" || userCompany === "전체")
-    ? ENTITIES
-    : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
+  const allowedEntities = (() => {
+    const base = (isAdmin || userCompany === "PwC" || userCompany === "전체")
+      ? ENTITIES
+      : ENTITIES.filter(e => e.toLowerCase().includes(userCompany.toLowerCase()));
+    if (!dbCompanies.length) return base;
+    const dbEntities: string[] = [];
+    for (const c of dbCompanies) {
+      if (isAdmin || userCompany === "PwC" || c.name.toLowerCase().includes(userCompany.toLowerCase())) {
+        dbEntities.push(c.name);
+        for (const s of c.subsidiaries ?? []) dbEntities.push(s.name);
+      }
+    }
+    return [...new Set([...base, ...dbEntities])];
+  })();
   const filteredReqs = requests.filter(r => {
     if (!isAdmin && r.status === "Draft") return false;
     if (myOnly && currentUser) {
@@ -862,10 +894,33 @@ export default function ResourceRoom() {
               {/* 1행 메타 */}
               <div style={{ display: "flex", background: "var(--rr-surface)", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24 }}>
                 <div style={divider}>
-                  <div style={fLabel}>법인</div>
-                  <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={fSelect}>
-                    {allowedEntities.map(en => <option key={en}>{en}</option>)}
+                  <div style={fLabel}>회사명</div>
+                  <select
+                    value={nParentId ?? ""}
+                    onChange={e => {
+                      const id = Number(e.target.value) || null;
+                      setNParentId(id);
+                      setNAssignees([]);
+                      const parent = dbCompanies.find(c => c.id === id);
+                      setNEntity(!id ? "" : !(parent?.subsidiaries?.length) ? (parent?.name ?? "") : "");
+                    }}
+                    style={fSelect}
+                  >
+                    <option value="">회사 선택</option>
+                    {(dbCompanies.length > 0 ? dbCompanies : allowedEntities.map((n, i) => ({ id: -(i + 1), name: n, subsidiaries: [] }))).map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                   </select>
+                  {nParentId != null && (() => {
+                    const subs = dbCompanies.find(c => c.id === nParentId)?.subsidiaries ?? [];
+                    if (!subs.length) return null;
+                    return (
+                      <select value={nEntity} onChange={e => { setNEntity(e.target.value); setNAssignees([]); }} style={{ ...fSelect, marginTop: 4 }}>
+                        <option value="">자회사 선택</option>
+                        {subs.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                      </select>
+                    );
+                  })()}
                 </div>
                 <div style={divider}>
                   <div style={fLabel}>자료요청자</div>
@@ -873,10 +928,18 @@ export default function ResourceRoom() {
                 </div>
                 <div style={divider}>
                   <div style={fLabel}>법인담당자</div>
-                  <select value="" onChange={e => { const v = e.target.value; if (v && !nAssignees.includes(v)) setNAssignees(p => [...p, v]); e.target.value = ""; }} style={fSelect}>
-                    <option value="">{(ENTITY_CLIENTS[nEntity] ?? []).length === 0 ? "등록 없음" : "추가..."}</option>
-                    {(ENTITY_CLIENTS[nEntity] ?? ASSIGNEES).filter(a => !nAssignees.includes(a)).map(a => <option key={a} value={a}>{a}</option>)}
-                  </select>
+                  {(() => {
+                    const parent = dbCompanies.find(c => c.id === nParentId);
+                    const available = parent && dbUsers.length > 0
+                      ? dbUsers.filter(u => u.company === parent.name && !nAssignees.includes(u.name)).map(u => u.name)
+                      : (ENTITY_CLIENTS[nEntity] ?? ASSIGNEES).filter(a => !nAssignees.includes(a));
+                    return (
+                      <select value="" onChange={e => { const v = e.target.value; if (v && !nAssignees.includes(v)) setNAssignees(p => [...p, v]); e.target.value = ""; }} style={fSelect}>
+                        <option value="">{available.length === 0 ? "등록 없음" : "추가..."}</option>
+                        {available.map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                    );
+                  })()}
                   {nAssignees.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                       {nAssignees.map(a => (
@@ -1265,12 +1328,37 @@ export default function ResourceRoom() {
 
                   {/* 메타 폼 – 1행 */}
                   <div style={{ background: "var(--rr-surface)", borderRadius: 8, border: `1px solid ${C.border}`, padding: "14px 20px", marginBottom: 24, display: "flex", gap: 0 }}>
-                    {/* 법인 */}
+                    {/* 회사명 (2단계) */}
                     <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
-                      <div style={fieldLabel}>법인</div>
-                      <select value={editDraft.entity} onChange={e => setEditDraft(p => p ? { ...p, entity: e.target.value, assignees: [] } : p)} style={fieldSelect}>
-                        {ENTITIES.map(en => <option key={en}>{en}</option>)}
+                      <div style={fieldLabel}>회사명</div>
+                      <select
+                        value={editParentId ?? ""}
+                        onChange={e => {
+                          const id = Number(e.target.value) || null;
+                          setEditParentId(id);
+                          const parent = dbCompanies.find(c => c.id === id);
+                          const entity = !id ? "" : !(parent?.subsidiaries?.length) ? (parent?.name ?? "") : "";
+                          setEditDraft(p => p ? { ...p, entity, assignees: [] } : p);
+                        }}
+                        style={fieldSelect}
+                      >
+                        <option value="">회사 선택</option>
+                        {dbCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
+                      {editParentId != null && (() => {
+                        const subs = dbCompanies.find(c => c.id === editParentId)?.subsidiaries ?? [];
+                        if (!subs.length) return null;
+                        return (
+                          <select
+                            value={editDraft.entity}
+                            onChange={e => setEditDraft(p => p ? { ...p, entity: e.target.value, assignees: [] } : p)}
+                            style={{ ...fieldSelect, marginTop: 4 }}
+                          >
+                            <option value="">자회사 선택</option>
+                            {subs.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                          </select>
+                        );
+                      })()}
                     </div>
                     {/* 자료요청자 */}
                     <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
@@ -1280,10 +1368,18 @@ export default function ResourceRoom() {
                     {/* 법인담당자 */}
                     <div style={{ flex: "1 1 0", minWidth: 0, paddingRight: 16, borderRight: `1px solid ${C.border}`, marginRight: 16 }}>
                       <div style={fieldLabel}>법인담당자</div>
-                      <select value="" onChange={e => { const v = e.target.value; if (v && !editDraft.assignees.includes(v)) setEditDraft(p => p ? { ...p, assignees: [...p.assignees, v] } : p); e.target.value = ""; }} style={fieldSelect}>
-                        <option value="">{(ENTITY_CLIENTS[editDraft.entity] ?? []).length === 0 ? "등록 없음" : "추가..."}</option>
-                        {(ENTITY_CLIENTS[editDraft.entity] ?? ASSIGNEES).filter(a => !editDraft.assignees.includes(a)).map(a => <option key={a} value={a}>{a}</option>)}
-                      </select>
+                      {(() => {
+                        const parent = dbCompanies.find(c => c.id === editParentId);
+                        const available = parent && dbUsers.length > 0
+                          ? dbUsers.filter(u => u.company === parent.name && !editDraft.assignees.includes(u.name)).map(u => u.name)
+                          : (ENTITY_CLIENTS[editDraft.entity] ?? ASSIGNEES).filter(a => !editDraft.assignees.includes(a));
+                        return (
+                          <select value="" onChange={e => { const v = e.target.value; if (v && !editDraft.assignees.includes(v)) setEditDraft(p => p ? { ...p, assignees: [...p.assignees, v] } : p); e.target.value = ""; }} style={fieldSelect}>
+                            <option value="">{available.length === 0 ? "등록 없음" : "추가..."}</option>
+                            {available.map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                        );
+                      })()}
                       {editDraft.assignees.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                           {editDraft.assignees.map(a => (

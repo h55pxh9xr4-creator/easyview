@@ -137,7 +137,7 @@ def create_report(
         company=body.company,
         title=title,
         period=body.period or "",
-        status="upload",
+        status="pending_generation" if body.data_request_id else "upload",
     )
     db.add(report)
     db.add(AuditLog(actor=current_user.name, action_type="리포트 생성 시작",
@@ -312,7 +312,7 @@ def _run_generate(report_id: int, db_url: str, actor: str):
     except Exception as e:
         report = session.query(Report).filter(Report.id == report_id).first()
         if report:
-            report.status = "pending_generation"
+            report.status = "upload"
             session.commit()
         raise e
     finally:
@@ -341,7 +341,7 @@ def generate_report(
     if not je or not tb:
         raise HTTPException(400, "JE와 TB 파일이 모두 업로드되어야 합니다.")
 
-    report.status = "pending_generation"
+    report.status = "generating"
     db.commit()
 
     from database import DATABASE_URL
