@@ -333,7 +333,7 @@ def _run_generate(report_id: int, db_url: str, actor: str):
     except Exception as e:
         report = session.query(Report).filter(Report.id == report_id).first()
         if report:
-            report.status = "upload"
+            report.status = "error"
             session.commit()
         raise e
     finally:
@@ -350,7 +350,7 @@ def generate_report(
     report = db.query(Report).filter(Report.id == report_id).first()
     if not report:
         raise HTTPException(404, "리포트를 찾을 수 없습니다.")
-    if report.status not in ("pending_generation", "upload"):
+    if report.status not in ("pending_generation", "upload", "error"):
         raise HTTPException(400, f"현재 상태({report.status})에서는 생성할 수 없습니다.")
 
     je = db.query(ReportFile).filter(
@@ -389,7 +389,8 @@ def update_status(
         "generated": ["reviewing"],
         "reviewing": ["active", "generated"],
         "active":    ["archived"],
-        "archived":  [],
+        "archived":  ["active"],
+        "error":     ["upload"],
     }
     if body.status not in ALLOWED.get(report.status, []):
         raise HTTPException(400, f"{report.status} 상태에서 {body.status}로 변경할 수 없습니다.")
