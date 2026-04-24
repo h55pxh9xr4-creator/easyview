@@ -1,14 +1,19 @@
-"""고객사 FAQ 엑셀(Asset/Easy View 고객사 FAQ.xlsx) → DB 일괄 import.
+"""고객사 FAQ → DB 일괄 import (startup에서 자동 호출).
 
+- 데이터 소스 우선순위:
+  1) backend/customer_faqs.json (git에 커밋됨 — 팀원 동기화 불필요)
+  2) Asset/Easy View 고객사 FAQ.xlsx (관리자가 엑셀 갱신 시 재생성용)
 - 재실행 안전: question 텍스트가 이미 있으면 answer/category만 갱신(upsert)
-- 실행: python -m import_customer_faqs  (backend 디렉터리에서)
+- 실행: python import_customer_faqs.py  (수동), 또는 main.py 시작 시 자동
 """
+import json
 from pathlib import Path
-import openpyxl
 from database import SessionLocal
 from chat_models import Faq
 
-EXCEL_PATH = Path(__file__).resolve().parent.parent / "Asset" / "Easy View 고객사 FAQ.xlsx"
+BACKEND_DIR = Path(__file__).resolve().parent
+JSON_PATH = BACKEND_DIR / "customer_faqs.json"
+EXCEL_PATH = BACKEND_DIR.parent / "Asset" / "Easy View 고객사 FAQ.xlsx"
 
 # 카테고리별 간단 키워드 부스터 (검색/매칭 정확도 향상)
 CATEGORY_HINT_KEYWORDS = {
@@ -35,15 +40,21 @@ def _derive_keywords(category: str, question: str, answer: str) -> str:
 
 
 def load_rows() -> list[dict]:
+    # 1순위: JSON (git-bundled)
+    if JSON_PATH.exists():
+        with open(JSON_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    # 2순위: 엑셀 (관리자 환경에만 존재)
+    if not EXCEL_PATH.exists():
+        return []
+    import openpyxl  # 엑셀 경로일 때만 로드
     wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
     ws = wb.worksheets[0]
     rows: list[dict] = []
-    header = None
     for i, row in enumerate(ws.iter_rows(values_only=True), 1):
         if i == 1:
-            header = [str(c or "").strip() for c in row]
             continue
-        if not row or not row[2] or not row[3]:  # Question/Answer 없으면 skip
+        if not row or not row[2] or not row[3]:
             continue
         cat = (row[1] or "고객사FAQ").strip() if row[1] else "고객사FAQ"
         q = str(row[2]).strip()

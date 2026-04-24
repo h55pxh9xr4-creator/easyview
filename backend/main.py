@@ -56,6 +56,44 @@ try:
 finally:
     _db_tmp.close()
 
+# 고객사 FAQ (JSON 번들) idempotent upsert — 팀원 로컬도 자동 동기화
+try:
+    from import_customer_faqs import upsert_faqs as _upsert_customer_faqs
+    _ins, _upd = _upsert_customer_faqs()
+    if _ins or _upd:
+        print(f"[FAQ] Customer FAQs — inserted={_ins}, updated={_upd}")
+except Exception as _e:
+    print(f"[FAQ] Customer FAQ import skipped: {_e}")
+
+# 기존 inquiry.reply 단일 컬럼 → inquiry_reply 테이블 이관 (idempotent)
+try:
+    from models import Inquiry, InquiryReply
+    _db_mig = SessionLocal()
+    try:
+        _existing_inq = _db_mig.query(Inquiry).filter(Inquiry.reply.isnot(None)).all()
+        _migrated = 0
+        for _inq in _existing_inq:
+            _has = _db_mig.query(InquiryReply).filter(InquiryReply.inquiry_id == _inq.id).count()
+            if _has:
+                continue
+            _content = (_inq.reply or "").strip()
+            if not _content:
+                continue
+            _db_mig.add(InquiryReply(
+                inquiry_id=_inq.id,
+                author="관리자",
+                content=_content,
+                created_at=_inq.reply_at,
+            ))
+            _migrated += 1
+        if _migrated:
+            _db_mig.commit()
+            print(f"[MIGRATE] inquiry.reply → inquiry_reply 이관 {_migrated}건")
+    finally:
+        _db_mig.close()
+except Exception as _e:
+    print(f"[MIGRATE] inquiry_reply 이관 skip: {_e}")
+
 # 기존 DB에 corporation 컬럼이 없을 경우 자동 추가
 with engine.connect() as conn:
     cols = [r[1] for r in conn.execute(text("PRAGMA table_info(inquiry)")).fetchall()]
