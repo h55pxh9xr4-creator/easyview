@@ -643,34 +643,28 @@ export default function ResourceRoom() {
 
   /* ── Sidebar ── */
   const SidebarEl = () => (
-    <aside style={{ width: 220, flexShrink: 0, background: "var(--rr-bg)", borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", boxShadow: "1px 0 4px rgba(0,0,0,.04)" }}>
-      {SIDEBAR_ITEMS.map(item => {
-        const active = page === item.key;
-        return (
-          <button
-            key={item.key}
-            onClick={() => setPage(item.key)}
-            style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "10px 20px", width: "100%", textAlign: "left",
-              cursor: "pointer", fontSize: 14, fontFamily: "inherit",
-              background: active ? C.primaryBg : "transparent",
-              color:      active ? C.primary   : "var(--rr-text)",
-              fontWeight: active ? 600 : 400,
-              border: "none", transition: "all 0.12s",
-            }}
-            onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "var(--rr-row-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--rr-text)"; } }}
-            onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--rr-text)"; } }}
-          >
-            <img
-              src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${item.icon}`}
-              width={22} height={22} alt=""
-              style={{ flexShrink: 0, opacity: 1 }}
-            />
-            {item.label}
-          </button>
-        );
-      })}
+    <aside className="sidebar" style={{ position: "sticky", top: 52, height: "calc(100vh - 52px)", alignSelf: "flex-start" }}>
+      <div className="sb-list">
+        {SIDEBAR_ITEMS.map(item => {
+          const active = page === item.key;
+          return (
+            <button
+              key={item.key}
+              onClick={() => setPage(item.key)}
+              className={`sb-item${active ? " active" : ""}`}
+            >
+              <span className="sb-icon">
+                <img
+                  src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${item.icon}`}
+                  width={22} height={22} alt=""
+                  style={{ display: "block" }}
+                />
+              </span>
+              <span className="sb-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </aside>
   );
 
