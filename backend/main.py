@@ -6,11 +6,12 @@ from sqlalchemy import text
 from database import engine, Base
 from dotenv import load_dotenv
 load_dotenv()
-from routers import filters, summary, pl, bs, vch, scenario, inquiry, requests as req_router, chat
+from routers import filters, summary, pl, bs, vch, scenario, inquiry, requests as req_router, chat, billing
 from routers import admin_auth, admin_users, admin_audit, admin_groups, admin_permissions, admin_roles, admin_companies, admin_requests, admin_reports
 from admin_seed import seed_admin_data, patch_companies
 import admin_models  # noqa: F401 — registers tables with Base
 import chat_models   # noqa: F401 — registers chat session/FAQ tables
+import billing_models  # noqa: F401 — registers billing tables with Base
 
 Base.metadata.create_all(bind=engine)
 seed_admin_data()
@@ -64,6 +65,15 @@ try:
         print(f"[FAQ] Customer FAQs — inserted={_ins}, updated={_upd}")
 except Exception as _e:
     print(f"[FAQ] Customer FAQ import skipped: {_e}")
+
+# 빌링 엑셀 (Asset/Easy View 빌링현황.xlsm) idempotent import — 있으면 로드
+try:
+    from import_billing import import_billing as _import_billing
+    _br = _import_billing()
+    if _br:
+        print(f"[BILLING] {_br}")
+except Exception as _e:
+    print(f"[BILLING] import skipped: {_e}")
 
 # 기존 inquiry.reply 단일 컬럼 → inquiry_reply 테이블 이관 (idempotent)
 try:
@@ -180,6 +190,7 @@ app.include_router(admin_companies.router)
 app.include_router(admin_requests.router)
 app.include_router(admin_reports.router)
 app.include_router(chat.router,          prefix="/api/chat",      tags=["chat"])
+app.include_router(billing.router,       prefix="/api/billing",   tags=["billing"])
 
 # media 폴더를 /media 경로로 정적 서빙
 media_dir = Path(__file__).parent / "media"

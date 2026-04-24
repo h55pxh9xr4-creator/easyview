@@ -25,6 +25,7 @@ import { fetchActiveReportInfo } from "@/lib/api";
 const AdminAccounts  = dynamic(() => import("@/app/admin/accounts/page"),  { ssr: false });
 const AdminCompanies = dynamic(() => import("@/app/admin/companies/page"), { ssr: false });
 const AdminReports   = dynamic(() => import("@/app/admin/reports/page"),   { ssr: false });
+const Billing        = dynamic(() => import("@/components/pages/Billing"), { ssr: false });
 
 const Summary      = dynamic(() => import("@/components/pages/Summary"),         { ssr: false });
 const PLSummary    = dynamic(() => import("@/components/pages/pl/PLSummary"),    { ssr: false });
@@ -260,6 +261,7 @@ function PageInner() {
           { key: "accounts",  label: "계정 관리",   icon: `${BASE}/icons/icon-building.svg` },
           { key: "companies", label: "회사 관리",   icon: `${BASE}/icons/icon-trust.svg` },
           { key: "reports",   label: "리포트 관리", icon: `${BASE}/icons/icon-journal.svg` },
+          { key: "billing",   label: "청구 관리",   icon: `${BASE}/icons/icon-coin.svg` },
         ];
         return (
           <div className="app-body">
@@ -281,6 +283,7 @@ function PageInner() {
                 {adminSubPage === "accounts"  && <AdminAccounts />}
                 {adminSubPage === "companies" && <AdminCompanies />}
                 {adminSubPage === "reports"   && <AdminReports />}
+                {adminSubPage === "billing"   && <Billing />}
               </Suspense>
             </div>
           </div>

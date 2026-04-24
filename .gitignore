@@ -69,3 +69,8 @@ API_SPECIFICATION*.md
 
 backend/media/*.mp4
 frontend/public/*.mp4
+
+# 민감 고객 데이터 (git에 커밋 금지)
+Asset/
+samilkim_nobg2_Faceonly.png
+deploy-to-easyview.sh

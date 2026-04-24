@@ -459,6 +459,91 @@ export const fetchRequestHistory = (reqId: number) =>
 export const getFileUrl = (url: string) => `${BASE}${url}`;
 export const getDownloadUrl = (reqId: number, fileId: number) => `${BASE}/api/requests/${reqId}/files/${fileId}/download`;
 
+// ── Billing (청구) ───────────────────────────────────────────
+export interface BillingEntry {
+  id: number;
+  parent: string | null;
+  subsidiary: string | null;
+  mgmt_no: string | null;
+  assignee: string | null;
+  report_ym: string | null;
+  delivery_ym: string | null;
+  billing_date: string | null;
+  invoice_date: string | null;
+  status: string | null;
+  deposit_date: string | null;
+  memo: string | null;
+  amount: number | null;
+  invoice_request_day: string | null;
+  invoice_manager: string | null;
+  manager_email: string | null;
+  manager_phone: string | null;
+  is_completed: boolean;
+  transfer_at: string | null;
+  updated_at: string | null;
+}
+
+export interface BillingEntryDetail extends BillingEntry {
+  exceptions: { category: string | null; note: string | null }[];
+}
+
+export interface BillingMaster {
+  id: number;
+  mgmt_no: string | null;
+  company: string | null;
+  parent: string | null;
+  amount: number | null;
+  invoice_request_day: string | null;
+  invoice_manager: string | null;
+  manager_email: string | null;
+  manager_phone: string | null;
+}
+
+export interface BillingException {
+  id: number;
+  no: number | null;
+  category: string | null;
+  parent: string | null;
+  note: string | null;
+}
+
+export interface BillingStats {
+  pending: number;
+  completed: number;
+  month_invoice: number;
+  pending_amount: number;
+  unpaid: number;
+}
+
+export const fetchBillingEntries = (opts: { status?: "pending" | "completed" | "all"; parent?: string; q?: string } = {}) =>
+  get<{ count: number; entries: BillingEntry[] }>("/api/billing/entries", {
+    status: opts.status, parent: opts.parent, q: opts.q,
+  });
+
+export const fetchBillingEntry = (id: number) =>
+  get<BillingEntryDetail>(`/api/billing/entries/${id}`);
+
+export const updateBillingEntry = (id: number, body: Partial<BillingEntry>) =>
+  mut<BillingEntry>(`${BASE}/api/billing/entries/${id}`, "PATCH", body);
+
+export const completeBillingEntry = (id: number) =>
+  mut<BillingEntry>(`${BASE}/api/billing/entries/${id}/complete`, "POST");
+
+export const markBillingDeposit = (id: number, depositDate?: string) =>
+  fetch(`${BASE}/api/billing/entries/${id}/deposit${depositDate ? `?deposit_date_iso=${depositDate}` : ""}`, { method: "POST" }).then(r => r.json());
+
+export const fetchBillingMaster = () =>
+  get<{ count: number; master: BillingMaster[] }>("/api/billing/master");
+
+export const fetchBillingExceptions = () =>
+  get<{ count: number; exceptions: BillingException[] }>("/api/billing/exceptions");
+
+export const fetchBillingStats = () =>
+  get<BillingStats>("/api/billing/stats");
+
+export const reimportBilling = () =>
+  mut<{ ok: boolean; entry_inserted: number; entry_updated: number }>(`${BASE}/api/billing/import`, "POST");
+
 // ── Report visibility ────────────────────────────────────────
 export interface ActiveReportInfo {
   active: boolean;
