@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 import uuid, shutil
 from database import get_db
-from models import DataRequest, RequestFile, RequestComment
+from models import DataRequest, RequestFile, RequestComment, RequestHistory
 
 router = APIRouter()
 
@@ -83,6 +83,16 @@ def _fmt_file(rf: RequestFile):
         "size":         rf.size or 0,
         "uploadedAt":   rf.uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if rf.uploaded_at else "",
         "url":          f"/media/requests/{rf.request_id}/{rf.filename}",
+    }
+
+def _fmt_history(h: RequestHistory):
+    return {
+        "id":        h.id,
+        "requestId": h.request_id,
+        "actor":     h.actor or "—",
+        "eventType": h.event_type,
+        "detail":    h.detail or "",
+        "ts":        h.created_at.strftime("%Y-%m-%d %H:%M:%S") if h.created_at else "",
     }
 
 def _next_code(db: Session) -> str:
@@ -170,6 +180,13 @@ def delete_comment(req_id: int, comment_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
+# ── History ──────────────────────────────────────────────────
+@router.get("/{req_id}/history")
+def get_history(req_id: int, db: Session = Depends(get_db)):
+    rows = db.query(RequestHistory).filter(RequestHistory.request_id == req_id).order_by(RequestHistory.created_at).all()
+    return [_fmt_history(r) for r in rows]
+
+
 # ── Files ────────────────────────────────────────────────────
 @router.get("/{req_id}/files")
 def list_files(req_id: int, db: Session = Depends(get_db)):
@@ -206,6 +223,12 @@ async def upload_file(
         size=dest.stat().st_size,
     )
     db.add(rf)
+    db.add(RequestHistory(
+        request_id=req_id,
+        actor=uploader,
+        event_type="upload_file",
+        detail=f"파일 업로드: {file.filename}",
+    ))
     db.commit()
     db.refresh(rf)
     return _fmt_file(rf)
@@ -227,7 +250,7 @@ def download_file(req_id: int, file_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{req_id}/files/{file_id}")
-def delete_file(req_id: int, file_id: int, db: Session = Depends(get_db)):
+def delete_file(req_id: int, file_id: int, actor: str = "", db: Session = Depends(get_db)):
     rf = (
         db.query(RequestFile)
         .filter(RequestFile.id == file_id, RequestFile.request_id == req_id)
@@ -235,6 +258,13 @@ def delete_file(req_id: int, file_id: int, db: Session = Depends(get_db)):
     )
     if not rf:
         raise HTTPException(404, "Not found")
+    log = RequestHistory(
+        request_id=req_id,
+        actor=actor,
+        event_type="delete_file",
+        detail=f"파일 삭제: {rf.original_name}",
+    )
+    db.add(log)
     try:
         (MEDIA_DIR / str(req_id) / rf.filename).unlink(missing_ok=True)
     except Exception:
