@@ -541,6 +541,8 @@ input[type=range].sc-slider::-webkit-slider-runnable-track{height:4px;background
 [data-theme="dark"] .cp-done p{color:#E2E5EC}
 
 /* ── 챗봇 패널 ── */
+.chatbot-title{color:#2C2C2C}
+[data-theme="dark"] .chatbot-title{color:#E2E5EC}
 [data-theme="dark"] .chatbot-panel{background:#1C1F26;box-shadow:0 8px 40px rgba(0,0,0,.5)}
 [data-theme="dark"] .chatbot-header{border-bottom-color:#2E3039}
 [data-theme="dark"] .chatbot-close{color:#5A6070}

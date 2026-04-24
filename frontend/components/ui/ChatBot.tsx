@@ -379,7 +379,7 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
           <div className="chatbot-header">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="logo" style={{ width: 24, height: 24, objectFit: "contain" }} />
-              <span style={{ fontWeight: 700, fontSize: 14, color: "#2C2C2C" }}>김삼일 매니저</span>
+              <span className="chatbot-title" style={{ fontWeight: 700, fontSize: 14 }}>김삼일 매니저</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <button className="chatbot-header-btn" onClick={toggleHistory} title="대화 내역">
@@ -537,7 +537,7 @@ export default function ChatBot({ activePage = "summary" }: ChatBotProps) {
           <div className="chatbot-input-area">
             <button className={`chatbot-suggest-toggle${showSuggestions ? " active" : ""}`} onClick={() => setShowSuggestions(prev => !prev)}>
               <span className="chatbot-tooltip">추천 질문</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
                 <path d="M9 18h6"/>
                 <path d="M10 22h4"/>
                 <path d="M12 2a7 7 0 00-4 12.74V17a1 1 0 001 1h6a1 1 0 001-1v-2.26A7 7 0 0012 2z"/>
