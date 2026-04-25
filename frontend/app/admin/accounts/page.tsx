@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { showToast } from "../_components/Toast";
+import ToastContainer, { showToast } from "../_components/Toast";
 import { adminUsersApi, adminCompaniesApi, adminGroupsApi } from "@/lib/admin-api";
 import { downloadCSV } from "@/lib/admin-export";
 
@@ -216,6 +216,7 @@ export default function AccountsPage() {
   if (view === "register") {
     return (
       <div className="space-y-6">
+      <ToastContainer />
         <div className="flex items-center gap-3">
           <button onClick={() => setView("list")} className="p-2 rounded hover:bg-pwc-gray-100 text-pwc-gray-500 cursor-pointer">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>

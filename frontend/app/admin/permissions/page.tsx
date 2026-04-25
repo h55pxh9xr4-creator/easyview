@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { adminPermissionsApi, adminUsersApi } from "@/lib/admin-api";
-import { showToast } from "../_components/Toast";
+import ToastContainer, { showToast } from "../_components/Toast";
 
 interface ReportPerm { id: number; report_name: string; role: string; can_view: boolean; can_download: boolean; can_print: boolean; can_share: boolean; can_comment: boolean; }
 interface UserPerm { id: number; user_id: number; user_name: string; user_email: string; can_view_report: boolean; can_upload: boolean; can_pdf: boolean; can_excel: boolean; can_print: boolean; can_share: boolean; can_comment: boolean; can_request_user: boolean; }
@@ -66,6 +66,7 @@ export default function PermissionsPage() {
 
   return (
     <div className="space-y-6">
+      <ToastContainer />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-pwc-black">리포트 접근 권한</h1>

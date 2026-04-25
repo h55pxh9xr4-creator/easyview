@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { adminReportsApi, adminCompaniesApi } from "@/lib/admin-api";
-import { showToast } from "../_components/Toast";
+import ToastContainer, { showToast } from "../_components/Toast";
 
 // ── 타입 ─────────────────────────────────────────────────────
 interface ReportFile {
@@ -480,6 +480,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
+      <ToastContainer />
       <div>
         <h1 className="text-2xl font-bold text-pwc-black">리포트 관리</h1>
         <p className="text-sm text-pwc-gray-500 mt-1">결산 기간과 대상 회사를 선택하고 JE / TB 파일을 업로드하여 리포트를 생성합니다.</p>

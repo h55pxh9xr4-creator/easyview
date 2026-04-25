@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { adminRolesApi } from "@/lib/admin-api";
-import { showToast } from "../_components/Toast";
+import ToastContainer, { showToast } from "../_components/Toast";
 
 interface Role { id: number; name: string; category: string; description: string | null; permissions: string[]; created_at: string | null; }
 
@@ -73,6 +73,7 @@ export default function RolesPage() {
 
   return (
     <div className="space-y-6">
+      <ToastContainer />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-pwc-black">역할 정의</h1>

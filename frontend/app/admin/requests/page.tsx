@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { adminRequestsApi } from "@/lib/admin-api";
-import { showToast } from "../_components/Toast";
+import ToastContainer, { showToast } from "../_components/Toast";
 
 interface Request {
   id: number; requester_id: number; requester_name: string; target_name: string; target_email: string;
@@ -56,6 +56,7 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-6">
+      <ToastContainer />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-pwc-black">사용자 추가 신청</h1>
