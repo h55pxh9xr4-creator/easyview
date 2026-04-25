@@ -17,6 +17,8 @@ interface FilterStore extends FilterState {
   setCurrency: (v: string) => void;
   exchangeRates: ExchangeRates;
   setExchangeRates: (v: ExchangeRates) => void;
+  viewCompany: string;
+  setViewCompany: (v: string) => void;
 }
 
 export const useFilter = create<FilterStore>((set) => ({
@@ -27,6 +29,7 @@ export const useFilter = create<FilterStore>((set) => ({
   amountUnit: "원",
   currency: "KRW",
   exchangeRates: { KRW: 1 },
+  viewCompany: "",
 
   setBaseYm: (v) => set({ baseYm: v }),
   setPeriodType: (v) => set({ periodType: v }),
@@ -35,4 +38,5 @@ export const useFilter = create<FilterStore>((set) => ({
   setAmountUnit: (v) => set({ amountUnit: v }),
   setCurrency: (v) => set({ currency: v }),
   setExchangeRates: (v) => set({ exchangeRates: v }),
+  setViewCompany: (v) => set({ viewCompany: v }),
 }));

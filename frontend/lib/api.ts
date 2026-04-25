@@ -559,6 +559,19 @@ export interface ActiveReportInfo {
 export const fetchActiveReportInfo = () =>
   get<ActiveReportInfo>('/api/admin/reports/active-info');
 
+export const fetchActiveCompanies = () =>
+  get<string[]>("/api/filters/active-companies");
+
+export const fetchViewCompany = () =>
+  get<{ company: string }>("/api/filters/view-company");
+
+export const putViewCompany = (company: string) =>
+  fetch(`${BASE}/api/filters/view-company`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ company }),
+  }).then(r => r.json());
+
 // ── Chat (김삼일 AI) ─────────────────────────────────────────
 export interface ChatMessage {
   role: "user" | "assistant";

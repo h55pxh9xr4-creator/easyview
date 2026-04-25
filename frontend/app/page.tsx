@@ -20,7 +20,7 @@ import { useCommentedItems } from "@/hooks/useCommentedItems";
 import { usePendingInquiry } from "@/hooks/usePendingInquiry";
 import { useChatAttachment } from "@/hooks/useChatAttachment";
 import { adminAuthApi } from "@/lib/admin-api";
-import { fetchActiveReportInfo } from "@/lib/api";
+import { fetchActiveCompanies } from "@/lib/api";
 
 const AdminAccounts  = dynamic(() => import("@/app/admin/accounts/page"),  { ssr: false });
 const AdminCompanies = dynamic(() => import("@/app/admin/companies/page"), { ssr: false });
@@ -170,11 +170,19 @@ function PageInner() {
       .catch(() => {});
   }, []);
 
-  // 활성 리포트 회사 조회
+  // 활성 리포트 회사 조회 — 다회사 지원: userCompany가 활성 목록에 있으면 접근 허용
   useEffect(() => {
     if (!authed) return;
-    fetchActiveReportInfo()
-      .then((info) => setActiveReportCompany(info.active ? info.company : null))
+    fetchActiveCompanies()
+      .then((companies) => {
+        if (companies.length === 0) {
+          setActiveReportCompany(null);
+        } else {
+          // 비어드민은 자기 회사가 활성 목록에 있는지 확인
+          const company = sessionStorage.getItem("ev_company") ?? "";
+          setActiveReportCompany(companies.includes(company) ? company : companies[0]);
+        }
+      })
       .catch(() => setActiveReportCompany(null));
   }, [authed]);
 
@@ -314,7 +322,7 @@ function PageInner() {
                 <div className="ptb">
                   <span className="ptb-sub">{pageLabel}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", position: "relative" }}>
-                    <FilterBar activeSub={activeSub} inline />
+                    <FilterBar activeSub={activeSub} inline isAdmin={role === "admin"} userCompany={userCompany} />
                     <DownloadMenu
                       activeSub={activeSub}
                       pageLabel={pageLabel}

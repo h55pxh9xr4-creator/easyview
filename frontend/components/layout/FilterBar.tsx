@@ -3,15 +3,22 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFilter } from "@/hooks/useFilter";
-import { fetchMonths } from "@/lib/api";
+import { fetchMonths, fetchActiveCompanies, putViewCompany } from "@/lib/api";
 import { fetchExchangeRates } from "@/lib/exchangeRate";
 
-export default function FilterBar({ activeSub, inline }: { activeSub: string; inline?: boolean }) {
+export default function FilterBar({ activeSub, inline, isAdmin, userCompany }: {
+  activeSub: string;
+  inline?: boolean;
+  isAdmin?: boolean;
+  userCompany?: string;
+}) {
   const { t, i18n } = useTranslation();
   const { baseYm, periodType, compareTarget, bsBase, amountUnit, currency, exchangeRates,
+          viewCompany,
           setBaseYm, setPeriodType, setCompareTarget, setBsBase, setAmountUnit,
-          setCurrency, setExchangeRates } = useFilter();
+          setCurrency, setExchangeRates, setViewCompany } = useFilter();
   const [months, setMonths] = useState<string[]>([]);
+  const [activeCompanies, setActiveCompanies] = useState<string[]>([]);
 
   const SC_PAGES = ["sc-dup","sc-cash","sc-wknd","sc-big","sc-sc5","sc-sc6"];
   const noFilters = SC_PAGES.includes(activeSub) || activeSub === "vch-search" || activeSub === "inquiry" || activeSub === "settings";
@@ -19,15 +26,25 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
   const showCompare = ["summary","pl-sum"].includes(activeSub);
   const showBsBase = ["summary","bs-acct"].includes(activeSub);
 
+  const refreshMonths = (m: string[]) => {
+    setMonths(m);
+    if (m.length > 0 && !m.includes(baseYm)) setBaseYm(m[0]);
+  };
+
   useEffect(() => {
-    fetchMonths().then((m) => {
-      setMonths(m);
-      if (m.length > 0 && !m.includes(baseYm)) {
-        setBaseYm(m[0]);
-      }
-    }).catch(console.error);
+    fetchMonths().then(refreshMonths).catch(console.error);
+    fetchActiveCompanies().then(setActiveCompanies).catch(console.error);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 비어드민: 자기 회사로 자동 고정
+  useEffect(() => {
+    if (!isAdmin && userCompany) {
+      putViewCompany(userCompany).catch(console.error);
+      setViewCompany(userCompany);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, userCompany]);
 
   useEffect(() => {
     fetchExchangeRates().then(setExchangeRates).catch(console.error);
@@ -61,6 +78,26 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
 
   const controls = (
     <div className="fbar-controls">
+      {/* 회사 선택 (어드민 전용, 활성 회사 2개 이상일 때) */}
+      {isAdmin && activeCompanies.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="flabel">회사</span>
+          <select
+            className="fsel"
+            value={viewCompany}
+            onChange={async (e) => {
+              const c = e.target.value;
+              setViewCompany(c);
+              await putViewCompany(c).catch(console.error);
+              fetchMonths().then(refreshMonths).catch(console.error);
+            }}
+          >
+            <option value="">전체</option>
+            {activeCompanies.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      )}
+
       {/* 월별/누적 토글 */}
       {showPeriod && (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
