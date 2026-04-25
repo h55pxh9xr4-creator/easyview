@@ -173,17 +173,23 @@ function PageInner() {
   // 활성 리포트 회사 조회 — 다회사 지원: userCompany가 활성 목록에 있으면 접근 허용
   useEffect(() => {
     if (!authed) return;
-    fetchActiveCompanies()
-      .then((companies) => {
-        if (companies.length === 0) {
-          setActiveReportCompany(null);
-        } else {
-          // 비어드민은 자기 회사가 활성 목록에 있는지 확인
-          const company = sessionStorage.getItem("ev_company") ?? "";
-          setActiveReportCompany(companies.includes(company) ? company : companies[0]);
-        }
-      })
-      .catch(() => setActiveReportCompany(null));
+    const norm = (s: string) => s.trim().toLowerCase();
+    const checkAccess = () => {
+      fetchActiveCompanies()
+        .then((companies) => {
+          if (companies.length === 0) {
+            setActiveReportCompany(null);
+          } else {
+            const company = sessionStorage.getItem("ev_company") ?? "";
+            const match = companies.find(c => norm(c) === norm(company));
+            setActiveReportCompany(match ?? null);
+          }
+        })
+        .catch(() => setActiveReportCompany(null));
+    };
+    checkAccess();
+    window.addEventListener("focus", checkAccess);
+    return () => window.removeEventListener("focus", checkAccess);
   }, [authed]);
 
   if (authed === null) return null;
@@ -303,7 +309,7 @@ function PageInner() {
           const isAdmin = role === "admin";
           if (!isAdmin && activeReportCompany === undefined) return null;
           // null = 활성 리포트 없음 → admin 외 차단
-          const hasAccess = isAdmin || activeReportCompany === userCompany;
+          const hasAccess = isAdmin || activeReportCompany !== null;
           if (!hasAccess) {
             return (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, color: "#6b7280", padding: 40 }}>

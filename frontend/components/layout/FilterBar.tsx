@@ -32,8 +32,13 @@ export default function FilterBar({ activeSub, inline, isAdmin, userCompany }: {
   };
 
   useEffect(() => {
-    fetchMonths().then(refreshMonths).catch(console.error);
-    fetchActiveCompanies().then(setActiveCompanies).catch(console.error);
+    const refetch = () => {
+      fetchMonths().then(refreshMonths).catch(console.error);
+      fetchActiveCompanies().then(setActiveCompanies).catch(console.error);
+    };
+    refetch();
+    window.addEventListener("focus", refetch);
+    return () => window.removeEventListener("focus", refetch);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -78,8 +83,8 @@ export default function FilterBar({ activeSub, inline, isAdmin, userCompany }: {
 
   const controls = (
     <div className="fbar-controls">
-      {/* 회사 선택 (어드민 전용, 활성 회사 2개 이상일 때) */}
-      {isAdmin && activeCompanies.length > 0 && (
+      {/* 회사 선택 (어드민 전용) */}
+      {isAdmin && (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="flabel">회사</span>
           <select
