@@ -192,7 +192,11 @@ function PageInner() {
     };
     checkAccess();
     window.addEventListener("focus", checkAccess);
-    return () => window.removeEventListener("focus", checkAccess);
+    const poll = setInterval(checkAccess, 30000);
+    return () => {
+      window.removeEventListener("focus", checkAccess);
+      clearInterval(poll);
+    };
   }, [authed, filterRefreshTick]);
 
   // 리포트 탭으로 이동할 때마다 회사 목록/접근 권한 재조회
