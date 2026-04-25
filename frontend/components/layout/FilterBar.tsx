@@ -20,7 +20,13 @@ export default function FilterBar({ activeSub, inline }: { activeSub: string; in
   const showBsBase = ["summary","bs-acct"].includes(activeSub);
 
   useEffect(() => {
-    fetchMonths().then(setMonths).catch(console.error);
+    fetchMonths().then((m) => {
+      setMonths(m);
+      if (m.length > 0 && !m.includes(baseYm)) {
+        setBaseYm(m[0]);
+      }
+    }).catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
