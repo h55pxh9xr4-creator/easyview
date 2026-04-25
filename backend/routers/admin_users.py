@@ -16,6 +16,7 @@ class UserCreate(BaseModel):
     email: str
     name: str
     company: str
+    corporation: Optional[str] = None
     group_id: Optional[int] = None
     role: str = "viewer"
     password: Optional[str] = None
@@ -25,6 +26,7 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     name: Optional[str] = None
     company: Optional[str] = None
+    corporation: Optional[str] = None
     group_id: Optional[int] = None
     role: Optional[str] = None
     status: Optional[str] = None
@@ -34,6 +36,7 @@ class UserUpdate(BaseModel):
 
 def _fmt(u: AdminUser) -> dict:
     return {"id": u.id, "email": u.email, "name": u.name, "company": u.company,
+            "corporation": u.corporation or "",
             "group_id": u.group_id, "role": u.role, "status": u.status,
             "trust_level": u.trust_level, "two_fa": u.two_fa,
             "password_expiry": str(u.password_expiry) if u.password_expiry else None,
@@ -59,8 +62,9 @@ async def list_users(search: Optional[str] = None, company: Optional[str] = None
 async def create_user(data: UserCreate, db: Session = Depends(get_db), current_user: AdminUser = Depends(get_current_admin)):
     if db.query(AdminUser).filter(AdminUser.email == data.email).first():
         raise HTTPException(400, "이미 등록된 이메일입니다.")
-    user = AdminUser(email=data.email, name=data.name, company=data.company, group_id=data.group_id,
-                     role=data.role, status="active",
+    user = AdminUser(email=data.email, name=data.name, company=data.company,
+                     corporation=data.corporation or None,
+                     group_id=data.group_id, role=data.role, status="active",
                      hashed_password=hash_password(data.password) if data.password else None,
                      password_expiry=datetime.utcnow() + timedelta(days=365))
     db.add(user)

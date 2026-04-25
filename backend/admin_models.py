@@ -10,6 +10,7 @@ class AdminUser(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
     company = Column(String, nullable=False)
+    corporation = Column(String, nullable=True)   # 자회사/법인명
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
     role = Column(String, default="viewer")        # admin, manager, viewer
     status = Column(String, default="active")      # active, inactive, pending

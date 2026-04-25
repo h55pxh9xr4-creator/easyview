@@ -26,6 +26,7 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
     return {
         "access_token": token, "token_type": "bearer",
         "user": {"id": user.id, "email": user.email, "name": user.name, "company": user.company,
+                 "corporation": user.corporation or "",
                  "role": user.role, "group_id": user.group_id, "status": user.status,
                  "trust_level": user.trust_level, "two_fa": user.two_fa},
     }

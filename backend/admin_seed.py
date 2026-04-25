@@ -126,6 +126,34 @@ def seed_admin_data(force=False):
     print("Admin seed data inserted successfully.")
 
 
+def patch_test_users():
+    """Ensure test accounts exist with correct company/corporation mapping (idempotent)."""
+    db = SessionLocal()
+    try:
+        hashed = hash_password(DEFAULT_PASSWORD)
+        test_users = [
+            {"email": "test_vu@pulmuone.com", "name": "테스트유저VU",
+             "company": "풀무원식품", "corporation": "Pulmuone Vietnam Co., Ltd.", "role": "viewer"},
+            {"email": "test_u@enftech.com",   "name": "테스트유저U",
+             "company": "이엔에프테크놀로지", "corporation": "ENF Kyle Technology, LLC", "role": "viewer"},
+        ]
+        added = 0
+        for u in test_users:
+            if not db.query(AdminUser).filter_by(email=u["email"]).first():
+                db.add(AdminUser(
+                    email=u["email"], name=u["name"], company=u["company"],
+                    corporation=u["corporation"],
+                    role=u["role"], status="active", trust_level="normal",
+                    two_fa=False, hashed_password=hashed,
+                ))
+                added += 1
+        if added:
+            db.commit()
+            print(f"[SEED] Test users added: {added}")
+    finally:
+        db.close()
+
+
 def patch_companies():
     """Ensure ENF and Pulmuone companies/subsidiaries exist (idempotent)."""
     db = SessionLocal()

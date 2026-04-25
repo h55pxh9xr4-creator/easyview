@@ -33,14 +33,19 @@ const USER_COMPANIES: Record<string, string> = {
   test_vu: "풀무원식품",
 };
 
+const USER_CORPORATIONS: Record<string, string> = {
+  test_u:  "ENF Kyle Technology, LLC",
+  test_vu: "Pulmuone Vietnam Co., Ltd.",
+};
+
 // DB 연결 후 이 함수 내부를 API 호출로 교체하면 됨
-async function authenticateUser(id: string, pw: string): Promise<{ role: string; company: string } | null> {
+async function authenticateUser(id: string, pw: string): Promise<{ role: string; company: string; corporation: string } | null> {
   // Future: const res = await fetch("/api/users/login", { method:"POST", body: JSON.stringify({username:id, password:pw}) });
   //         if (!res.ok) return null;
   //         const { role, company } = await res.json();
   //         return { role, company };
   if (CREDENTIALS[id] && CREDENTIALS[id] === pw) {
-    return { role: USER_ROLES[id] ?? "viewer", company: USER_COMPANIES[id] ?? "PwC" };
+    return { role: USER_ROLES[id] ?? "viewer", company: USER_COMPANIES[id] ?? "PwC", corporation: USER_CORPORATIONS[id] ?? "" };
   }
   return null;
 }
@@ -96,6 +101,7 @@ export default function LoginPage({ onLogin }: Props) {
       sessionStorage.setItem("ev_user", id);
       sessionStorage.setItem("ev_role", result.role);
       sessionStorage.setItem("ev_company", result.company);
+      sessionStorage.setItem("ev_corporation", result.corporation ?? "");
       if (autoLogin) {
         localStorage.setItem("ev_auto_auth", "1");
         localStorage.setItem("ev_auto_user", id);
@@ -294,6 +300,7 @@ export default function LoginPage({ onLogin }: Props) {
                         sessionStorage.setItem("ev_user", account);
                         sessionStorage.setItem("ev_role", result.role);
                         sessionStorage.setItem("ev_company", result.company);
+                        sessionStorage.setItem("ev_corporation", result.corporation ?? "");
                         onLogin();
                       }
                     }}

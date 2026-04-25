@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from routers import filters, summary, pl, bs, vch, scenario, inquiry, requests as req_router, chat, billing
 from routers import admin_auth, admin_users, admin_audit, admin_groups, admin_permissions, admin_roles, admin_companies, admin_requests, admin_reports
-from admin_seed import seed_admin_data, patch_companies
+from admin_seed import seed_admin_data, patch_companies, patch_test_users
 import admin_models  # noqa: F401 — registers tables with Base
 import chat_models   # noqa: F401 — registers chat session/FAQ tables
 import billing_models  # noqa: F401 — registers billing tables with Base
@@ -16,6 +16,7 @@ import billing_models  # noqa: F401 — registers billing tables with Base
 Base.metadata.create_all(bind=engine)
 seed_admin_data()
 patch_companies()
+patch_test_users()
 
 # FAQ 초기 데이터 seed
 from database import SessionLocal
@@ -113,11 +114,15 @@ try:
 except Exception as _e:
     print(f"[MIGRATE] inquiry_reply 이관 skip: {_e}")
 
-# 기존 DB에 corporation 컬럼이 없을 경우 자동 추가
+# 기존 DB 컬럼 마이그레이션 (없으면 추가)
 with engine.connect() as conn:
-    cols = [r[1] for r in conn.execute(text("PRAGMA table_info(inquiry)")).fetchall()]
-    if "corporation" not in cols:
+    inquiry_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(inquiry)")).fetchall()]
+    if "corporation" not in inquiry_cols:
         conn.execute(text("ALTER TABLE inquiry ADD COLUMN corporation VARCHAR"))
+        conn.commit()
+    users_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(users)")).fetchall()]
+    if "corporation" not in users_cols:
+        conn.execute(text("ALTER TABLE users ADD COLUMN corporation VARCHAR"))
         conn.commit()
 
 # ── je / tb_account 뷰 + view_settings (회사 선택) 마이그레이션 ──────────────
