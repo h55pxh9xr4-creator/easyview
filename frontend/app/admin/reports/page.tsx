@@ -331,6 +331,8 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
     try {
       const res = await adminReportsApi.updateStatus(reportId, status);
       showToast(res.message ?? "변경 완료", "success");
+      // 재활성화 후 "활성" 탭으로 이동해야 변경 결과가 보임
+      if (status === "active") setFilter("active");
       onRefresh();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "변경 실패", "error");

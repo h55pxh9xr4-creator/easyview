@@ -6,11 +6,12 @@ import { useFilter } from "@/hooks/useFilter";
 import { fetchMonths, fetchActiveCompanies, putViewCompany } from "@/lib/api";
 import { fetchExchangeRates } from "@/lib/exchangeRate";
 
-export default function FilterBar({ activeSub, inline, isAdmin, userCompany }: {
+export default function FilterBar({ activeSub, inline, isAdmin, userCompany, refreshTick }: {
   activeSub: string;
   inline?: boolean;
   isAdmin?: boolean;
   userCompany?: string;
+  refreshTick?: number;
 }) {
   const { t, i18n } = useTranslation();
   const { baseYm, periodType, compareTarget, bsBase, amountUnit, currency, exchangeRates,
@@ -40,7 +41,7 @@ export default function FilterBar({ activeSub, inline, isAdmin, userCompany }: {
     window.addEventListener("focus", refetch);
     return () => window.removeEventListener("focus", refetch);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshTick]);
 
   // 비어드민: 자기 회사로 자동 고정
   useEffect(() => {

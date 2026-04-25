@@ -170,6 +170,9 @@ function PageInner() {
       .catch(() => {});
   }, []);
 
+  // 리포트 탭 전환 횟수 — FilterBar/접근 체크 재조회 트리거
+  const [filterRefreshTick, setFilterRefreshTick] = useState(0);
+
   // 활성 리포트 회사 조회 — 다회사 지원: userCompany가 활성 목록에 있으면 접근 허용
   useEffect(() => {
     if (!authed) return;
@@ -190,7 +193,13 @@ function PageInner() {
     checkAccess();
     window.addEventListener("focus", checkAccess);
     return () => window.removeEventListener("focus", checkAccess);
-  }, [authed]);
+  }, [authed, filterRefreshTick]);
+
+  // 리포트 탭으로 이동할 때마다 회사 목록/접근 권한 재조회
+  useEffect(() => {
+    if (topTab === "리포트") setFilterRefreshTick(t => t + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topTab]);
 
   if (authed === null) return null;
 
@@ -328,7 +337,7 @@ function PageInner() {
                 <div className="ptb">
                   <span className="ptb-sub">{pageLabel}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", position: "relative" }}>
-                    <FilterBar activeSub={activeSub} inline isAdmin={role === "admin"} userCompany={userCompany} />
+                    <FilterBar activeSub={activeSub} inline isAdmin={role === "admin"} userCompany={userCompany} refreshTick={filterRefreshTick} />
                     <DownloadMenu
                       activeSub={activeSub}
                       pageLabel={pageLabel}
