@@ -246,13 +246,18 @@ def _run_generate(report_id: int, db_url: str, actor: str):
             "분류": "category",           "합산계정": "sum_acct",
             "회사계정": "company_acct",   "기초": "opening_balance",
         }
-        df_tb = pd.read_excel(tb_file.file_path).rename(columns=_TB_COL_MAP)
+        _df_raw_tb = pd.read_excel(tb_file.file_path)
+        _df_raw_tb.columns = _df_raw_tb.columns.str.strip()
+        df_tb = _df_raw_tb.rename(columns=_TB_COL_MAP)
         df_tb = df_tb.assign(
             opening_balance=pd.to_numeric(df_tb["opening_balance"], errors="coerce"),
             account_code=pd.to_numeric(df_tb["account_code"], errors="coerce"),
         )
         df_tb = df_tb.dropna(subset=["opening_balance", "account_code"]).reset_index(drop=True)
         df_tb = df_tb.drop_duplicates(subset=["account_code"], keep="last")
+
+        if len(df_tb) == 0:
+            raise ValueError("TB 파싱 결과가 비어있습니다. 파일 헤더/형식을 확인하세요.")
 
         with eng.connect() as conn:
             conn.execute(text("DELETE FROM tb_data WHERE report_id = :rid"), {"rid": report_id})
@@ -289,18 +294,31 @@ def _run_generate(report_id: int, db_url: str, actor: str):
             "합산계정": "sum_acct",       "분류": "category",
             "구분": "section",            "RecordID": "record_id",
         }
-        df_je = pd.read_excel(je_file.file_path).rename(columns=_JE_COL_MAP)
-        df_je = df_je.assign(amount=pd.to_numeric(df_je["amount"], errors="coerce"))
-        df_je = df_je.dropna(subset=["amount", "date"]).reset_index(drop=True)
+        _df_raw_je = pd.read_excel(je_file.file_path)
+        _df_raw_je.columns = _df_raw_je.columns.str.strip()
+        df_je = _df_raw_je.rename(columns=_JE_COL_MAP)
+
+        # 선택적 컬럼 누락 시 빈 값으로 채우기
+        for _col in ["voucher_no", "counterparty", "counterparty_raw", "description", "description_raw"]:
+            if _col not in df_je.columns:
+                df_je[_col] = ""
         if "record_id" not in df_je.columns:
-            df_je = df_je.assign(record_id=range(1, len(df_je) + 1))
-        df_je["date"] = pd.to_datetime(df_je["date"]).dt.date
+            df_je["record_id"] = range(1, len(df_je) + 1)
+
+        df_je = df_je.assign(amount=pd.to_numeric(df_je["amount"], errors="coerce"))
+        df_je["date"] = pd.to_datetime(df_je["date"], errors="coerce")
+        df_je = df_je.dropna(subset=["amount", "date"]).reset_index(drop=True)
+
+        if len(df_je) == 0:
+            raise ValueError("JE 파싱 결과가 비어있습니다. 파일 헤더/형식 또는 날짜·금액 컬럼을 확인하세요.")
+
+        df_je["date"] = df_je["date"].dt.date
         df_je["year_month"] = df_je["date"].astype(str).str[:7]
         df_je["signed_amount"] = df_je.apply(
             lambda r: r["amount"] if r["dr_cr"] == "차변" else -r["amount"], axis=1
         )
         df_je["is_weekend"] = pd.to_datetime(df_je["date"]).dt.dayofweek >= 5
-        df_je["is_cash"] = df_je["disclosure_acct"].str.contains("현금", na=False)
+        df_je["is_cash"] = df_je.get("disclosure_acct", pd.Series([""] * len(df_je))).str.contains("현금", na=False)
         df_je["account_code"] = df_je["account_code"].astype(str)
         df_je["report_id"] = report_id
 
