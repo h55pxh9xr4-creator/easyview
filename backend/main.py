@@ -184,6 +184,19 @@ with engine.connect() as conn:
     conn.commit()
     print("[MIGRATE] Views recreated (is_active only, company filter)")
 
+# AUTO_SEED_ABC=1 시 ABC 샘플 데이터 자동 시드
+import os as _os
+if _os.environ.get("AUTO_SEED_ABC") == "1":
+    try:
+        from seed_abc import seed_abc_report as _seed_abc
+        _abc = _seed_abc()
+        if _abc.get("skipped"):
+            print(f"[SEED-ABC] SKIP — 이미 시드됨 (report_id={_abc.get('report_id', '?')})")
+        else:
+            print(f"[SEED-ABC] DONE — ABC 리포트 active 시드 완료 (report_id={_abc['report_id']}, TB={_abc['tb_rows']}건, JE={_abc['je_rows']}건)")
+    except Exception as _e:
+        print(f"[SEED-ABC] ERROR — {_e}")
+
 app = FastAPI(title="EasyView API", version="1.0.0")
 
 app.add_middleware(
