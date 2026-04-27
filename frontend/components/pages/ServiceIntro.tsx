@@ -1053,7 +1053,7 @@ export default function ServiceIntro({ onNavigateToReport }: Props) {
               </svg>
             </button>
             <video
-              src={`${process.env.NEXT_PUBLIC_API_URL ?? "https://easyview-api.onrender.com"}/media/Worldwide_Easy_View_Manual.mp4`}
+              src={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/media/Worldwide_Easy_View_Manual.mp4`}
               controls
               autoPlay
               className="w-full rounded-xl shadow-2xl"
