@@ -14,6 +14,20 @@ import chat_models   # noqa: F401 — registers chat session/FAQ tables
 import billing_models  # noqa: F401 — registers billing tables with Base
 
 Base.metadata.create_all(bind=engine)
+
+# JE 인덱스 idempotent 생성 — CREATE INDEX IF NOT EXISTS (SQLAlchemy __table_args__ Index와 달리 재시작 시 안전)
+with engine.connect() as _conn:
+    for _idx_sql in [
+        "CREATE INDEX IF NOT EXISTS idx_je_yearmonth  ON je_data (year_month)",
+        "CREATE INDEX IF NOT EXISTS idx_je_section    ON je_data (section)",
+        "CREATE INDEX IF NOT EXISTS idx_je_disclosure ON je_data (disclosure_acct)",
+        "CREATE INDEX IF NOT EXISTS idx_je_date       ON je_data (date)",
+        "CREATE INDEX IF NOT EXISTS idx_je_voucher    ON je_data (voucher_no)",
+        "CREATE INDEX IF NOT EXISTS idx_je_category   ON je_data (category)",
+    ]:
+        _conn.execute(text(_idx_sql))
+    _conn.commit()
+
 seed_admin_data()
 patch_companies()
 patch_test_users()
