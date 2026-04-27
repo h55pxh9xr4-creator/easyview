@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE = process.env.NEXT_PUBLIC_API_URL || "https://easyview-api.onrender.com";
 
 export type PeriodType = "monthly" | "cumulative";
 export type CompareTarget = "prev_year_cum" | "prev_year_month" | "prev_month" | "prev_month_cum";
