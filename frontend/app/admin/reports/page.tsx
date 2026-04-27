@@ -367,8 +367,18 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
           <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr className="border-b border-pwc-gray-200 bg-pwc-gray-50">
-                {["법인", "제목", "기간", "버전", "상태", "생성일", "검토자", "활성화일", ""].map(h => (
-                  <th key={h} className="text-left py-3 px-4 font-medium text-pwc-gray-500 whitespace-nowrap">{h}</th>
+                {[
+                  { label: "법인",    align: "left"   },
+                  { label: "제목",    align: "left"   },
+                  { label: "기간",    align: "center" },
+                  { label: "버전",    align: "center" },
+                  { label: "상태",    align: "center" },
+                  { label: "생성일",  align: "center" },
+                  { label: "검토자",  align: "center" },
+                  { label: "활성화일", align: "center" },
+                  { label: "",       align: "center" },
+                ].map(({ label, align }) => (
+                  <th key={label} className={`text-${align} py-3 px-4 font-medium text-pwc-gray-500 whitespace-nowrap`}>{label}</th>
                 ))}
               </tr>
             </thead>
@@ -377,12 +387,12 @@ function StatusTab({ reports, onRefresh }: { reports: Report[]; onRefresh: () =>
                 <tr key={r.id} className={`border-b border-pwc-gray-100 hover:bg-pwc-gray-50 ${r.isActive ? "bg-green-50" : ""}`}>
                   <td className="py-3 px-4 font-medium text-pwc-black">{r.company}</td>
                   <td className="py-3 px-4 text-pwc-gray-700 max-w-[180px] truncate" title={r.title}>{r.title}</td>
-                  <td className="py-3 px-4 text-pwc-gray-600 text-xs">{r.period || "—"}</td>
+                  <td className="py-3 px-4 text-center text-pwc-gray-600 text-xs whitespace-nowrap">{r.period || "—"}</td>
                   <td className="py-3 px-4 text-center text-pwc-gray-500 text-xs">v{r.version}</td>
-                  <td className="py-3 px-4"><StatusBadge status={r.status} /></td>
-                  <td className="py-3 px-4 text-xs text-pwc-gray-500 whitespace-nowrap">{r.generatedAt ? r.generatedAt.slice(0, 16) : "—"}</td>
-                  <td className="py-3 px-4 text-xs text-pwc-gray-500">{r.reviewedBy || "—"}</td>
-                  <td className="py-3 px-4 text-xs text-pwc-gray-500 whitespace-nowrap">{r.activatedAt ? r.activatedAt.slice(0, 16) : "—"}</td>
+                  <td className="py-3 px-4 text-center"><StatusBadge status={r.status} /></td>
+                  <td className="py-3 px-4 text-center text-xs text-pwc-gray-500 whitespace-nowrap">{r.generatedAt ? r.generatedAt.slice(0, 16) : "—"}</td>
+                  <td className="py-3 px-4 text-center text-xs text-pwc-gray-500">{r.reviewedBy || "—"}</td>
+                  <td className="py-3 px-4 text-center text-xs text-pwc-gray-500 whitespace-nowrap">{r.activatedAt ? r.activatedAt.slice(0, 16) : "—"}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       {r.status === "generating" && (
