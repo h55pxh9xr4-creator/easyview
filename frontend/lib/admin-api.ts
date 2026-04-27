@@ -20,7 +20,9 @@ async function silentLogin(): Promise<string | null> {
 }
 
 async function request(path: string, options: RequestInit = {}) {
-  const token = getToken();
+  let token = getToken();
+  if (!token) token = await silentLogin();
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
@@ -29,7 +31,7 @@ async function request(path: string, options: RequestInit = {}) {
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
     const newToken = await silentLogin();
