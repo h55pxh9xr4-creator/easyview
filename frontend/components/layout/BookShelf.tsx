@@ -7,7 +7,6 @@ const PAGES = [
   { tab: "bs",      sub: "bs-sum",       label: "재무상태분석", wall: "#BAE6FD", roof: "#0EA5E9", door: "#0C4A6E" },
   { tab: "vch",     sub: "vch-analysis", label: "전표분석",     wall: "#BBF7D0", roof: "#22C55E", door: "#14532D" },
   { tab: "sc",      sub: "sc-dup",       label: "시나리오분석", wall: "#DDD6FE", roof: "#8B5CF6", door: "#4C1D95" },
-  { tab: "inquiry", sub: "inquiry",      label: "문의게시판",   wall: "#CFFAFE", roof: "#06B6D4", door: "#164E63" },
 ];
 type Phase = "idle" | "running" | "entering";
 

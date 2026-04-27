@@ -69,7 +69,6 @@ const NAV: NavGroup[] = [
       { id: "sc-sc6",  labelKey: "sidebar.scSc6" },
     ],
   },
-  { tab: "inquiry", labelKey: "sidebar.inquiry", directSub: "inquiry", icon: `${BASE}/icons/icon-email.svg` },
 ];
 
 interface Props {
