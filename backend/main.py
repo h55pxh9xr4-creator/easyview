@@ -28,6 +28,16 @@ with engine.connect() as _conn:
         _conn.execute(text(_idx_sql))
     _conn.commit()
 
+# ── 옛 schema 호환: seed 가 참조하는 컬럼은 미리 추가 ───────────
+# seed_admin_data() 가 users.corporation 을 참조하므로 ALTER TABLE 을
+# seed 호출보다 *앞으로* 옮긴다. 컬럼이 이미 있으면 skip (idempotent).
+with engine.connect() as _conn:
+    for _tbl in ("inquiry", "users"):
+        _cols = [r[1] for r in _conn.execute(text(f"PRAGMA table_info({_tbl})")).fetchall()]
+        if "corporation" not in _cols:
+            _conn.execute(text(f"ALTER TABLE {_tbl} ADD COLUMN corporation VARCHAR"))
+            _conn.commit()
+
 seed_admin_data()
 patch_companies()
 patch_test_users()

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFilter } from "@/hooks/useFilter";
-import { fetchMonths, fetchActiveCompanies, putViewCompany } from "@/lib/api";
+import { fetchMonths, fetchActiveCompanies, putViewCompany, fetchViewCompany } from "@/lib/api";
 import { fetchExchangeRates } from "@/lib/exchangeRate";
 
 export default function FilterBar({ activeSub, inline, isAdmin, userCompany, refreshTick }: {
@@ -20,6 +20,7 @@ export default function FilterBar({ activeSub, inline, isAdmin, userCompany, ref
           setCurrency, setExchangeRates, setViewCompany } = useFilter();
   const [months, setMonths] = useState<string[]>([]);
   const [activeCompanies, setActiveCompanies] = useState<string[]>([]);
+  const [companyChanging, setCompanyChanging] = useState(false);
 
   const SC_PAGES = ["sc-dup","sc-cash","sc-wknd","sc-big","sc-sc5","sc-sc6"];
   const noFilters = SC_PAGES.includes(activeSub) || activeSub === "vch-search" || activeSub === "inquiry" || activeSub === "settings";
@@ -51,6 +52,23 @@ export default function FilterBar({ activeSub, inline, isAdmin, userCompany, ref
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, userCompany]);
+
+  // 어드민: 첫 진입 시 backend 의 view_settings 와 동기화. 비어있으면 ABC 를 default 로.
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchViewCompany()
+      .then(({ company }) => {
+        if (company) {
+          setViewCompany(company);
+        } else {
+          // 첫 진입: 시연용 default 회사로 ABC 고정
+          putViewCompany("ABC").catch(console.error);
+          setViewCompany("ABC");
+        }
+      })
+      .catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchExchangeRates().then(setExchangeRates).catch(console.error);
@@ -91,11 +109,21 @@ export default function FilterBar({ activeSub, inline, isAdmin, userCompany, ref
           <select
             className="fsel"
             value={viewCompany}
+            disabled={companyChanging}
             onChange={async (e) => {
               const c = e.target.value;
+              setCompanyChanging(true);
               setViewCompany(c);
-              await putViewCompany(c).catch(console.error);
-              fetchMonths().then(refreshMonths).catch(console.error);
+              try {
+                await putViewCompany(c);
+              } catch (err) {
+                console.error(err);
+              }
+              // 임시 fix — 모든 페이지의 useEffect 의존성에 viewCompany 가 빠져있어
+              // 회사 변경이 데이터 refetch 를 트리거하지 못함. 페이지 강제 reload 로
+              // 모든 페이지가 새 회사 데이터를 처음부터 받도록 보장.
+              // (정석 fix: 14개 useEffect 의존성에 viewCompany 추가 — 시연 후 작업)
+              setTimeout(() => window.location.reload(), 50);
             }}
           >
             <option value="">전체</option>
@@ -206,8 +234,32 @@ export default function FilterBar({ activeSub, inline, isAdmin, userCompany, ref
     </div>
   );
 
-  // inline 모드: ptb 안에 삽입 (별도 바 없음)
-  if (inline) return controls;
+  // 회사 전환 중 풀스크린 로딩 오버레이
+  const overlay = companyChanging ? (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 99999,
+        background: "rgba(20,20,30,0.55)", backdropFilter: "blur(2px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexDirection: "column", gap: 16,
+      }}
+    >
+      <div
+        style={{
+          width: 48, height: 48, border: "4px solid rgba(255,255,255,0.25)",
+          borderTopColor: "#E87722", borderRadius: "50%",
+          animation: "fbarSpin 0.8s linear infinite",
+        }}
+      />
+      <div style={{ color: "#fff", fontSize: 16, fontWeight: 600 }}>
+        {viewCompany ? `${viewCompany} 데이터 불러오는 중...` : "전체 데이터 불러오는 중..."}
+      </div>
+      <style>{`@keyframes fbarSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  ) : null;
 
-  return <div className="fbar">{controls}</div>;
+  // inline 모드: ptb 안에 삽입 (별도 바 없음)
+  if (inline) return <>{controls}{overlay}</>;
+
+  return <><div className="fbar">{controls}</div>{overlay}</>;
 }
